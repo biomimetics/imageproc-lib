@@ -31,7 +31,7 @@
 ; 
 ; by Fernando L. Garcia Bermudez
 ; 
-; v.release
+; v.1.0
 ; 
 ; Revisions:
 ;  Fernando L. Garcia Bermudez     2007-9-14    Mixed assembly-C implementation

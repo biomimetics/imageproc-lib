@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2010-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
  *
  * by Fernando L. Garcia Bermudez & Stanley S. Baek
  *
- * v.beta
+ * v.1.0
  *
  * Revisions:
  *  Fernando L. Garcia Bermudez     2010-6-21   Initial release

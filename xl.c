@@ -121,7 +121,6 @@ void xlSetup(void) {
     // right justified mode
     // +-8g range
     xlWrite(0x31, 0b00001010);   
-	//xlWrite(0x31, 0b00001011);  //Same as above, but +-16g range
 
     xlWrite(0x38, 0x00); // FIFO control is bypassed
 

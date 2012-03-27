@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2010-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,17 +31,15 @@
  *
  * by Fernando L. Garcia Bermudez & Stanley S. Baek
  *
- * v.beta
- *
- * Revisions:
- *  Fernando L. Garcia Bermudez     2010-6-21   Initial release
- *  Stanley S. Baek                 2010-6-25   Expanded to even more boards
+ * v.1.0
  *
  */
 
 #ifndef __INIT_DEFAULT_H
 #define __INIT_DEFAULT_H
 
+
+#define FCY (40000000) // Internal instruction cycle clock
 
 // Sets up the MCU to use external clock.
 //
