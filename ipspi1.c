@@ -1,23 +1,50 @@
-/******************************************************************************
-* Name: ipspi1.c
-* Desc: Software module implementing basic spi read/write functionality
-* Date: 2010-08-10
-* Author: stanbaek
-*
-* UNDER DEVELOPMENT == UNDER DEVELOPMENT == UNDER DEVELOPMENT
-*
-* TODO: 
-*  1. Implement DMA for SPI.
-*
-* SPI1 is used for AT86RF231
-* SPI2 should be used if you run this module on
-* MikroElektronika dev board because RB2 is used for LCD.
-******************************************************************************/
+/*
+ * Copyright (c) 2010, Regents of the University of California
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright notice,
+ *   this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ * - Neither the name of the University of California, Berkeley nor the names
+ *   of its contributors may be used to endorse or promote products derived
+ *   from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ *
+ * Wrapper of SPI read/write functionality
+ *
+ * by Stanley S. Baek
+ *
+ * v.beta
+ *
+ * Revisions:
+ *  Stanlay S. Baek     2010-8-10    Initial release
+ *
+ * Notes:
+ *  - Uses an SPI bus (SPI1 for ImageProc2, SPI2 for MikroElectronika).
+ *  - TODO (stanbaek) : Implement DMA for SPI.
+ */
 
 #include "ipspi1.h"
 #include "utils.h"
 #include <stdio.h>
-//#include "lcd.h"
+#include "lcd.h"
 
 #if defined(__MIKRO)
     #define SPI_BUF         SPI2BUF
