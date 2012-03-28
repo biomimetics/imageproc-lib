@@ -44,7 +44,7 @@
 #include "counter.h"
 #include "ovcam.h"
 #include "utils.h"
-#include "fast_queue.h"
+#include "array_list.h"
 #include <stdlib.h>
 #include <string.h>
 #include "camera.h"
@@ -145,7 +145,7 @@ static CamFrame current_frame;
 static CamRow latest_row;
 static unsigned int next_row_index;
 static unsigned char has_new_row, has_new_frame;
-static FastQueue empty_frame_pool, full_frame_pool;
+static ArrayList empty_frame_pool, full_frame_pool;
 
 // Driver config'd function pointers
 static CamIrqHandler irq_handler;
@@ -179,15 +179,15 @@ void camSetup(void) {
     row_counter = cntrCreate(); // Row counter allocation
     if(row_counter == NULL) { return; }
 
-    empty_frame_pool = fqueueInit(CAM_POOL_SIZE); // Initialize frame pool
+    empty_frame_pool = alistInit(CAM_POOL_SIZE); // Initialize frame pool
     if(empty_frame_pool == NULL) { return; }
-    full_frame_pool = fqueueInit(CAM_POOL_SIZE); // Initialize frame pool
+    full_frame_pool = alistInit(CAM_POOL_SIZE); // Initialize frame pool
     if(full_frame_pool == NULL) { return; }
     
     for(i = 0; i < CAM_POOL_SIZE; i++) {
         frame = camCreateFrame(DS_IMAGE_COLS, DS_IMAGE_ROWS);    
         if(frame == NULL) { return; }
-        fqueueAddTail(empty_frame_pool, frame);
+        alistAddTail(empty_frame_pool, frame);
     }
 
     row_buff = camCreateRow(NATIVE_IMAGE_COLS);         // Allocate buffer space
@@ -501,7 +501,7 @@ static CamFrame getEmptyFrame(void) {
     
     CamFrame frame;
     
-    frame = fqueuePopHead(empty_frame_pool);
+    frame = alistPopHead(empty_frame_pool);
     if(frame == NULL) {
         frame = getOldestFullFrame(); // If no more empty frames, get oldest full
     }
@@ -516,7 +516,7 @@ static CamFrame getEmptyFrame(void) {
  */
 static void enqueueEmptyFrame(CamFrame frame) {
 
-    fqueueAddTail(empty_frame_pool, frame);
+    alistAddTail(empty_frame_pool, frame);
     
 }
 
@@ -529,8 +529,8 @@ static CamFrame getOldestFullFrame(void) {
 
     CamFrame frame;
     
-    frame = fqueuePopHead(full_frame_pool);
-    if(fqueueIsEmpty(full_frame_pool)) {
+    frame = alistPopHead(full_frame_pool);
+    if(alistIsEmpty(full_frame_pool)) {
         has_new_frame = 0;
     }
 
@@ -545,7 +545,7 @@ static CamFrame getOldestFullFrame(void) {
  */
 static void enqueueFullFrame(CamFrame frame) {
     
-    fqueueAddTail(full_frame_pool, frame);
+    alistAddTail(full_frame_pool, frame);
     has_new_frame = 1;
     
 }
