@@ -1,6 +1,6 @@
 All code licensed under the 3-clause modified-BSD license, unless otherwise noted.
 
-**imageproc-lib: Shared libraries for ImageProc projects**
+**imageproc-lib: Shared library for ImageProc projects**
 
 Description:
  A set of common libraries developed for the ImageProc family of boards based
