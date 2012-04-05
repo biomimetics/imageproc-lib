@@ -124,7 +124,7 @@
 #define CHLF    0x33
 #define ARBLM   0x34
 
-// Matrix Coefficients  
+// Matrix Coefficients
 #define MTX1    0x4F
 #define MTX2    0x50
 #define MTX3    0x51
@@ -175,7 +175,7 @@ void ovcamWriteRegister (unsigned char subaddr, unsigned char data)
     ovcamStopTx();
 }
 
-unsigned char ovcamReadRegister (unsigned char subaddr) 
+unsigned char ovcamReadRegister (unsigned char subaddr)
 {
     unsigned char data;
 
@@ -218,7 +218,7 @@ static void ovcamSetupPeripheral(void)
 // functioning. Since some of the registers are undocumented in the datasheet,
 // they might be calibration data (provided by the manufacturer). More testing
 // is needed to make sure this is the right interpretation.
-void ovcamSetupOV7660 (void) 
+void ovcamSetupOV7660 (void)
 {
     // SCCB Register Reset
     ovcamWriteRegister(COM7,0x80);
@@ -351,7 +351,7 @@ void ovcamSetupOV7660 (void)
 // Sends a byte to the camera.
 //
 // Parameters : byte to send.
-static inline void ovcamWriteByte (unsigned char byte) 
+static inline void ovcamWriteByte (unsigned char byte)
 {
     I2C_TRN = byte;
     while(I2C_STATbits.TRSTAT);
@@ -362,7 +362,7 @@ static inline void ovcamWriteByte (unsigned char byte)
 // Receives a byte from the camera.
 //
 // Returns : received byte.
-static inline unsigned char ovcamReadByte (void) 
+static inline unsigned char ovcamReadByte (void)
 {
     I2C_CONbits.RCEN = 1;
     while(I2C_CONbits.RCEN);
@@ -371,7 +371,7 @@ static inline unsigned char ovcamReadByte (void)
 }
 
 // Sends NACK to the camera.
-static inline void ovcamNACK (void) 
+static inline void ovcamNACK (void)
 {
     I2C_CONbits.ACKDT = 1;
     I2C_CONbits.ACKEN = 1;
@@ -379,15 +379,15 @@ static inline void ovcamNACK (void)
 }
 
 // Starts communication with the camera.
-static inline void ovcamStartTx (void) 
+static inline void ovcamStartTx (void)
 {
     I2C_CONbits.SEN = 1;
     while(I2C_CONbits.SEN);
 }
 
 // Stops communication with the camera.
-static inline void ovcamStopTx (void) 
-{    
+static inline void ovcamStopTx (void)
+{
     I2C_CONbits.PEN = 1;
     while(I2C_CONbits.PEN);
 }
@@ -395,6 +395,6 @@ static inline void ovcamStopTx (void)
 // Wait until I2C sus is inactive
 static inline void ovcamWaitTillIdle (void)
 {
-    while(I2C_CONbits.SEN || I2C_CONbits.PEN || I2C_CONbits.RCEN || 
+    while(I2C_CONbits.SEN || I2C_CONbits.PEN || I2C_CONbits.RCEN ||
           I2C_CONbits.RSEN || I2C_CONbits.ACKEN || I2C_STATbits.TRSTAT);
 }

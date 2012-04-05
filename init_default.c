@@ -58,21 +58,21 @@
 
     #else
         // Primary OSC (XT, HS, EC) w/PLL & 2-Speed Startup Enabled (for fast EC)
-        _FOSCSEL(FNOSC_PRIPLL & IESO_ON); 
+        _FOSCSEL(FNOSC_PRIPLL & IESO_ON);
 
         // EC oscillator & CLK Switch./Mon. Dis & OSC2 as CLK Out
-        _FOSC(POSCMD_EC & FCKSM_CSDCMD & OSCIOFNC_OFF); 
+        _FOSC(POSCMD_EC & FCKSM_CSDCMD & OSCIOFNC_OFF);
 
         // Watchdog Timer Disabled
-        _FWDT(FWDTEN_OFF); 
+        _FWDT(FWDTEN_OFF);
     #endif
 
 #endif // !defined(__BOOTLOAD)
 
 
-void SetupClock(void) 
+void SetupClock(void)
 {
-#if !defined(__BOOTLOAD)    
+#if !defined(__BOOTLOAD)
 
     #if defined(__EXP16DEV)
         // Setup for 40MIPS(Fcy) w/8MHz XT(Fin): Fcy = Fin * (M/(2 * N1 * N2))
@@ -84,14 +84,14 @@ void SetupClock(void)
         CLKDIVbits.PLLPRE=0; // N2=2
         OSCTUN=0; // Tune FRC oscillator, if FRC is used
         RCONbits.SWDTEN=0; // Disable Watch Dog Timer
-    #else        
+    #else
         // Setup for 40MIPS(Fcy) w/40MHz XT(Fin): Fcy = Fin * (M/(2 * N1 * N2))
         _PLLDIV = 6;  // M = 8
         _PLLPRE = 0;  // N1 = 2
         _PLLPOST = 0; // N2 = 2
     #endif //defined(__EXP16DEV)
 
-#endif //!defined(__BOOTLOAD)    
+#endif //!defined(__BOOTLOAD)
 }
 
 
@@ -107,12 +107,12 @@ void SwitchClocks(void)
 
 
 void SetupPorts(void)
-{        
+{
     // Disabling all potential ADC AIO's to enable DIO's
     // (will enable the needed ones in SetupADC())
     AD1PCFGL = ENABLE_ALL_DIG_0_15;
     AD2PCFGL = ENABLE_ALL_DIG_0_15;
-    
+
 #if defined(__IMAGEPROC1)
 
     // LEDs: RB3(AN3), RD11(ext int), and RF0-1 are outputs
@@ -124,16 +124,16 @@ void SetupPorts(void)
     LATF  = 0x00;
     TRISF = 0b1111100; // Switches: RF2-3, Batt Supervisor: RF6(ext int) are
                        // all inputs
-    
+
     // Camera PWDN: RC13-14 are outputs
     LATC  = 0x0000;
     TRISC = 0b1001111111111111;
-    
+
     // DFMEM: SPI2 Slave Select is an output (RG9)
     LATG  = 0b0000000000;
     TRISG = 0b0111111111;
 
-    // PWM: RE2 is an output managed thru the peripheral   
+    // PWM: RE2 is an output managed thru the peripheral
     // PWM outputs (*not* hardware PWM)
     // All 8 pins (RE0 - RE7) are outputs
     LATE  = 0b00000000;
@@ -145,7 +145,7 @@ void SetupPorts(void)
     // LEDs: RB12-14 are outputs
     // SPI1 Slave Select is an output (RB2)
     // SLPTR for Radio is an output (RB15)
-    // A/D Conv: RB-1, RB5, and RB8 are analog inputs    
+    // A/D Conv: RB-1, RB5, and RB8 are analog inputs
     LATB  = 0x0000;
     TRISB = 0b0000111111111011;
 
@@ -155,14 +155,14 @@ void SetupPorts(void)
 
     // OVCAM: RD0-7(PIXEL), RC13(VSYNC), RF0(HREF), and RF1(PCLK) are inputs
     // RD8-RD11 are used for external interrupt
-    // Batt Supervisor: RD9(ext int) is an input     
+    // Batt Supervisor: RD9(ext int) is an input
     LATD = 0x0000;
     TRISD = 0xffff;
 
     // DFMEM: SPI2 Slave Select is an output (RG9)
     LATG  = 0b0000000000;
     TRISG = 0b0111111111;
-   
+
     // PWMs: RE0, RE2, RE4, and RE6 are outputs managed thru the peripheral
     // PWM outputs (*not* hardware PWM)
     // All 8 pins (RE0 - RE7) are outputs
@@ -171,7 +171,7 @@ void SetupPorts(void)
 
 
 #elif defined(__BASESTATION) || defined(__BASESTATION2)
- 
+
     // RD0-RD3 are used for LEDs
     // RD11 is input (Radio Interrupt)
     LATD = 0x0000;
@@ -180,7 +180,7 @@ void SetupPorts(void)
     // RE5 is output (Radio SLP_TR)
     LATE = 0x0000;
     TRISE = 0x0000;
-	
+
     // RADIO: SPI2 Slave Select is an output (RG9)
     LATG  = 0b0000000000;
     TRISG = 0b0111111111;
@@ -214,15 +214,15 @@ void SetupPorts(void)
 #elif defined(__EXP16DEV)
 
     // LEDs (D3-D10/RA0-RA7)
-    LATA = 0x0000; 
+    LATA = 0x0000;
     TRISA = 0xFF00;
-        
+
     // LCD control pins RS (RB15)
     // SLPTR for Radio (RB1)
     LATB = 0x0000;
     TRISB = 0b0111111111111101;
 
-    // LCD control pins RW(RD5), EN(RD4)  
+    // LCD control pins RW(RD5), EN(RD4)
     LATD = 0x0000;
     TRISD = 0xffcf;
 

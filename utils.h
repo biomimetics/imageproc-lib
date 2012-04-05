@@ -83,15 +83,15 @@
 
 //Disable interrupts by wrapping code with this macro
 //Example usage:
-//      
+//
 //      CRITICAL_SECTION_START
 //          ...
 //          <some important code like writing to shared data>
 //          ...
 //      CRITICAL_SECTION_END
 #ifndef CRITICAL_SECTION_START
-    #define CRITICAL_SECTION_START	char saved_ipl; SET_AND_SAVE_CPU_IPL(saved_ipl, 7);
-    #define CRITICAL_SECTION_END RESTORE_CPU_IPL(saved_ipl);	
+    #define CRITICAL_SECTION_START  char saved_ipl; SET_AND_SAVE_CPU_IPL(saved_ipl, 7);
+    #define CRITICAL_SECTION_END RESTORE_CPU_IPL(saved_ipl);
 #endif
 
 // Define False/FALSE & True/TRUE for boolean
@@ -104,7 +104,7 @@ typedef enum {False, True} Boolean;
 
 
 /*-----------------------------------------------------------------------------
- *          Comparison subroutines                            
+ *          Comparison subroutines
 -----------------------------------------------------------------------------*/
 
 #ifndef max
@@ -116,11 +116,11 @@ typedef enum {False, True} Boolean;
 #endif
 
 /*-----------------------------------------------------------------------------
- *          Delay subroutines 
+ *          Delay subroutines
 -----------------------------------------------------------------------------*/
 
 // Wastes a number of microseconds
-// 
+//
 // Even though time is an int, it is limited by its assembly implementation to
 // the value 8192. Thus, this function can delay up to ~8.2ms.
 //
@@ -128,7 +128,7 @@ typedef enum {False, True} Boolean;
 extern void delay_us (unsigned int time);
 
 // Wastes a number of milliseconds
-// 
+//
 // This function is slightly less accurate than the microsecond delay routine
 // and thus it is recommended to use the former within its limits.
 //
@@ -137,9 +137,9 @@ extern void delay_ms (unsigned int time);
 
 
 /*-----------------------------------------------------------------------------
- *          Commonly used unions                            
+ *          Commonly used unions
 -----------------------------------------------------------------------------*/
- 
+
 typedef union union_int
 {
     int i;
