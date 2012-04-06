@@ -52,7 +52,7 @@
  *  }
  *
  *  // The array now contains a 160x100 image
- *  
+ *
  */
 
 #ifndef __OVCAM_H
@@ -82,7 +82,7 @@
 // Configures the camera through I2C(SCCB).
 void ovcamSetup (void);
 // !!! Should rely on function above instead of the following one !!!
-void ovcamSetupOV7660 (void); 
+void ovcamSetupOV7660 (void);
 static inline void __attribute__ ((deprecated)) SCCB_SetupOV7660 (void) {
         ovcamSetupOV7660(); }
 
@@ -130,7 +130,7 @@ static inline void ovcamWaitForNewFrame (void)
 static inline void ovcamTurnOn (void)
 {
     #if defined(__IMAGEPROC1)
-    OVCAM_REG2_EN = 1;  
+    OVCAM_REG2_EN = 1;
     #endif
     OVCAM_PWDN = 0;
 }
@@ -139,7 +139,7 @@ static inline void ovcamTurnOn (void)
 static inline void ovcamTurnOff (void)
 {
     #if defined(__IMAGEPROC1)
-    OVCAM_REG2_EN = 0;  
+    OVCAM_REG2_EN = 0;
     #endif
     OVCAM_PWDN = 1;
 }

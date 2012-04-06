@@ -131,7 +131,7 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
         unsigned int byte, unsigned char buffer)
 {
     unsigned char command;
-    
+
     while(!dfmemIsReady());
 
     // Choose command dependent on buffer choice
@@ -140,7 +140,7 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     } else {
         command = WRITE_PAGE_VIA_BUFFER2;
     }
-    
+
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + byte address bits
     MemAddr.address = (((unsigned long)page) << BYTE_ADDRESS_BITS) + byte;
@@ -157,7 +157,7 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     dfmemDeselectChip();
 }
 
-void dfmemWriteBuffer (unsigned char *data, unsigned int length, 
+void dfmemWriteBuffer (unsigned char *data, unsigned int length,
         unsigned int byte, unsigned char buffer)
 {
     unsigned char command;
@@ -168,14 +168,14 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
     } else {
         command = WRITE_TO_BUFFER2;
     }
-    
+
     // Restructure page/byte addressing
     // 14 don't care bit + byte address bits
     MemAddr.address = (unsigned long)byte;
-    
+
     // Write data to memory
     dfmemSelectChip();
-    
+
     dfmemWriteByte(command);
     dfmemWriteByte(MemAddr.chr_addr[2]);
     dfmemWriteByte(MemAddr.chr_addr[1]);
@@ -189,7 +189,7 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
 void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
 {
     unsigned char command;
-    
+
     while(!dfmemIsReady());
 
     // Choose command dependent on buffer choice
@@ -198,11 +198,11 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
     } else {
         command = WRITE_BUFFER2_TO_PAGE_NO_ERASE;
     }
-    
+
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + don't care bits
     MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-   
+
     // Write data to memory
     dfmemSelectChip();
 
@@ -214,7 +214,7 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
     dfmemDeselectChip();
 }
 
-void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset) 
+void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset)
 {
     static unsigned int page = 0;
     static unsigned int byte = 0;
@@ -245,15 +245,15 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + byte address bits
     MemAddr.address = (((unsigned long)page) << BYTE_ADDRESS_BITS) + byte;
-   
+
     // Read data from memory
     dfmemSelectChip();
-    
+
     dfmemWriteByte(READ_PAGE);
     dfmemWriteByte(MemAddr.chr_addr[2]);
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
-    
+
     dfmemWriteByte(0x00); // 4 don't care bytes
     dfmemWriteByte(0x00);
     dfmemWriteByte(0x00);
@@ -267,7 +267,7 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
 void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
 {
     unsigned char command;
-    
+
     while(!dfmemIsReady());
 
     // Choose command dependent on buffer choice
@@ -279,7 +279,7 @@ void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
 
     // 1 don't care bit + 13 page address bits + don't care bits
     MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-    
+
     // Write data to memory
     dfmemSelectChip();
 
@@ -291,13 +291,13 @@ void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
     dfmemDeselectChip();
 }
 
-void dfmemErasePage (unsigned int page) 
-{ 
+void dfmemErasePage (unsigned int page)
+{
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
     MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-    
+
     // Write data to memory
     dfmemSelectChip();
 
@@ -309,13 +309,13 @@ void dfmemErasePage (unsigned int page)
     dfmemDeselectChip();
 }
 
-void dfmemEraseBlock (unsigned int page) 
-{ 
+void dfmemEraseBlock (unsigned int page)
+{
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
     MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-    
+
     // Write data to memory
     dfmemSelectChip();
 
@@ -327,13 +327,13 @@ void dfmemEraseBlock (unsigned int page)
     dfmemDeselectChip();
 }
 
-void dfmemEraseSector (unsigned int page) 
+void dfmemEraseSector (unsigned int page)
 {
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
     MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-    
+
     // Write data to memory
     dfmemSelectChip();
 
@@ -348,31 +348,31 @@ void dfmemEraseSector (unsigned int page)
 void dfmemEraseChip (void)
 {
     while(!dfmemIsReady());
-        
+
     dfmemSelectChip();
-    
+
     dfmemWriteByte(0xC7);
     dfmemWriteByte(0x94);
     dfmemWriteByte(0x80);
     dfmemWriteByte(0x9A);
-    
+
     dfmemDeselectChip();
 }
 
 unsigned char dfmemIsReady (void)
-{   
+{
     return (dfmemGetStatus() >> 7);
 }
 
 unsigned char dfmemGetStatus (void)
-{   
-    unsigned char byte;    
-    
+{
+    unsigned char byte;
+
     dfmemSelectChip();
-    
+
     dfmemWriteByte(0xD7);
     byte = dfmemReadByte();
-    
+
     dfmemDeselectChip();
 
     return byte;
@@ -382,11 +382,11 @@ unsigned char dfmemGetStatus (void)
 // (including info on id, family, density, etc.), but this functions returns
 // just the manufacturer id and discards the rest when deselecting the chip.
 unsigned char dfmemGetManufacturerID (void)
-{   
+{
     unsigned char byte;
-    
+
     dfmemSelectChip();
-    
+
     dfmemWriteByte(0x9F);
     byte = dfmemReadByte();
 
@@ -399,14 +399,14 @@ unsigned char dfmemGetManufacturerID (void)
 // (including info on id, family, density, etc.), but this functions returns
 // only the 5 bits pertaining to the memory density.
 unsigned char dfmemGetChipSize (void)
-{   
+{
     unsigned char byte;
-    
+
     dfmemSelectChip();
-    
+
     dfmemWriteByte(0x9F);
-	byte = dfmemReadByte(); // Manufacturer ID, not needed
-	byte = dfmemReadByte() & 0b00011111;
+    byte = dfmemReadByte(); // Manufacturer ID, not needed
+    byte = dfmemReadByte() & 0b00011111;
 
     dfmemDeselectChip();
 
@@ -415,20 +415,20 @@ unsigned char dfmemGetChipSize (void)
 
 void dfmemDeepSleep()
 {
-	dfmemSelectChip();
+    dfmemSelectChip();
 
-	dfmemWriteByte(0xB9);
+    dfmemWriteByte(0xB9);
 
-	dfmemDeselectChip();
+    dfmemDeselectChip();
 }
 
 void dfmemResumeFromDeepSleep()
 {
-	dfmemSelectChip();
+    dfmemSelectChip();
 
-	dfmemWriteByte(0xAB);
+    dfmemWriteByte(0xAB);
 
-	dfmemDeselectChip();
+    dfmemDeselectChip();
 }
 
 
@@ -437,7 +437,7 @@ void dfmemResumeFromDeepSleep()
 -----------------------------------------------------------------------------*/
 
 // Sends a byte to the memory chip and returns the byte read from it
-// 
+//
 // Parameters   :   byte to send.
 // Returns      :   received byte.
 static inline unsigned char dfmemExchangeByte (unsigned char byte)
@@ -445,7 +445,7 @@ static inline unsigned char dfmemExchangeByte (unsigned char byte)
     SPI_BUF = byte;
     while(SPI_STATbits.SPITBF);
     while(!SPI_STATbits.SPIRBF);
-    SPI_STATbits.SPIROV = 0;    
+    SPI_STATbits.SPIROV = 0;
     return SPI_BUF;
 }
 
@@ -453,7 +453,7 @@ static inline unsigned char dfmemExchangeByte (unsigned char byte)
 //
 // It discards the byte it receives when transmitting this one as it should
 // not be important and so that it doesn't stay in the received queue.
-// 
+//
 // Parameters : byte to send.
 static inline void dfmemWriteByte (unsigned char byte)
 {
