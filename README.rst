@@ -3,7 +3,7 @@ All code licensed under the 3-clause modified-BSD license, unless otherwise note
 *imageproc-lib:* **Shared library for ImageProc projects**
 
 Description:
- A set of common modules developed for the ImageProc family of boards, that
+ A set of common modules developed for the ImageProc family of boards, which
  use Microchip's dsPIC architecture.
 
 Download code:
