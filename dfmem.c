@@ -49,6 +49,7 @@
 #include "p33Fxxxx.h"
 #include "spi.h"
 #include "dfmem.h"
+#include "led.h"
 
 
 #if (defined(__IMAGEPROC1) || defined(__IMAGEPROC2) || defined(__MIKRO) || defined(__EXP16DEV))
@@ -66,16 +67,21 @@
 
 #endif
 
-// Handle different chip sizes
-#if (defined(__DFMEM_8MBIT))
-    #define BYTE_ADDRESS_BITS   9
-#elif (defined(__DFMEM_16MBIT) || defined(__DFMEM_32MBIT))
-    #define BYTE_ADDRESS_BITS   10
-#elif (defined(__DFMEM_64MBIT))
-    #define BYTE_ADDRESS_BITS   11
-#else
-    #error "You need to specify the size of your memory chip by defining one of the following flags: __DFMEM_8MBIT, __DFMEM_16MBIT, or __DFMEM_32MBIT."
-#endif
+// AT45 DataFlash Memory geometry
+// These values are set by the setup function.
+static unsigned int dfmem_byte_address_bits;
+static unsigned int dfmem_max_sector;
+static unsigned int dfmem_max_pages;
+static unsigned int dfmem_buffersize;
+static unsigned int dfmem_bytes_per_page;
+static unsigned int dfmem_pages_per_block;
+static unsigned int dfmem_blocks_per_sector;
+static unsigned int dfmem_pages_per_sector;
+
+//Placeholders
+static unsigned int currentBuffer = 0;
+static unsigned int currentBufferOffset = 0;
+static unsigned int nextPage = 0;
 
 // Commands
 #define WRITE_PAGE_VIA_BUFFER1              0x82
@@ -115,6 +121,7 @@ static inline unsigned char dfmemReadByte (void);
 static inline void dfmemSelectChip(void);
 static inline void dfmemDeselectChip(void);
 static void dfmemSetupPeripheral(void);
+static void dfmemGeometrySetup(void);
 
 
 /*-----------------------------------------------------------------------------
@@ -125,13 +132,14 @@ void dfmemSetup(void)
 {
     dfmemSetupPeripheral();
     dfmemDeselectChip();
+	dfmemGeometrySetup();
 }
 
 void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
         unsigned int byte, unsigned char buffer)
 {
     unsigned char command;
-
+    
     while(!dfmemIsReady());
 
     // Choose command dependent on buffer choice
@@ -140,10 +148,10 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     } else {
         command = WRITE_PAGE_VIA_BUFFER2;
     }
-
+    
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + byte address bits
-    MemAddr.address = (((unsigned long)page) << BYTE_ADDRESS_BITS) + byte;
+    MemAddr.address = (((unsigned long)page) << dfmem_byte_address_bits) + byte;
 
 
     // Write data to memory
@@ -157,7 +165,7 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     dfmemDeselectChip();
 }
 
-void dfmemWriteBuffer (unsigned char *data, unsigned int length,
+void dfmemWriteBuffer (unsigned char *data, unsigned int length, 
         unsigned int byte, unsigned char buffer)
 {
     unsigned char command;
@@ -168,14 +176,14 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
     } else {
         command = WRITE_TO_BUFFER2;
     }
-
+    
     // Restructure page/byte addressing
     // 14 don't care bit + byte address bits
     MemAddr.address = (unsigned long)byte;
-
+    
     // Write data to memory
     dfmemSelectChip();
-
+    
     dfmemWriteByte(command);
     dfmemWriteByte(MemAddr.chr_addr[2]);
     dfmemWriteByte(MemAddr.chr_addr[1]);
@@ -189,7 +197,7 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
 void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
 {
     unsigned char command;
-
+    
     while(!dfmemIsReady());
 
     // Choose command dependent on buffer choice
@@ -198,11 +206,11 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
     } else {
         command = WRITE_BUFFER2_TO_PAGE_NO_ERASE;
     }
-
+    
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + don't care bits
-    MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-
+    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+   
     // Write data to memory
     dfmemSelectChip();
 
@@ -211,11 +219,15 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
+	//
+	currentBufferOffset = 0;
+
     dfmemDeselectChip();
 }
 
-void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset)
+void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset) 
 {
+	/*
     static unsigned int page = 0;
     static unsigned int byte = 0;
     static unsigned char buffer = 0;
@@ -234,6 +246,7 @@ void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_rese
 
     dfmemWriteBuffer(data, length, byte, buffer);
     byte += length;
+	*/
 
 }
 
@@ -244,16 +257,16 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
 
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + byte address bits
-    MemAddr.address = (((unsigned long)page) << BYTE_ADDRESS_BITS) + byte;
-
+    MemAddr.address = (((unsigned long)page) << dfmem_byte_address_bits) + byte;
+   
     // Read data from memory
     dfmemSelectChip();
-
+    
     dfmemWriteByte(READ_PAGE);
     dfmemWriteByte(MemAddr.chr_addr[2]);
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
-
+    
     dfmemWriteByte(0x00); // 4 don't care bytes
     dfmemWriteByte(0x00);
     dfmemWriteByte(0x00);
@@ -267,7 +280,7 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
 void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
 {
     unsigned char command;
-
+    
     while(!dfmemIsReady());
 
     // Choose command dependent on buffer choice
@@ -278,8 +291,8 @@ void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
     }
 
     // 1 don't care bit + 13 page address bits + don't care bits
-    MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-
+    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    
     // Write data to memory
     dfmemSelectChip();
 
@@ -291,13 +304,13 @@ void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
     dfmemDeselectChip();
 }
 
-void dfmemErasePage (unsigned int page)
-{
+void dfmemErasePage (unsigned int page) 
+{ 
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
-    MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-
+    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    
     // Write data to memory
     dfmemSelectChip();
 
@@ -309,13 +322,13 @@ void dfmemErasePage (unsigned int page)
     dfmemDeselectChip();
 }
 
-void dfmemEraseBlock (unsigned int page)
-{
+void dfmemEraseBlock (unsigned int page) 
+{ 
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
-    MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-
+    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    
     // Write data to memory
     dfmemSelectChip();
 
@@ -327,13 +340,13 @@ void dfmemEraseBlock (unsigned int page)
     dfmemDeselectChip();
 }
 
-void dfmemEraseSector (unsigned int page)
+void dfmemEraseSector (unsigned int page) 
 {
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
-    MemAddr.address = ((unsigned long)page) << BYTE_ADDRESS_BITS;
-
+    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    
     // Write data to memory
     dfmemSelectChip();
 
@@ -348,31 +361,31 @@ void dfmemEraseSector (unsigned int page)
 void dfmemEraseChip (void)
 {
     while(!dfmemIsReady());
-
+        
     dfmemSelectChip();
-
+    
     dfmemWriteByte(0xC7);
     dfmemWriteByte(0x94);
     dfmemWriteByte(0x80);
     dfmemWriteByte(0x9A);
-
+    
     dfmemDeselectChip();
 }
 
 unsigned char dfmemIsReady (void)
-{
+{   
     return (dfmemGetStatus() >> 7);
 }
 
 unsigned char dfmemGetStatus (void)
-{
-    unsigned char byte;
-
+{   
+    unsigned char byte;    
+    
     dfmemSelectChip();
-
+    
     dfmemWriteByte(0xD7);
     byte = dfmemReadByte();
-
+    
     dfmemDeselectChip();
 
     return byte;
@@ -382,11 +395,11 @@ unsigned char dfmemGetStatus (void)
 // (including info on id, family, density, etc.), but this functions returns
 // just the manufacturer id and discards the rest when deselecting the chip.
 unsigned char dfmemGetManufacturerID (void)
-{
+{   
     unsigned char byte;
-
+    
     dfmemSelectChip();
-
+    
     dfmemWriteByte(0x9F);
     byte = dfmemReadByte();
 
@@ -399,45 +412,147 @@ unsigned char dfmemGetManufacturerID (void)
 // (including info on id, family, density, etc.), but this functions returns
 // only the 5 bits pertaining to the memory density.
 unsigned char dfmemGetChipSize (void)
-{
-    unsigned char byte;
-
+{   
+    unsigned char byte[4];
+	unsigned char size = 0;
+    
     dfmemSelectChip();
-
+    
     dfmemWriteByte(0x9F);
-    byte = dfmemReadByte(); // Manufacturer ID, not needed
-    byte = dfmemReadByte() & 0b00011111;
+	byte[0] = dfmemReadByte(); // Manufacturer ID, not needed
+	byte[1] = dfmemReadByte(); // family & density code
+	byte[2] = dfmemReadByte(); // MLC code, Product Version
+	byte[3] = dfmemReadByte(); // Byte Count
+	size = byte[1] & 0b00011111;
 
     dfmemDeselectChip();
 
-    return byte;
+    return size;
 }
 
 void dfmemDeepSleep()
 {
-    dfmemSelectChip();
+	dfmemSelectChip();
 
-    dfmemWriteByte(0xB9);
+	dfmemWriteByte(0xB9);
 
-    dfmemDeselectChip();
+	dfmemDeselectChip();
 }
 
 void dfmemResumeFromDeepSleep()
 {
-    dfmemSelectChip();
+	dfmemSelectChip();
 
-    dfmemWriteByte(0xAB);
+	dfmemWriteByte(0xAB);
 
-    dfmemDeselectChip();
+	dfmemDeselectChip();
 }
 
+void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char *data){
+	//If you don't understand the math here, too bad. Go ask a grad student about it.
+	//Saves to dfmem will NOT overlap page boundaries, so we need to do this level by level:
+	unsigned int samplesPerPage = dfmem_bytes_per_page / sampLen; //round DOWN int division
+	//unsigned int numPages = (numSamples + samplesPerPage - 1) / samplesPerPage; //round UP int division
+	//unsigned int numBlocks = (numPages + dfmem_pages_per_block - 1 ) / 
+	//			dfmem_pages_per_block; //round UP int division
+	//unsigned int numSectors = (numBlocks + dfmem_blocks_per_sector - 1) / 
+	//			dfmem_blocks_per_sector; //round UP int division	
+
+	unsigned int pagenum = sampNum / samplesPerPage;
+	unsigned int byteOffset = (sampNum - pagenum*samplesPerPage)*sampLen;
+	
+	dfmemRead(pagenum, byteOffset, sampLen, data);
+
+}
+
+//Erases enough sectors to fit a specified number of samples into the flash
+void dfMemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
+{	
+	//Todo: Add an explicit check to see if the number of saved samples will fit into memory!
+	LED_2 = 1;
+	unsigned int firstPageOfSector;
+	
+	//avoid trivial case
+	if(numSamples == 0){ return;}	
+
+	//If you don't understand the math here, too bad. Go ask a grad student about it.
+	//Saves to dfMem will NOT overlap page boundaries, so we need to do this level by level:
+	unsigned int samplesPerPage = dfmem_bytes_per_page / sampLen; //round DOWN int division
+	unsigned int numPages = (numSamples + samplesPerPage - 1) / samplesPerPage; //round UP int division
+	//unsigned int numBlocks = (numPages + dfmem_pages_per_block - 1 ) / 
+	//			dfmem_pages_per_block; //round UP int division
+	//unsigned int numSectors = (numBlocks + dfmem_blocks_per_sector - 1) / 
+	//			dfmem_blocks_per_sector; //round UP int division
+	unsigned int numSectors = (	numPages + dfmem_pages_per_sector-1) / dfmem_pages_per_sector;
+
+	//At this point, it is impossible for numSectors == 0
+	//Sector 0a and 0b will be erased together always, for simplicity
+	//Note that numSectors will be the actual number of sectors to erase,
+	//   even though the sectors themselves are numbered starting at '0'
+	dfmemEraseSector(0); //Erase Sector 0a
+	dfmemEraseSector(8); //Erase Sector 0b
+
+	int i;
+	//Start erasing the rest from Sector 1:
+	for(i=1; i <= numSectors; i++){
+		//firstPageOfSector = dfmem_pages_per_block * dfmem_blocks_per_sector * i;
+		firstPageOfSector = dfmem_pages_per_sector * i;
+		//hold off until dfMem is ready for secort erase command
+		while(!dfmemIsReady());
+		//LED should blink indicating progress
+		LED_2 = ~LED_2;
+		//Send actual erase command
+		dfmemEraseSector(firstPageOfSector);
+	}
+	
+	//Leadout flash, should blink faster than above, indicating the last sector
+	while(!dfmemIsReady()){
+		LED_2 = ~LED_2;
+		delay_ms(75);
+	}
+	LED_2 = 0; //Green LED off
+
+	//Since we've erased, reset our place keeper vars
+	currentBuffer = 0;
+	currentBufferOffset = 0;
+	nextPage = 0;
+}
+
+void dfmemSave(unsigned char* data, unsigned int length){
+	//If this write will fit into the buffer, then just put it there
+	if (currentBufferOffset + length >= dfmem_buffersize) {
+		dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
+		currentBuffer = (currentBuffer) ? 0 : 1;
+		currentBufferOffset = 0;
+		nextPage++;
+	}
+
+	//We know there won't be an overrun here because of the previous 'if'
+	dfmemWriteBuffer(data, length, currentBufferOffset, currentBuffer);
+	currentBufferOffset += length;
+}
+
+// This function will write the current buffer into the flash memory if it contains
+//  any data, and then swaps the buffer pointer
+void dfmemSync(){
+	while(!dfmemIsReady());
+
+	//if currentBufferOffset == 0, then we don't need to write anything to be sync'd
+	if(currentBufferOffset != 0){
+		dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
+		currentBuffer = (currentBuffer) ? 0 : 1;   //Toggle buffer number
+		currentBufferOffset = 0;
+		nextPage++;
+	}
+	
+}
 
 /*-----------------------------------------------------------------------------
  *          Private functions
 -----------------------------------------------------------------------------*/
 
 // Sends a byte to the memory chip and returns the byte read from it
-//
+// 
 // Parameters   :   byte to send.
 // Returns      :   received byte.
 static inline unsigned char dfmemExchangeByte (unsigned char byte)
@@ -445,7 +560,7 @@ static inline unsigned char dfmemExchangeByte (unsigned char byte)
     SPI_BUF = byte;
     while(SPI_STATbits.SPITBF);
     while(!SPI_STATbits.SPIRBF);
-    SPI_STATbits.SPIROV = 0;
+    SPI_STATbits.SPIROV = 0;    
     return SPI_BUF;
 }
 
@@ -453,7 +568,7 @@ static inline unsigned char dfmemExchangeByte (unsigned char byte)
 //
 // It discards the byte it receives when transmitting this one as it should
 // not be important and so that it doesn't stay in the received queue.
-//
+// 
 // Parameters : byte to send.
 static inline void dfmemWriteByte (unsigned char byte)
 {
@@ -489,3 +604,112 @@ static void dfmemSetupPeripheral(void)
                FRAME_SYNC_EDGE_PRECEDE;
     SPI_STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
 }
+
+
+//////// Auto flash geometry params
+
+//From datasheets
+enum FlashSizeType {
+    DFMEM_8MBIT    = 0b00101,
+    DFMEM_16MBIT   = 0b00110,
+    DFMEM_32MBIT   = 0b00111,
+    DFMEM_64MBIT   = 0b01000
+ };
+
+////// Flash chip parameters
+//8 Mbit
+#define FLASH_8MBIT_MAX_SECTOR				16
+#define FLASH_8MBIT_MAX_PAGES				4096
+#define FLASH_8MBIT_BUFFERSIZE				264
+#define FLASH_8MBIT_BYTES_PER_PAGE			264
+#define FLASH_8MBIT_PAGES_PER_BLOCK			8
+#define FLASH_8MBIT_BLOCKS_PER_SECTOR		32
+#define FLASH_8MBIT_PAGES_PER_SECTOR		256  //Calculated; not directly in datasheet
+#define FLASH_8MBIT_BYTE_ADDRESS_BITS		9
+
+//16 Mbit
+#define FLASH_16MBIT_MAX_SECTOR				16
+#define FLASH_16MBIT_MAX_PAGES				4096
+#define FLASH_16MBIT_BUFFERSIZE				528
+#define FLASH_16MBIT_BYTES_PER_PAGE			528
+#define FLASH_16MBIT_PAGES_PER_BLOCK		8
+#define FLASH_16MBIT_BLOCKS_PER_SECTOR		32
+#define FLASH_16MBIT_PAGES_PER_SECTOR		256  //Calculated; not directly in datasheet
+#define FLASH_16MBIT_BYTE_ADDRESS_BITS		10
+
+//32 Mbit
+#define FLASH_32MBIT_MAX_SECTOR				64
+#define FLASH_32MBIT_MAX_PAGES				8192
+#define FLASH_32MBIT_BUFFERSIZE				528
+#define FLASH_32MBIT_BYTES_PER_PAGE			528
+#define FLASH_32MBIT_PAGES_PER_BLOCK		8
+#define FLASH_32MBIT_BLOCKS_PER_SECTOR		16   // --> THIS VALUE IS WRONG IN THE DATASHEET! 16 IS CORRECT.
+#define FLASH_32MBIT_PAGES_PER_SECTOR		128  //Calculated; not directly in datasheet
+#define FLASH_32MBIT_BYTE_ADDRESS_BITS		10
+
+//64 Mbit
+#define FLASH_64MBIT_MAX_SECTOR				32
+#define FLASH_64MBIT_MAX_PAGES				8192
+#define FLASH_64MBIT_BUFFERSIZE				1056
+#define FLASH_64MBIT_BYTES_PER_PAGE			1056
+#define FLASH_64MBIT_PAGES_PER_BLOCK		8
+#define FLASH_64MBIT_BLOCKS_PER_SECTOR		32
+#define FLASH_64MBIT_PAGES_PER_SECTOR		256  //Calculated; not directly in datasheet
+#define FLASH_64MBIT_BYTE_ADDRESS_BITS		11
+
+static void dfmemGeometrySetup(void){
+	//Configure size parameters
+	unsigned char size;
+	size = dfmemGetChipSize();
+
+	switch(size){
+		case DFMEM_8MBIT:
+			//myFlashGeom_ptr = &dfmem8Mbit;
+			dfmem_max_sector 		= FLASH_8MBIT_MAX_SECTOR;
+			dfmem_max_pages 		= FLASH_8MBIT_MAX_PAGES;
+			dfmem_buffersize 		= FLASH_8MBIT_BUFFERSIZE;
+			dfmem_bytes_per_page	= FLASH_8MBIT_BYTES_PER_PAGE;
+			dfmem_pages_per_block 	= FLASH_8MBIT_PAGES_PER_BLOCK;
+			dfmem_blocks_per_sector = FLASH_8MBIT_BLOCKS_PER_SECTOR;
+			dfmem_pages_per_sector  = FLASH_8MBIT_PAGES_PER_SECTOR;
+			dfmem_byte_address_bits = FLASH_8MBIT_BYTE_ADDRESS_BITS;
+			break;
+		case DFMEM_16MBIT:
+			//myFlashGeom_ptr = &dfmem16Mbit;
+			dfmem_max_sector 		= FLASH_16MBIT_MAX_SECTOR;
+			dfmem_max_pages 		= FLASH_16MBIT_MAX_PAGES;
+			dfmem_buffersize 		= FLASH_16MBIT_BUFFERSIZE;
+			dfmem_bytes_per_page	= FLASH_16MBIT_BYTES_PER_PAGE;
+			dfmem_pages_per_block 	= FLASH_16MBIT_PAGES_PER_BLOCK;
+			dfmem_blocks_per_sector	= FLASH_16MBIT_BLOCKS_PER_SECTOR;
+			dfmem_pages_per_sector  = FLASH_16MBIT_PAGES_PER_SECTOR;
+			dfmem_byte_address_bits = FLASH_16MBIT_BYTE_ADDRESS_BITS;
+			break;
+		case DFMEM_32MBIT:
+			//myFlashGeom_ptr = &dfmem32Mbit;
+			dfmem_max_sector 		= FLASH_32MBIT_MAX_SECTOR;
+			dfmem_max_pages 		= FLASH_32MBIT_MAX_PAGES;
+			dfmem_buffersize 		= FLASH_32MBIT_BUFFERSIZE;
+			dfmem_bytes_per_page	= FLASH_32MBIT_BYTES_PER_PAGE;
+			dfmem_pages_per_block 	= FLASH_32MBIT_PAGES_PER_BLOCK;
+			dfmem_blocks_per_sector	= FLASH_32MBIT_BLOCKS_PER_SECTOR;
+			dfmem_pages_per_sector  = FLASH_32MBIT_PAGES_PER_SECTOR;
+			dfmem_byte_address_bits = FLASH_32MBIT_BYTE_ADDRESS_BITS;
+			break;
+		case DFMEM_64MBIT:
+			//myFlashGeom_ptr = &dfmem64Mbit;
+			dfmem_max_sector 		= FLASH_64MBIT_MAX_SECTOR;
+			dfmem_max_pages 		= FLASH_64MBIT_MAX_PAGES;
+			dfmem_buffersize 		= FLASH_64MBIT_BUFFERSIZE;
+			dfmem_bytes_per_page	= FLASH_64MBIT_BYTES_PER_PAGE;
+			dfmem_pages_per_block 	= FLASH_64MBIT_PAGES_PER_BLOCK;
+			dfmem_blocks_per_sector	= FLASH_64MBIT_BLOCKS_PER_SECTOR;
+			dfmem_pages_per_sector  = FLASH_64MBIT_PAGES_PER_SECTOR;
+			dfmem_byte_address_bits = FLASH_64MBIT_BYTE_ADDRESS_BITS;
+			break;
+		default:
+			//Do something
+			break;
+	}
+}
+
