@@ -459,21 +459,17 @@ unsigned char dfmemGetManufacturerID (void)
 // only the 5 bits pertaining to the memory density.
 unsigned char dfmemGetChipSize (void)
 {
-    unsigned char byte[4];
-    unsigned char size = 0;
+    unsigned char byte;
 
     dfmemSelectChip();
 
     dfmemWriteByte(0x9F);
-    byte[0] = dfmemReadByte(); // Manufacturer ID, not needed
-    byte[1] = dfmemReadByte(); // family & density code
-    byte[2] = dfmemReadByte(); // MLC code, Product Version
-    byte[3] = dfmemReadByte(); // Byte Count
-    size = byte[1] & 0b00011111;
+    byte = dfmemReadByte(); // Manufacturer ID, not needed
+    byte = dfmemReadByte() & 0b00011111;
 
     dfmemDeselectChip();
 
-    return size;
+    return byte;
 }
 
 void dfmemDeepSleep()
