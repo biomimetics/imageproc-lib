@@ -490,6 +490,35 @@ void dfmemResumeFromDeepSleep()
     dfmemDeselectChip();
 }
 
+void dfmemSave(unsigned char* data, unsigned int length)
+{
+    //If this write will fit into the buffer, then just put it there
+    if (currentBufferOffset + length >= dfmem_buffersize) {
+        dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
+        currentBuffer = (currentBuffer) ? 0 : 1;
+        currentBufferOffset = 0;
+        nextPage++;
+    }
+
+    //We know there won't be an overrun here because of the previous 'if'
+    // TODO (fgb) : Shouldn't this happen only when the buffer is full,
+    //              probably calling dfmemSync?
+    dfmemWriteBuffer(data, length, currentBufferOffset, currentBuffer);
+    currentBufferOffset += length;
+}
+
+void dfmemSync()
+{
+    while(!dfmemIsReady());
+
+    //if currentBufferOffset == 0, then we don't need to write anything to be sync'd
+    if(currentBufferOffset != 0){
+        dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
+        currentBuffer = (currentBuffer) ? 0 : 1; //Toggle buffer number
+        currentBufferOffset = 0;
+        nextPage++;
+    }
+}
 
 void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char *data)
 {
@@ -553,34 +582,6 @@ void dfMemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
     nextPage = 0;
 }
 
-void dfmemSave(unsigned char* data, unsigned int length){
-    //If this write will fit into the buffer, then just put it there
-    if (currentBufferOffset + length >= dfmem_buffersize) {
-        dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
-        currentBuffer = (currentBuffer) ? 0 : 1;
-        currentBufferOffset = 0;
-        nextPage++;
-    }
-
-    //We know there won't be an overrun here because of the previous 'if'
-    dfmemWriteBuffer(data, length, currentBufferOffset, currentBuffer);
-    currentBufferOffset += length;
-}
-
-// This function will write the current buffer into the flash memory if it contains
-//  any data, and then swaps the buffer pointer
-void dfmemSync(){
-    while(!dfmemIsReady());
-
-    //if currentBufferOffset == 0, then we don't need to write anything to be sync'd
-    if(currentBufferOffset != 0){
-        dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
-        currentBuffer = (currentBuffer) ? 0 : 1;   //Toggle buffer number
-        currentBufferOffset = 0;
-        nextPage++;
-    }
-
-}
 
 /*-----------------------------------------------------------------------------
  *          Private functions

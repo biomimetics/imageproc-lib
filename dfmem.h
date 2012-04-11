@@ -206,15 +206,18 @@ void dfmemDeepSleep();
 // Resumes dfmem from deep power-down mode.
 void dfmemResumeFromDeepSleep();
 
+// Saves to the current buffer, keeping track of position in memory.
+void dfmemSave(unsigned char* data, unsigned int length);
+
+// This function will write the current buffer into the flash memory if it
+// contains any data, and then swaps the buffer pointer.
+void dfmemSync();
+
 // Reads back a "sample" from the flash memory following special page alignment
 // rules: Samples do not cross page boundaries, and start from the beginning
 // of the page.
 void dfmemReadSample(unsigned long, unsigned int, unsigned char*);
 
-void dfmemSave(unsigned char* data, unsigned int length);
-
 void dfMemEraseSectorsForSamples(unsigned long, unsigned int);
-
-void dfmemSync();
 
 #endif // __DFMEM_H
