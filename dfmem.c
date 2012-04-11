@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2011, Regents of the University of California
+ * Copyright (c) 2008-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.beta
+ * v.1.0
  *
  * Revisions:
  *  Fernando L. Garcia Bermudez 2008-7-23   Initial release
@@ -41,6 +41,8 @@
  *  Andrew Pullin               2011-6-7    Added ability to query for chip
  *  w/Fernando L. Garcia Bermudez           size and flags to handle them.
  *  Andrew Pullin               2011-9-23   Added ability for deep power-down.
+ *                              2012-4-8    Adding auto flash geometry and
+ *                                          some telemetry helper functions.
  *
  * Notes:
  *  - Uses an SPI port for communicating with the memory chip.

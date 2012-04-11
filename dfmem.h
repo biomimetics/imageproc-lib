@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2011, Regents of the University of California
+ * Copyright (c) 2008-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.beta
+ * v.1.0
  *
  * Usage:
  *  #include "dfmem.h"
