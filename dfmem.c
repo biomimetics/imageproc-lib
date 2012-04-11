@@ -529,24 +529,19 @@ void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char 
     dfmemRead(pagenum, byteOffset, sampLen, data);
 }
 
-//Erases enough sectors to fit a specified number of samples into the flash
-void dfMemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
+void dfmemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
 {
-    //Todo: Add an explicit check to see if the number of saved samples will fit into memory!
+    // TODO (apullin) : Add an explicit check to see if the number of saved
+    //                  samples will fit into memory!
     LED_2 = 1;
-    unsigned int firstPageOfSector;
+    unsigned int firstPageOfSector, i;
 
     //avoid trivial case
     if(numSamples == 0){ return;}
 
-    //If you don't understand the math here, too bad. Go ask a grad student about it.
-    //Saves to dfMem will NOT overlap page boundaries, so we need to do this level by level:
+    //Saves to dfmem will NOT overlap page boundaries, so we need to do this level by level:
     unsigned int samplesPerPage = dfmem_bytes_per_page / sampLen; //round DOWN int division
     unsigned int numPages = (numSamples + samplesPerPage - 1) / samplesPerPage; //round UP int division
-    //unsigned int numBlocks = (numPages + dfmem_pages_per_block - 1 ) /
-    //          dfmem_pages_per_block; //round UP int division
-    //unsigned int numSectors = (numBlocks + dfmem_blocks_per_sector - 1) /
-    //          dfmem_blocks_per_sector; //round UP int division
     unsigned int numSectors = ( numPages + dfmem_pages_per_sector-1) / dfmem_pages_per_sector;
 
     //At this point, it is impossible for numSectors == 0
@@ -556,12 +551,10 @@ void dfMemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
     dfmemEraseSector(0); //Erase Sector 0a
     dfmemEraseSector(8); //Erase Sector 0b
 
-    int i;
     //Start erasing the rest from Sector 1:
     for(i=1; i <= numSectors; i++){
-        //firstPageOfSector = dfmem_pages_per_block * dfmem_blocks_per_sector * i;
         firstPageOfSector = dfmem_pages_per_sector * i;
-        //hold off until dfMem is ready for secort erase command
+        //hold off until dfmem is ready for secort erase command
         while(!dfmemIsReady());
         //LED should blink indicating progress
         LED_2 = ~LED_2;
