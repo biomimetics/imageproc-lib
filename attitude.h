@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Regents of the University of California
+ * Copyright (c) 2010-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,60 +27,56 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Circular Array Data Structure
+ * Orientation Estimation Module (Quaternion and Binary Angle Representation)
  *
- * by Humphrey Hu
- *
- * v 0.1
- *
- * Usage:
- *
+ *  by Humphrey Hu 
+ *	v.beta
  *
  */
- 
-#ifndef __CARRAY_H
-#define __CARRAY_H
 
-typedef void* CircArrayItem;
+#ifndef __ATTITUDE_H
+#define __ATTITUDE_H
+
+#include "telemetry.h"
+#include "bams.h"
 
 typedef struct {
-    CircArrayItem* items;
-    unsigned int head;
-    unsigned int tail;
-    unsigned int size;
-    unsigned int max_size;
-} CircArrayStruct;
+    float yaw;
+    float pitch;
+    float roll;
+    unsigned long timestamp;
+} PoseEstimateStruct;
 
-typedef CircArrayStruct *CircArray;
+typedef PoseEstimateStruct *PoseEstimate;
 
-// Create a queue/stack
-CircArray carrayInit(unsigned int max_size);
-void carrayDelete(CircArray fq);
+/*****************************************************************************
+* Function Name : attSetup
+* Description   : Sets up module for operation
+* Parameters    : Estimator period in seconds
+* Return Value  : None                                                     
+*****************************************************************************/
+void attSetup(float ts);
+void attReset(void);
 
-// ========== Adding ============
-// Add an object to the back
-unsigned int carrayAddTail(CircArray fq, CircArrayItem item);
-// Add an object to the front
-unsigned int carrayAddHead(CircArray fq, CircArrayItem item);
+void attZero(void);
 
-// ========== Querying ============
-// Remove an object from the back
-CircArrayItem carrayPopTail(CircArray fq);
-// Remove an object from the front
-CircArrayItem carrayPopHead(CircArray fq);
+float attGetPitch(void);
+float attGetRoll(void);
+float attGetYaw(void);
 
-// ========== Removing ============
-// Retrieve an object from the back
-CircArrayItem carrayPeekTail(CircArray fq);
-// Retrieve an object from the front
-CircArrayItem carrayPeekHead(CircArray fq);
+bams16_t attGetPitchBAMS(void);
+bams16_t attGetRollBAMS(void);
+bams16_t attGetYawBAMS(void);
 
-// Check if the queue is empty
-unsigned int carrayIsEmpty(CircArray fq);
-// Check if the queue is full
-unsigned int carrayIsFull(CircArray fq);
-// Get number of items in the queue
-unsigned int carrayGetSize(CircArray fq);
+void attGetPose(PoseEstimate pose);
+
+unsigned char attIsRunning(void);
+void attSetRunning(unsigned char flag);
+
+void attEstimatePose(void);
+
+void attUpdateTelemetryB(TelemetryB);
+
+#endif  // __ATTITUDE_H
 
 
-#endif // __ALIST_H

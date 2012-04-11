@@ -44,7 +44,7 @@
  *      items[head] == items[tail] == NULL when the queue is empty
  */
  
-#include "circular_array.h"
+#include "carray.h"
 #include <stdlib.h>
 #include "utils.h"
 
@@ -53,7 +53,7 @@ static inline unsigned int carrayNextIndex(CircArray carray, unsigned int i);
 static inline unsigned int carrayPrevIndex(CircArray carray, unsigned int i);
 
 // ================ Public Functions ==========================================
-CircArray carrayInit(unsigned int max_size) {
+CircArray carrayCreate(unsigned int max_size) {
 
     CircArray carray = (CircArray) malloc(sizeof(CircArrayStruct));
     
