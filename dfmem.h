@@ -115,7 +115,8 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer);
 //              length = length of this data array (should be <= 528 byte),
 //              page_reset = reset the page number to write the data.
 //                  If page_reset is -1(0xffff), page number will not be reset
-void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset);
+// TODO (fgb) : Needs further debugging.
+//void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset);
 
 // Read the contents of a memory page into a data array.
 //
