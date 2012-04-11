@@ -490,21 +490,14 @@ void dfmemResumeFromDeepSleep()
     dfmemDeselectChip();
 }
 
-void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char *data){
-    //If you don't understand the math here, too bad. Go ask a grad student about it.
-    //Saves to dfmem will NOT overlap page boundaries, so we need to do this level by level:
-    unsigned int samplesPerPage = dfmem_bytes_per_page / sampLen; //round DOWN int division
-    //unsigned int numPages = (numSamples + samplesPerPage - 1) / samplesPerPage; //round UP int division
-    //unsigned int numBlocks = (numPages + dfmem_pages_per_block - 1 ) /
-    //          dfmem_pages_per_block; //round UP int division
-    //unsigned int numSectors = (numBlocks + dfmem_blocks_per_sector - 1) /
-    //          dfmem_blocks_per_sector; //round UP int division
 
+void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char *data)
+{
+    unsigned int samplesPerPage = dfmem_bytes_per_page / sampLen; //round DOWN int division
     unsigned int pagenum = sampNum / samplesPerPage;
     unsigned int byteOffset = (sampNum - pagenum*samplesPerPage)*sampLen;
 
     dfmemRead(pagenum, byteOffset, sampLen, data);
-
 }
 
 //Erases enough sectors to fit a specified number of samples into the flash
