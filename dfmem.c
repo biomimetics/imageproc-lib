@@ -634,14 +634,14 @@ static void dfmemSetupPeripheral(void)
     SPI_STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
 }
 
-static void dfmemGeometrySetup(void){
-    //Configure size parameters
+// Figures out memory geometry by querying its size
+static void dfmemGeometrySetup(void)
+{
     unsigned char size;
     size = dfmemGetChipSize();
 
     switch(size){
         case DFMEM_8MBIT:
-            //myFlashGeom_ptr = &dfmem8Mbit;
             dfmem_max_sector        = FLASH_8MBIT_MAX_SECTOR;
             dfmem_max_pages         = FLASH_8MBIT_MAX_PAGES;
             dfmem_buffersize        = FLASH_8MBIT_BUFFERSIZE;
@@ -652,7 +652,6 @@ static void dfmemGeometrySetup(void){
             dfmem_byte_address_bits = FLASH_8MBIT_BYTE_ADDRESS_BITS;
             break;
         case DFMEM_16MBIT:
-            //myFlashGeom_ptr = &dfmem16Mbit;
             dfmem_max_sector        = FLASH_16MBIT_MAX_SECTOR;
             dfmem_max_pages         = FLASH_16MBIT_MAX_PAGES;
             dfmem_buffersize        = FLASH_16MBIT_BUFFERSIZE;
@@ -663,7 +662,6 @@ static void dfmemGeometrySetup(void){
             dfmem_byte_address_bits = FLASH_16MBIT_BYTE_ADDRESS_BITS;
             break;
         case DFMEM_32MBIT:
-            //myFlashGeom_ptr = &dfmem32Mbit;
             dfmem_max_sector        = FLASH_32MBIT_MAX_SECTOR;
             dfmem_max_pages         = FLASH_32MBIT_MAX_PAGES;
             dfmem_buffersize        = FLASH_32MBIT_BUFFERSIZE;
@@ -674,7 +672,6 @@ static void dfmemGeometrySetup(void){
             dfmem_byte_address_bits = FLASH_32MBIT_BYTE_ADDRESS_BITS;
             break;
         case DFMEM_64MBIT:
-            //myFlashGeom_ptr = &dfmem64Mbit;
             dfmem_max_sector        = FLASH_64MBIT_MAX_SECTOR;
             dfmem_max_pages         = FLASH_64MBIT_MAX_PAGES;
             dfmem_buffersize        = FLASH_64MBIT_BUFFERSIZE;
@@ -685,7 +682,7 @@ static void dfmemGeometrySetup(void){
             dfmem_byte_address_bits = FLASH_64MBIT_BYTE_ADDRESS_BITS;
             break;
         default:
-            //Do something
+            // TODO (apullin, fgb) : Do something. Probably communicate back with user.
             break;
     }
 }
