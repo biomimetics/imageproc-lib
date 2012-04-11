@@ -54,7 +54,7 @@ typedef struct {
 typedef CircArrayStruct *CircArray;
 
 // Create a queue/stack
-CircArray carrayInit(unsigned int max_size);
+CircArray carrayCreate(unsigned int max_size);
 void carrayDelete(CircArray fq);
 
 // ========== Adding ============
@@ -63,13 +63,13 @@ unsigned int carrayAddTail(CircArray fq, CircArrayItem item);
 // Add an object to the front
 unsigned int carrayAddHead(CircArray fq, CircArrayItem item);
 
-// ========== Querying ============
+// ========== Removing ============
 // Remove an object from the back
 CircArrayItem carrayPopTail(CircArray fq);
 // Remove an object from the front
 CircArrayItem carrayPopHead(CircArray fq);
 
-// ========== Removing ============
+// ========== Querying ============
 // Retrieve an object from the back
 CircArrayItem carrayPeekTail(CircArray fq);
 // Retrieve an object from the front
