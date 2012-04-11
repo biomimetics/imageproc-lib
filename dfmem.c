@@ -69,21 +69,46 @@
 
 #endif
 
-// AT45 DataFlash Memory geometry
-// These values are set by the setup function.
-static unsigned int dfmem_byte_address_bits;
-static unsigned int dfmem_max_sector;
-static unsigned int dfmem_max_pages;
-static unsigned int dfmem_buffersize;
-static unsigned int dfmem_bytes_per_page;
-static unsigned int dfmem_pages_per_block;
-static unsigned int dfmem_blocks_per_sector;
-static unsigned int dfmem_pages_per_sector;
+// Flash geometry
+// 8 Mbit
+#define FLASH_8MBIT_MAX_SECTOR              16
+#define FLASH_8MBIT_MAX_PAGES               4096
+#define FLASH_8MBIT_BUFFERSIZE              264
+#define FLASH_8MBIT_BYTES_PER_PAGE          264
+#define FLASH_8MBIT_PAGES_PER_BLOCK         8
+#define FLASH_8MBIT_BLOCKS_PER_SECTOR       32
+#define FLASH_8MBIT_PAGES_PER_SECTOR        256  //Calculated; not directly in datasheet
+#define FLASH_8MBIT_BYTE_ADDRESS_BITS       9
 
-//Placeholders
-static unsigned int currentBuffer = 0;
-static unsigned int currentBufferOffset = 0;
-static unsigned int nextPage = 0;
+// 16 Mbit
+#define FLASH_16MBIT_MAX_SECTOR             16
+#define FLASH_16MBIT_MAX_PAGES              4096
+#define FLASH_16MBIT_BUFFERSIZE             528
+#define FLASH_16MBIT_BYTES_PER_PAGE         528
+#define FLASH_16MBIT_PAGES_PER_BLOCK        8
+#define FLASH_16MBIT_BLOCKS_PER_SECTOR      32
+#define FLASH_16MBIT_PAGES_PER_SECTOR       256  //Calculated; not directly in datasheet
+#define FLASH_16MBIT_BYTE_ADDRESS_BITS      10
+
+// 32 Mbit
+#define FLASH_32MBIT_MAX_SECTOR             64
+#define FLASH_32MBIT_MAX_PAGES              8192
+#define FLASH_32MBIT_BUFFERSIZE             528
+#define FLASH_32MBIT_BYTES_PER_PAGE         528
+#define FLASH_32MBIT_PAGES_PER_BLOCK        8
+#define FLASH_32MBIT_BLOCKS_PER_SECTOR      16   // --> THIS VALUE IS WRONG IN THE DATASHEET! 16 IS CORRECT.
+#define FLASH_32MBIT_PAGES_PER_SECTOR       128  //Calculated; not directly in datasheet
+#define FLASH_32MBIT_BYTE_ADDRESS_BITS      10
+
+// 64 Mbit
+#define FLASH_64MBIT_MAX_SECTOR             32
+#define FLASH_64MBIT_MAX_PAGES              8192
+#define FLASH_64MBIT_BUFFERSIZE             1056
+#define FLASH_64MBIT_BYTES_PER_PAGE         1056
+#define FLASH_64MBIT_PAGES_PER_BLOCK        8
+#define FLASH_64MBIT_BLOCKS_PER_SECTOR      32
+#define FLASH_64MBIT_PAGES_PER_SECTOR       256  //Calculated; not directly in datasheet
+#define FLASH_64MBIT_BYTE_ADDRESS_BITS      11
 
 // Commands
 #define WRITE_PAGE_VIA_BUFFER1              0x82
@@ -106,6 +131,28 @@ static unsigned int nextPage = 0;
 /*-----------------------------------------------------------------------------
  *          Private variables
 -----------------------------------------------------------------------------*/
+
+// Memory geometry
+static unsigned int dfmem_byte_address_bits;
+static unsigned int dfmem_max_sector;
+static unsigned int dfmem_max_pages;
+static unsigned int dfmem_buffersize;
+static unsigned int dfmem_bytes_per_page;
+static unsigned int dfmem_pages_per_block;
+static unsigned int dfmem_blocks_per_sector;
+static unsigned int dfmem_pages_per_sector;
+
+// Placeholders
+static unsigned int currentBuffer = 0;
+static unsigned int currentBufferOffset = 0;
+static unsigned int nextPage = 0;
+
+enum FlashSizeType {
+    DFMEM_8MBIT    = 0b00101,
+    DFMEM_16MBIT   = 0b00110,
+    DFMEM_32MBIT   = 0b00111,
+    DFMEM_64MBIT   = 0b01000
+ };
 
 union {
     unsigned long address;
@@ -606,58 +653,6 @@ static void dfmemSetupPeripheral(void)
                FRAME_SYNC_EDGE_PRECEDE;
     SPI_STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
 }
-
-
-//////// Auto flash geometry params
-
-//From datasheets
-enum FlashSizeType {
-    DFMEM_8MBIT    = 0b00101,
-    DFMEM_16MBIT   = 0b00110,
-    DFMEM_32MBIT   = 0b00111,
-    DFMEM_64MBIT   = 0b01000
- };
-
-////// Flash chip parameters
-//8 Mbit
-#define FLASH_8MBIT_MAX_SECTOR              16
-#define FLASH_8MBIT_MAX_PAGES               4096
-#define FLASH_8MBIT_BUFFERSIZE              264
-#define FLASH_8MBIT_BYTES_PER_PAGE          264
-#define FLASH_8MBIT_PAGES_PER_BLOCK         8
-#define FLASH_8MBIT_BLOCKS_PER_SECTOR       32
-#define FLASH_8MBIT_PAGES_PER_SECTOR        256  //Calculated; not directly in datasheet
-#define FLASH_8MBIT_BYTE_ADDRESS_BITS       9
-
-//16 Mbit
-#define FLASH_16MBIT_MAX_SECTOR             16
-#define FLASH_16MBIT_MAX_PAGES              4096
-#define FLASH_16MBIT_BUFFERSIZE             528
-#define FLASH_16MBIT_BYTES_PER_PAGE         528
-#define FLASH_16MBIT_PAGES_PER_BLOCK        8
-#define FLASH_16MBIT_BLOCKS_PER_SECTOR      32
-#define FLASH_16MBIT_PAGES_PER_SECTOR       256  //Calculated; not directly in datasheet
-#define FLASH_16MBIT_BYTE_ADDRESS_BITS      10
-
-//32 Mbit
-#define FLASH_32MBIT_MAX_SECTOR             64
-#define FLASH_32MBIT_MAX_PAGES              8192
-#define FLASH_32MBIT_BUFFERSIZE             528
-#define FLASH_32MBIT_BYTES_PER_PAGE         528
-#define FLASH_32MBIT_PAGES_PER_BLOCK        8
-#define FLASH_32MBIT_BLOCKS_PER_SECTOR      16   // --> THIS VALUE IS WRONG IN THE DATASHEET! 16 IS CORRECT.
-#define FLASH_32MBIT_PAGES_PER_SECTOR       128  //Calculated; not directly in datasheet
-#define FLASH_32MBIT_BYTE_ADDRESS_BITS      10
-
-//64 Mbit
-#define FLASH_64MBIT_MAX_SECTOR             32
-#define FLASH_64MBIT_MAX_PAGES              8192
-#define FLASH_64MBIT_BUFFERSIZE             1056
-#define FLASH_64MBIT_BYTES_PER_PAGE         1056
-#define FLASH_64MBIT_PAGES_PER_BLOCK        8
-#define FLASH_64MBIT_BLOCKS_PER_SECTOR      32
-#define FLASH_64MBIT_PAGES_PER_SECTOR       256  //Calculated; not directly in datasheet
-#define FLASH_64MBIT_BYTE_ADDRESS_BITS      11
 
 static void dfmemGeometrySetup(void){
     //Configure size parameters
