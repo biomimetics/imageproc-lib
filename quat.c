@@ -39,7 +39,7 @@
  * 
  */
 
- #include "quaternion.h"
+ #include "quat.h"
  #include <stdlib.h>
  #include <math.h>
  

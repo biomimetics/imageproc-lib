@@ -42,7 +42,7 @@
 #include "sys_clock.h"
 #include "telemetry.h"
 #include "attitude.h"
-#include "quaternion.h"
+#include "quat.h"
 #include "xl.h"
 #include "gyro.h"
 #include <math.h>
