@@ -31,7 +31,7 @@
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.1.0
+ * v.1.0 beta
  *
  * Usage:
  *  #include "dfmem.h"

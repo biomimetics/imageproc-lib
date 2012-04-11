@@ -31,7 +31,7 @@
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.1.0
+ * v.1.0 beta
  *
  * Revisions:
  *  Fernando L. Garcia Bermudez 2008-7-23   Initial release
@@ -159,7 +159,6 @@ union {
     unsigned char chr_addr[4];
 } MemAddr;
 
-
 /*----------------------------------------------------------------------------
  *          Declaration of private functions
  ---------------------------------------------------------------------------*/
@@ -201,7 +200,6 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + byte address bits
     MemAddr.address = (((unsigned long)page) << dfmem_byte_address_bits) + byte;
-
 
     // Write data to memory
     dfmemSelectChip();
@@ -268,7 +266,6 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
-    //
     currentBufferOffset = 0;
 
     dfmemDeselectChip();
@@ -709,4 +706,3 @@ static void dfmemGeometrySetup(void){
             break;
     }
 }
-
