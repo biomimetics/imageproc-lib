@@ -51,7 +51,7 @@
 #include "p33Fxxxx.h"
 #include "spi.h"
 #include "dfmem.h"
-#include "led.h"
+#include "utils.h"
 
 
 #if (defined(__IMAGEPROC1) || defined(__IMAGEPROC2) || defined(__MIKRO) || defined(__EXP16DEV))
