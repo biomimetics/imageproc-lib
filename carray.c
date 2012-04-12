@@ -31,11 +31,11 @@
  *
  * by Humphrey Hu
  *
- * v 0.1
+ * v.0.1
  *
  * Revisions:
  *  Humphrey Hu         2012-02-04    Initial implementation
- *                      
+ *
  * Notes:
  *  - Index convention:
  *      items[head] is the first item in the queue
@@ -43,7 +43,7 @@
  *  - Empty convention:
  *      items[head] == items[tail] == NULL when the queue is empty
  */
- 
+
 #include "carray.h"
 #include <stdlib.h>
 #include "utils.h"
@@ -56,51 +56,51 @@ static inline unsigned int carrayPrevIndex(CircArray carray, unsigned int i);
 CircArray carrayCreate(unsigned int max_size) {
 
     CircArray carray = (CircArray) malloc(sizeof(CircArrayStruct));
-    
+
     if(carray == NULL) { return carray; }   // Check for allocation failure
 
     carray->items = (CircArrayItem*) calloc(max_size, sizeof(CircArrayItem)); // Init to zeros
-    
+
     if(carray->items == NULL) {
         carrayDelete(carray);
         return NULL;
     }
-    
+
     carray->max_size = max_size;
     carray->size = 0;
     carray->head = 0;
     carray->tail = 0;
     return carray;
-    
+
 }
 
 void carrayDelete(CircArray carray) {
 
     if(carray != NULL) {
-    
+
         if(carray->items != NULL) {
             free(carray->items);
         }
         free(carray);
-        
+
     }
-    
+
 }
 
 unsigned int carrayAddTail(CircArray carray, CircArrayItem item) {
 
     // Can't add NULL items since NULL return is reserved
-    if(item == NULL) { 
-        return 0; 
+    if(item == NULL) {
+        return 0;
     }
-    
+
     CRITICAL_SECTION_START
     // Can't add if the queue is full
     if(carrayIsFull(carray)) {
         CRITICAL_SECTION_END
-        return 0; 
+        return 0;
     }
-    
+
     if(!carrayIsEmpty(carray)) {
         carray->tail = carrayNextIndex(carray, carray->tail);  // Find the new tail
     }
@@ -108,23 +108,23 @@ unsigned int carrayAddTail(CircArray carray, CircArrayItem item) {
     carray->size++;         // Update the size
     CRITICAL_SECTION_END
     return 1;
-    
+
 }
 
 unsigned int carrayAddHead(CircArray carray, CircArrayItem item) {
 
     // Can't add NULL items since NULL return is reserved
-    if(item == NULL) { 
-        return 0; 
+    if(item == NULL) {
+        return 0;
     }
-    
+
     CRITICAL_SECTION_START
     // Can't add if the queue is full
     if(carrayIsFull(carray)) {
         CRITICAL_SECTION_END
-        return 0; 
+        return 0;
     }
-    
+
     if(!carrayIsEmpty(carray)) {
         carray->head = carrayPrevIndex(carray, carray->head);  // Find the new head
     }
@@ -132,70 +132,70 @@ unsigned int carrayAddHead(CircArray carray, CircArrayItem item) {
     carray->size++;         // Update the size
     CRITICAL_SECTION_END
     return -1;
-    
+
 }
 
 CircArrayItem carrayPopTail(CircArray carray) {
 
     CircArrayItem item;
-    
+
     CRITICAL_SECTION_START
     if(carrayIsEmpty(carray)) {
         CRITICAL_SECTION_END
-        return NULL; 
+        return NULL;
     }
-    
+
     item = carray->items[carray->tail]; // Retrieve item
     carray->items[carray->tail] = NULL; // Clear entry
-    
+
     if(carray->tail != carray->head) {  // Size > 1
         carray->tail = carrayPrevIndex(carray, carray->tail); // Update tail
     }
     carray->size--;
     CRITICAL_SECTION_END
     return item;
-    
+
 }
 
 CircArrayItem carrayPopHead(CircArray carray) {
 
     CircArrayItem item;
-    
+
     CRITICAL_SECTION_START
     if(carrayIsEmpty(carray)) {
         CRITICAL_SECTION_END
-        return NULL; 
+        return NULL;
     }
-    
+
     item = carray->items[carray->head]; // Retrieve item
     carray->items[carray->head] = NULL; // Clear entry
-    
+
     if(carray->head != carray->tail) {  // Size > 1
         carray->head = carrayNextIndex(carray, carray->head); // Update head
     }
     carray->size--;
     CRITICAL_SECTION_END
     return item;
-    
+
 }
 
 CircArrayItem carrayPeekTail(CircArray carray) {
 
     CircArrayItem item;
-    
+
     CRITICAL_SECTION_START
 
     if(carrayIsEmpty(carray)) {
         CRITICAL_SECTION_END
-        return NULL; 
-    }        
-    
+        return NULL;
+    }
+
     item = carray->items[carray->tail];
 
     CRITICAL_SECTION_END
-    
+
     return item;
-    
+
 }
 
 CircArrayItem carrayPeekHead(CircArray carray) {
@@ -203,22 +203,22 @@ CircArrayItem carrayPeekHead(CircArray carray) {
     CircArrayItem item;
 
     CRITICAL_SECTION_START
-    
+
     if(carrayIsEmpty(carray)) {
         CRITICAL_SECTION_END
-        return NULL; 
+        return NULL;
     }
-    
+
     item = carray->items[carray->head];
 
     CRITICAL_SECTION_END
-    
+
     return item;
-    
+
 }
 
 unsigned int carrayIsEmpty(CircArray carray) {
-    
+
     return carray->size == 0;
 
 }
@@ -233,7 +233,7 @@ unsigned int carrayGetSize(CircArray carray) {
 
     return carray->size;
 
-}    
+}
 
 // ================== PRIVATE FUNCTIONS ==========================
 /**
