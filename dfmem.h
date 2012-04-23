@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2011, Regents of the University of California
+ * Copyright (c) 2008-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.beta
+ * v.1.0 beta
  *
  * Usage:
  *  #include "dfmem.h"
@@ -45,7 +45,7 @@
  *
  *  // Send string to the memory
  *  dfmemWrite(phrase, sizeof(phrase), page, byte, buffer);
- *  
+ *
  *  // Get same string back
  *  dfmemRead(page, byte, sizeof(phrase), itsaid);
  *
@@ -88,7 +88,7 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
 //              length = length of this data array (should be <= 528-byte),
 //              byte = 0-527 (10 bits),
 //              buffer = 1 or 2.
-void dfmemWriteBuffer (unsigned char *data, unsigned int length, 
+void dfmemWriteBuffer (unsigned char *data, unsigned int length,
         unsigned int byte, unsigned char buffer);
 
 // Writes the contents of a buffer to a memory page without pre-erasing it.
@@ -103,24 +103,25 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
 //              buffer = 1 or 2.
 void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer);
 
-// Pushes the contents of a data array to a memory buffer. If the buffer is 
-// full (528 bytes), the contents of the buffer is written to a memory page 
-// without pre-erasing. After that, the memory page is incremented for the 
+// Pushes the contents of a data array to a memory buffer. If the buffer is
+// full (528 bytes), the contents of the buffer is written to a memory page
+// without pre-erasing. After that, the memory page is incremented for the
 // next operations. This function would be useful when you don't want to keep
 // track of the current memory address to write. For the very first time you
 // call this function set the page number using page_reset. After that, you
 // can put -1(0xffff) for page_reset to use the internal page number.
-// 
+//
 // Parameters : data = pointer to the input data array,
 //              length = length of this data array (should be <= 528 byte),
-//              page_reset = reset the page number to write the data. 
+//              page_reset = reset the page number to write the data.
 //                  If page_reset is -1(0xffff), page number will not be reset
-void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset);
+// TODO (fgb) : Needs further debugging.
+//void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset);
 
 // Read the contents of a memory page into a data array.
 //
 // It's an implementation of the dfmem's "Main Memory Page Read" command.
-// 
+//
 // The page and the starting byte of the memory to read is passed along with
 // the length of data to be retrieved into the data array.
 //
@@ -135,7 +136,7 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
 //
 // It's an implementation of the dfmem's "Main Memory Page to Buffer Transfer"
 // command.
-// 
+//
 // The page and the specified dfmem's internal buffer are passed.
 //
 // Parameters : page = 0-8191 (13 bits),
@@ -147,7 +148,7 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
 // Erase the contents of a memory page.
 //
 // It's an implementation of the dfmem's "Page Erase" command.
-// 
+//
 // The page to be erased is passed.
 //
 // Parameters : page = 0-8191 (13 bits).
@@ -156,7 +157,7 @@ void dfmemErasePage(unsigned int page);
 // Erase the contents of a memory block.
 //
 // It's an implementation of the dfmem's "Block Erase" command.
-// 
+//
 // One of the pages within the specified block is passed.
 //
 // Parameters : page = 0-8191 (13 bits).
@@ -165,7 +166,7 @@ void dfmemEraseBlock(unsigned int page);
 // Erase the contents of a memory sector.
 //
 // It's an implementation of the dfmem's "Sector Erase" command.
-// 
+//
 // One of the pages within the specified sector is passed.
 //
 // Parameters : page = 0-8191 (13 bits).
@@ -176,21 +177,21 @@ void dfmemEraseSector(unsigned int page);
 // It's an implementation of the dfmem's "Chip Erase" command.
 //
 //  NOTE (fgb) : Errata mentions it could be faulty and recommends
-//               using Page or Block Erase commands instead. 
+//               using Page or Block Erase commands instead.
 //void dfmemEraseChip(void);
 
 // Requests dfmem status register and returns its ready(RDY) bit.
-// 
-// Returns : ready(RDY) bit 
+//
+// Returns : ready(RDY) bit
 unsigned char dfmemIsReady (void);
 
 // Requests dfmem status register and returns it.
-// 
+//
 // Returns : status register
 unsigned char dfmemGetStatus (void);
 
 // Requests dfmem manufacturer id and returns it.
-// 
+//
 // Returns : manufacturer id
 unsigned char dfmemGetManufacturerID (void);
 
@@ -205,15 +206,19 @@ void dfmemDeepSleep();
 // Resumes dfmem from deep power-down mode.
 void dfmemResumeFromDeepSleep();
 
-// Reads back a "sample" from the flash memory following special page alignment
-// rules: Samples do not cross page boundaries, and start from the beginning
-// of the page. 
-void dfmemReadSample(unsigned long, unsigned int, unsigned char*);
-
+// Saves to the current buffer, keeping track of position in memory.
 void dfmemSave(unsigned char* data, unsigned int length);
 
-void dfMemEraseSectorsForSamples(unsigned long, unsigned int);
-
+// This function will write the current buffer into the flash memory if it
+// contains any data, and then swaps the buffer pointer.
 void dfmemSync();
+
+// Reads back a "sample" from the flash memory following special page alignment
+// rules: Samples do not cross page boundaries, and start from the beginning
+// of the page.
+void dfmemReadSample(unsigned long, unsigned int, unsigned char*);
+
+// Erases enough sectors to fit a specified number of samples into the flash
+void dfmemEraseSectorsForSamples(unsigned long, unsigned int);
 
 #endif // __DFMEM_H

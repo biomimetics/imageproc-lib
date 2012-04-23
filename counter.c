@@ -71,7 +71,7 @@ unsigned int cntrRead(Counter counter) {
    CRITICAL_SECTION_END;
    return val;
    
-
+}
 
 void cntrIncrement(Counter counter) {
 

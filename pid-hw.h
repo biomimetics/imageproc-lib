@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Regents of the University of California
+ * Copyright (c) 2010, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,56 +27,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Array-based List
+ * PID
  *
- * by Humphrey Hu
+ * by Kevin Peterson
  *
- * v 0.1
+ * v.beta
+ *
+ * Revisions:
+ *  Kevin Peterson      2012-04-05    Initial release
+ *                      
+ * Notes:
  */
- 
-#ifndef __ALIST_H
-#define __ALIST_H
 
-typedef void* ArrayListItem;
+#ifndef __PID_HW_H
+#define __PID_HW_H
 
+/*
 typedef struct {
-    ArrayListItem* items;
-    unsigned int head;
-    unsigned int tail;
-    unsigned int size;
-    unsigned int max_size;
-} ArrayListStruct;
-
-typedef ArrayListStruct *ArrayList;
-
-// Create a queue/stack
-ArrayList alistInit(unsigned int max_size);
-void alistDelete(ArrayList fq);
-
-// ========== Adding ============
-// Add an object to the back
-unsigned int alistAddTail(ArrayList fq, ArrayListItem item);
-// Add an object to the front
-unsigned int alistAddHead(ArrayList fq, ArrayListItem item);
-
-// ========== Querying ============
-// Remove an object from the back
-ArrayListItem alistPopTail(ArrayList fq);
-// Remove an object from the front
-ArrayListItem alistPopHead(ArrayList fq);
-
-// ========== Removing ============
-// Retrieve an object from the back
-ArrayListItem alistPeekTail(ArrayList fq);
-// Retrieve an object from the front
-ArrayListItem alistPeekHead(ArrayList fq);
-
-// Check if the queue is empty
-unsigned int alistIsEmpty(ArrayList fq);
-// Check if the queue is full
-unsigned int alistIsFull(ArrayList fq);
-// Get number of items in the queue
-unsigned int alistGetSize(ArrayList fq);
+    tPID* p_PID;
 
 
-#endif // __ALIST_H
+} pidStruct;
+*/
+
+#define DEAFULT_KP_FRAC 0.1
+#define DEAFULT_KI_FRAC 0.01
+#define DEAFULT_KD_FRAC 0.0
+
+typedef tPID* pPID;
+
+void pidCreate(pPID controller, fractional* abcCoefficients, fractional* controlHistory);
+void pidSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
+//void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd);
+void pidSetFracCoeffs(unsigned int pid_num, fractional Kp, fractional Ki, fractional Kd);
+void pidSetReference(tPID* controller, fractional reference);
+fractional pidRun(tPID* controller, fractional feedback);
+void dspPIDSetup();
+
+#endif //__PID_HW_H
+
