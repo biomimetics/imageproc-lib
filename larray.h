@@ -44,7 +44,8 @@
 typedef void* LinArrayItem;
 
 typedef struct {
-    unsigned int max_size;    
+    unsigned int max_size;
+    unsigned int size;
     LinArrayItem* items;
 } LinArrayStruct;
 
@@ -122,5 +123,13 @@ unsigned int larrayFindN(LinArray larray, LinArrayItemTest equals,
  * @param index - Pointer to store matching item in
  */ 
 unsigned int larrayFindEmpty(LinArray larray, unsigned int *index);                            
-                            
+
+unsigned int larrayIsEmpty(LinArray larray);
+
+unsigned int larrayIsFull(LinArray larray);
+
+unsigned int larrayGetSize(LinArray larray);
+
+unsigned int larrayGetMaxSize(LinArray larray);
+
 #endif
