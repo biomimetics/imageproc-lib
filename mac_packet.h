@@ -29,15 +29,15 @@
  *
  * IEEE 802.15.4 Packet Utilities
  *
- * by ?
+ * by Humphrey Hu
  *
  * v.beta
  *
  * Revisions:
- *  Humphrey Hu		2011-07-27      Minor comment changes
+ *  Humphrey Hu     2011-07-27      Minor comment changes
  *  Humphrey Hu     2011-10-01      Changed to full utility module
  *  Humphrey Hu     2012-02-20      Added packet fields for clock sync
- *                      
+ *
  * Usage:
  *
  *
@@ -50,41 +50,41 @@
 #include "generic_typedefs.h"
 #include "payload.h"
 
-#define MAC_PACKET_TYPE_BEACON		(0)
-#define MAC_PACKET_TYPE_DATA		(1)
-#define MAC_PACKET_TYPE_ACK			(2)
-#define MAC_PACKET_TYPE_COMMAND		(3)
+#define MAC_PACKET_TYPE_BEACON      (0)
+#define MAC_PACKET_TYPE_DATA        (1)
+#define MAC_PACKET_TYPE_ACK         (2)
+#define MAC_PACKET_TYPE_COMMAND     (3)
 
-#define MAC_SEC_DISABLED			(0)
-#define MAC_SEC_ENABLED				(1)
+#define MAC_SEC_DISABLED            (0)
+#define MAC_SEC_ENABLED             (1)
 
-#define MAC_FRAME_COMPLETE			(0)
-#define MAC_FRAME_PENDING			(1)
+#define MAC_FRAME_COMPLETE          (0)
+#define MAC_FRAME_PENDING           (1)
 
-#define MAC_ACK_NOT_REQUIRED		(0)
-#define MAC_ACK_REQUIRED			(1)
+#define MAC_ACK_NOT_REQUIRED        (0)
+#define MAC_ACK_REQUIRED            (1)
 
-#define MAC_INTRAPAN_OFF			(0)
-#define MAC_INTRAPAN_ON				(1)
+#define MAC_INTRAPAN_OFF            (0)
+#define MAC_INTRAPAN_ON             (1)
 
-#define MAC_DEST_ADDR_MODE_NONE		(0)
-#define MAC_DEST_ADDR_MODE_16BIT	(2)
-#define MAC_DEST_ADDR_MODE_64BIT	(3)
+#define MAC_DEST_ADDR_MODE_NONE     (0)
+#define MAC_DEST_ADDR_MODE_16BIT    (2)
+#define MAC_DEST_ADDR_MODE_64BIT    (3)
 
-#define MAC_FIRMWARE_2003			(0)
-#define MAC_FIRMWARE_2006			(1)
- 
-#define MAC_SRC_ADDR_MODE_NONE		(0)
-#define MAC_SRC_ADDR_MODE_16BIT		(2)
-#define MAC_SRC_ADDR_MODE_64BIT		(3)
+#define MAC_FIRMWARE_2003           (0)
+#define MAC_FIRMWARE_2006           (1)
+
+#define MAC_SRC_ADDR_MODE_NONE      (0)
+#define MAC_SRC_ADDR_MODE_16BIT     (2)
+#define MAC_SRC_ADDR_MODE_64BIT     (3)
 
 #define MAC_MAX_DATA_SIZE           (125)
- 
+
 typedef struct
 {
     union
     {
-        WordVal    val;   
+        WordVal    val;
         struct
         {
             word        packet_type     : 3;        // type of packet. Possible types are
@@ -92,25 +92,25 @@ typedef struct
                                                     // 1 PACKET_TYPE_DATA -  Data
                                                     // 2 PACKET_TYPE_ACK -  Acknowledgement type
                                                     // 3 PACKET_TYPE_COMMAND - MAC command
-													// 4-7 PACKET_TYPE_RESERVE - Reserved type
+                                                    // 4-7 PACKET_TYPE_RESERVE - Reserved type
             word        sec_en          : 1;        // 1: secure the MAC payload, 0: send plain text
                                                     // We are *not* currently implementing secured transmission
             word        frm_pending     : 1;        // 1: sending device has more data for recipient, 0: no more data
             word        ack_req         : 1;        // 1: acknowledgement required, 0: no acknowldgement
-            
+
             word        pan_id_comp     : 1;        // 1: PAN ID compression subfield  (Intra-Pan Mode)
             word        reserved        : 3;
-            word        dest_addr_mode  : 2;        // 0: PAN ID and dest addr not present, 
-                                                    // 1: reserved, 
-                                                    // 2: address field contains 16 bit short address 
+            word        dest_addr_mode  : 2;        // 0: PAN ID and dest addr not present,
+                                                    // 1: reserved,
+                                                    // 2: address field contains 16 bit short address
                                                     // 3: address field contains 64 bit extended address - NOT IMPLEMENTED
-            word        frm_version     : 2;        // 0: IEEE 802.15.4-2003 
+            word        frm_version     : 2;        // 0: IEEE 802.15.4-2003
                                                     // 1: IEEE 802.15.4-2006
-													// 2-3: Reserved
-            word        src_addr_mode   : 2;        // 0: PAN ID and src addr not present, 
-                                                    // 1: reserved, 
-                                                    // 2: address field contains 16 bit short address 
-                                                    // 3: address field contains 64 bit extended address 
+                                                    // 2-3: Reserved
+            word        src_addr_mode   : 2;        // 0: PAN ID and src addr not present,
+                                                    // 1: reserved,
+                                                    // 2: address field contains 16 bit short address
+                                                    // 3: address field contains 64 bit extended address
         } bits;
     } frame_ctrl;                       // Frame control bits
     byte        seq_num;                // Packet sequence number
@@ -121,7 +121,7 @@ typedef struct
     //byte * auxSecHdr                  // Placeholder for auxiliary security header
     // The following are non-physical packet fields
     Payload     payload;                // Data payload object
-    byte        payload_length;	        // Data payload length in octets    
+    byte        payload_length;         // Data payload length in octets
     unsigned long timestamp;            // Local system time at which receiver received packet
 } MacPacketStruct;
 

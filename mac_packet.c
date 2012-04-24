@@ -39,7 +39,7 @@
  * Notes:
  *
  * To Do:
- *    
+ *
  */
 
  #include "mac_packet.h"
@@ -121,7 +121,7 @@ void macSetSeqNum(MacPacket packet, char seq_num) {
 }
 
 void macSetDestAddr(MacPacket packet, unsigned int dest_addr) {
-    
+
     packet->dest_addr.val = dest_addr;
 
 }
@@ -130,8 +130,8 @@ void macSetDestPan(MacPacket packet, unsigned int dest_pan) {
 
     packet->dest_pan_id.val = dest_pan;
 
-}    
-    
+}
+
 void macSetSrc(MacPacket packet, unsigned int src_pan_id, unsigned int src_addr) {
 
     packet->src_pan_id.val = src_pan_id;
@@ -146,12 +146,12 @@ unsigned int macGetSrcAddr(MacPacket packet) {
 }
 
 unsigned int macGetSrcPan(MacPacket packet) {
-    
+
     unsigned char src_pan_compression;
-    
+
     src_pan_compression = packet->frame_ctrl.bits.src_addr_mode
         && packet->frame_ctrl.bits.dest_addr_mode && packet->frame_ctrl.bits.pan_id_comp;
-        
+
     if(src_pan_compression) {
         return packet->dest_pan_id.val;
     }
@@ -172,54 +172,54 @@ Payload macGetPayload(MacPacket packet) {
 }
 
 unsigned int macReadPhyLength(unsigned char* frame) {
-    
+
     return frame[0];
-    
+
 }
 
 unsigned int macReadDataLength(unsigned char* frame) {
 
     MacPacketStruct packet;
     unsigned char header_length, phy_length, src_pan_compression;
-    
+
     header_length = MPDU_HEADER_BASE_LENGTH; // Account for phy_length and frame_ctrl bytes
-    phy_length = frame[MAC_PHY_LEN_POS]; // Read PHY payload length from PPDU    
+    phy_length = frame[MAC_PHY_LEN_POS]; // Read PHY payload length from PPDU
     packet.frame_ctrl.val.byte.LB = frame[MAC_FCF_LB_POS];
     packet.frame_ctrl.val.byte.HB = frame[MAC_FCF_HB_POS];
-    
+
     if(packet.frame_ctrl.bits.dest_addr_mode == MAC_DEST_ADDR_MODE_NONE) {
         header_length += 0; // No destination address
     } else if(packet.frame_ctrl.bits.dest_addr_mode == MAC_DEST_ADDR_MODE_16BIT) {
         header_length += 4; // Destination address + PAN
-    } else if(packet.frame_ctrl.bits.dest_addr_mode == MAC_DEST_ADDR_MODE_64BIT) {       
+    } else if(packet.frame_ctrl.bits.dest_addr_mode == MAC_DEST_ADDR_MODE_64BIT) {
         header_length += 10; // Destination address + PAN
     }
 
     // If both addresses are present and intra-PAN mode is on, source PAN is dropped
     src_pan_compression = packet.frame_ctrl.bits.src_addr_mode
         && packet.frame_ctrl.bits.dest_addr_mode && packet.frame_ctrl.bits.pan_id_comp;
-    
+
     if(packet.frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_NONE) {
         header_length += 0; // No source address
-    } else if(packet.frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_16BIT) {                
+    } else if(packet.frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_16BIT) {
         if(src_pan_compression) {
             header_length += 0; // No source PAN
         } else {
             header_length += 2; // Source pan included
-        }        
+        }
         header_length += 2; // Plus source address
     }
-    else if(packet.frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_64BIT) {        
+    else if(packet.frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_64BIT) {
         if(src_pan_compression) {
             header_length += 0; // No source PAN
         } else {
             header_length += 2; // Source pan included
-        }        
+        }
         header_length += 8; // Plus source address
     }
 
     return phy_length - header_length - MAC_CRC_LENGTH; // Calculate payload length
-    
+
 }
 
 unsigned int macReadFrame(unsigned char* frame, MacPacket packet) {
@@ -231,9 +231,9 @@ unsigned int macReadFrame(unsigned char* frame, MacPacket packet) {
     if(packet == NULL) { return 0; }
     pld = macGetPayload(packet);
     if(pld == NULL) { return 0; }
-    
+
     header_length = MPDU_HEADER_BASE_LENGTH;
-    phy_length = frame[MAC_PHY_LEN_POS]; // Read PHY payload length from PPDU    
+    phy_length = frame[MAC_PHY_LEN_POS]; // Read PHY payload length from PPDU
     packet->frame_ctrl.val.byte.LB = frame[MAC_FCF_LB_POS];
     packet->frame_ctrl.val.byte.HB = frame[MAC_FCF_HB_POS];
     packet->seq_num = frame[MAC_SEQ_NUM_POS];
@@ -266,12 +266,12 @@ unsigned int macReadFrame(unsigned char* frame, MacPacket packet) {
         && packet->frame_ctrl.bits.dest_addr_mode && packet->frame_ctrl.bits.pan_id_comp;
 
     // Read source addresses
-    if(packet->frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_NONE) {        
+    if(packet->frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_NONE) {
         packet->src_pan_id.byte.LB = 0;
         packet->src_pan_id.byte.HB = 0;
         packet->src_addr.byte.LB = 0;
         packet->src_addr.byte.HB = 0;
-    } else if(packet->frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_16BIT) {        
+    } else if(packet->frame_ctrl.bits.src_addr_mode == MAC_SRC_ADDR_MODE_16BIT) {
         if(src_pan_compression) {
             header_length += 0;
             packet->src_pan_id.byte.LB = 0; //packet->dest_pan_id.byte.LB;
@@ -280,7 +280,7 @@ unsigned int macReadFrame(unsigned char* frame, MacPacket packet) {
             header_length += 2;
             packet->src_pan_id.byte.LB = frame[i++];
             packet->src_pan_id.byte.HB = frame[i++];
-        }        
+        }
         header_length += 2;
         packet->src_addr.byte.LB = frame[i++];
         packet->src_addr.byte.HB = frame[i++];
@@ -300,12 +300,12 @@ unsigned int macReadFrame(unsigned char* frame, MacPacket packet) {
     }
 
     data_length = phy_length - header_length - MAC_CRC_LENGTH; // Calculate payload length
-    
+
     memcpy(payToString(pld), frame + i, data_length);
 
     pld->data_length = data_length - PAYLOAD_HEADER_LENGTH; // macSetPayload requires accurate payload length
-    macSetPayload(packet, pld);           
+    macSetPayload(packet, pld);
 
     return 1;
-    
+
  }
