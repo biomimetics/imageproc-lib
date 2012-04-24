@@ -41,16 +41,27 @@
  *  Andrew Pullin               2011-6-7    Added ability to query for chip
  *  w/Fernando L. Garcia Bermudez           size and flags to handle them.
  *  Andrew Pullin               2011-9-23   Added ability for deep power-down.
+ *  Humphrey  Hu                2012-1-22   Enabled DMA on SPI port
  *
  * Notes:
- *  - Uses an SPI port for communicating with the memory chip.
+ *  - Uses an SPI port for communicating with the memory chip and DMA
+ *    channels 4 and 5 with spi_controller.c
  */
 
+ // TODO (humhu) : Divide into generic nvmem (non-volatile memory) device class interface and
+ //                DFMEM-specific driver to match radio class/driver
+ // TODO (humhu) : Use a better non-ghetto mutex
+ // TODO (humhu) : Add a rudimentary filesystem
+ // TODO (humhu) : Add defines to switch between DMA/bitbang modes
+
+#include <stdlib.h>
 #include "p33Fxxxx.h"
 #include "spi.h"
 #include "dfmem.h"
+#include "spi_controller.h"        // For DMA
+#include "utils.h"
 
-
+// TODO (humhu) : Consolidate into some BSP header
 #if (defined(__IMAGEPROC1) || defined(__IMAGEPROC2) || defined(__MIKRO) || defined(__EXP16DEV))
 // MIKRO & EXP16DEV has no FLASHMEM, but needs this for compile
 
@@ -66,6 +77,7 @@
 
 #endif
 
+// TODO (humhu) : Consolidate into BSP header
 // Handle different chip sizes
 #if (defined(__DFMEM_8MBIT))
     #define BYTE_ADDRESS_BITS   9
@@ -95,6 +107,10 @@
 #define ERASE_BLOCK     0x50
 #define ERASE_SECTOR    0x7C
 
+// Ghetto mutex constants
+#define MUTEX_LOCKED    (0x01)
+#define MUTEX_FREE        (0x00)
+
 /*-----------------------------------------------------------------------------
  *          Private variables
 -----------------------------------------------------------------------------*/
@@ -104,6 +120,7 @@ union {
     unsigned char chr_addr[4];
 } MemAddr;
 
+static unsigned char mutex;    // Ghetto mutex
 
 /*----------------------------------------------------------------------------
  *          Declaration of private functions
@@ -116,6 +133,9 @@ static inline void dfmemSelectChip(void);
 static inline void dfmemDeselectChip(void);
 static void dfmemSetupPeripheral(void);
 
+static void spiCallback(unsigned int irq_source);
+static unsigned char checkMutex(void);
+static void setMutex(unsigned char);
 
 /*-----------------------------------------------------------------------------
  *          Public functions
@@ -125,6 +145,9 @@ void dfmemSetup(void)
 {
     dfmemSetupPeripheral();
     dfmemDeselectChip();
+
+    spic2SetCallback(&spiCallback);
+
 }
 
 void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
@@ -153,7 +176,13 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
-    while (length--) { dfmemWriteByte(*data++); }
+    setMutex(MUTEX_LOCKED);
+
+    // TODO (humhu) : Abstract this line into something like dfmemMassTransfer?
+    spic2MassTransmit(length, data, 2*length);
+    // Wait until transmit finishes?
+    while(checkMutex() != MUTEX_FREE);
+
     dfmemDeselectChip();
 }
 
@@ -181,7 +210,11 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
-    while (length--) { dfmemWriteByte(*data++); }
+    setMutex(MUTEX_LOCKED);
+
+    spic2MassTransmit(length, data, 2*length);
+
+    while(checkMutex() != MUTEX_FREE);
 
     dfmemDeselectChip();
 }
@@ -259,7 +292,14 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
     dfmemWriteByte(0x00);
     dfmemWriteByte(0x00);
 
-    while (length--) { *data++ = dfmemReadByte(); }
+    setMutex(MUTEX_LOCKED);
+
+    unsigned int read_bytes;
+    read_bytes = spic2MassTransmit(length, NULL, 2*length);
+
+    while(checkMutex() != MUTEX_FREE);
+
+    spic2ReadBuffer(read_bytes, data);
 
     dfmemDeselectChip();
 }
@@ -436,6 +476,39 @@ void dfmemResumeFromDeepSleep()
  *          Private functions
 -----------------------------------------------------------------------------*/
 
+void spiCallback(unsigned int irq_source) {
+
+    if(irq_source == SPIC_TRANS_SUCCESS) {
+
+        spic2EndTransaction();
+        setMutex(MUTEX_FREE);    // Unblock anything waiting on transfer
+
+    } else if(irq_source == SPIC_TRANS_TIMEOUT) {
+
+        spic2Reset();   // Reset hardware?
+
+    }
+
+}
+
+static unsigned char checkMutex(void) {
+
+    unsigned char stat;
+    CRITICAL_SECTION_START;
+    stat = mutex;
+    CRITICAL_SECTION_END;
+    return stat;
+
+}
+
+static void setMutex(unsigned char stat) {
+
+    CRITICAL_SECTION_START;
+    mutex = stat;
+    CRITICAL_SECTION_END;
+
+}
+
 // Sends a byte to the memory chip and returns the byte read from it
 //
 // Parameters   :   byte to send.
@@ -457,7 +530,7 @@ static inline unsigned char dfmemExchangeByte (unsigned char byte)
 // Parameters : byte to send.
 static inline void dfmemWriteByte (unsigned char byte)
 {
-    dfmemExchangeByte(byte);
+    spic2Transmit(byte);
 }
 
 // Receives a byte from the memory chip.
@@ -468,14 +541,23 @@ static inline void dfmemWriteByte (unsigned char byte)
 // Returns : received byte.
 static inline unsigned char dfmemReadByte (void)
 {
-    return dfmemExchangeByte(0x00);
+    return spic2Receive();
 }
 
 // Selects the memory chip.
-static inline void dfmemSelectChip(void) { SPI_CS = 0; }
+//static inline void dfmemSelectChip(void) { SPI_CS = 0; }
+
+static inline void dfmemSelectChip(void) {
+    spic2BeginTransaction();
+}
 
 // Deselects the memory chip.
-static inline void dfmemDeselectChip(void) { SPI_CS = 1; }
+//static inline void dfmemDeselectChip(void) { SPI_CS = 1; }
+
+static inline void dfmemDeselectChip(void) {
+    spic2EndTransaction();
+}
+
 
 // Initializes the SPIx bus for communicating with the memory.
 //
