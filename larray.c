@@ -31,11 +31,11 @@
 *
 * by Humphrey Hu
 *
-* v 0.1
+* v 0.2
 *
 * Revisions:
 *  Humphrey Hu         2012-02-04    Initial implementation
-*                      
+*  Humphrey Hu         2012-02-06    Added size querying                
 */
 
 #include "larray.h"
@@ -58,20 +58,25 @@ LinArray larrayCreate(unsigned int size) {
         return NULL;
     }
     
-    larray->max_size = size;    
+    larray->max_size = size;
+    larray->size = 0;
     return larray;
     
 }
 
 LinArrayItem larrayReplace(LinArray larray, unsigned int index, LinArrayItem item) {
 
-    LinArrayItem temp;
+    LinArrayItem orig;
 
     if(index >= larray->max_size) { return NULL; }
     
-    temp = larray->items[index];
+    orig = larray->items[index];
     larray->items[index] = item;
-    return temp;
+
+    if(item == NULL) { larray->size--; }
+    if(orig == NULL) { larray->size++; }
+
+    return orig;
 
 }
 
@@ -120,6 +125,30 @@ unsigned int larrayFindEmpty(LinArray larray, unsigned int *index) {
     LinArrayItem dummy;
 
     return larrayFindFirst(larray, &findEmpty, NULL, index, &dummy);
+    
+}
+
+unsigned int larrayIsEmpty(LinArray larray) {
+
+    return larray->size == 0;
+
+}
+
+unsigned int larrayIsFull(LinArray larray) {
+
+    return larray->size == larray->max_size;
+
+}
+
+unsigned int larrayGetSize(LinArray larray) {
+
+    return larray->size;
+
+}
+
+unsigned int larrayGetMaxSize(LinArray larray) {
+
+    return larray->max_size;
     
 }
 

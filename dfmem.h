@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2011, Regents of the University of California
+ * Copyright (c) 2008-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.beta
+ * v.1.0 beta
  *
  * Usage:
  *  #include "dfmem.h"
@@ -115,7 +115,8 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer);
 //              length = length of this data array (should be <= 528 byte),
 //              page_reset = reset the page number to write the data.
 //                  If page_reset is -1(0xffff), page number will not be reset
-void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset);
+// TODO (fgb) : Needs further debugging.
+//void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset);
 
 // Read the contents of a memory page into a data array.
 //
@@ -205,5 +206,19 @@ void dfmemDeepSleep();
 // Resumes dfmem from deep power-down mode.
 void dfmemResumeFromDeepSleep();
 
+// Saves to the current buffer, keeping track of position in memory.
+void dfmemSave(unsigned char* data, unsigned int length);
+
+// This function will write the current buffer into the flash memory if it
+// contains any data, and then swaps the buffer pointer.
+void dfmemSync();
+
+// Reads back a "sample" from the flash memory following special page alignment
+// rules: Samples do not cross page boundaries, and start from the beginning
+// of the page.
+void dfmemReadSample(unsigned long, unsigned int, unsigned char*);
+
+// Erases enough sectors to fit a specified number of samples into the flash
+void dfmemEraseSectorsForSamples(unsigned long, unsigned int);
 
 #endif // __DFMEM_H
