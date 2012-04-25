@@ -31,13 +31,13 @@
  *
  * by Humphrey Hu
  *
- * v1.0
+ * v.1.0
  *
  * Revisions:
- *   Humphrey Hu     2011-10-26      Initial implementation
- *   Humphrey Hu     2012-01-31      Release
- *   Humphrey Hu     2012-02-16      Slight restructuring
- *   Humphrey Hu     2012-02-21      Changed to use pooled frames   
+ *   Humphrey Hu    2011-10-26  Initial implementation
+ *                  2012-01-31  Release
+ *                  2012-02-16  Slight restructuring
+ *                  2012-02-21  Changed to use pooled frames
  */
 
 #include "timer.h"
@@ -56,14 +56,14 @@
 // after subsampling
 // Camera parameters for QQVGA
 // See ovcam.c for more options
-#define NATIVE_CCD_COLS			(160)
-#define NATIVE_CCD_ROWS			(240)	// Should be 240, but some rows don't seem to work
-#define NATIVE_COL_SS			(1)	// Hardware skipping 0 pixels
-#define NATIVE_ROW_SS			(2)	// Hardware skipping every 1/2 rows
+#define NATIVE_CCD_COLS         (160)
+#define NATIVE_CCD_ROWS         (240)   // Should be 240, but some rows don't seem to work
+#define NATIVE_COL_SS           (1) // Hardware skipping 0 pixels
+#define NATIVE_ROW_SS           (2) // Hardware skipping every 1/2 rows
 
 // Hardware output parameters
-#define NATIVE_IMAGE_COLS		(160) // NATIVE_CCD_COLS/NATIVE_COL_SS
-#define NATIVE_IMAGE_ROWS		(120) // NATIVE_CCD_ROWS/NATIVE_ROW_SS
+#define NATIVE_IMAGE_COLS       (160) // NATIVE_CCD_COLS/NATIVE_COL_SS
+#define NATIVE_IMAGE_ROWS       (120) // NATIVE_CCD_ROWS/NATIVE_ROW_SS
 
 // TODO: Integrate row windowing
 // Windowing parameters
@@ -73,13 +73,13 @@
 #define WINDOW_END_ROW                  (120)
 
 // Downsampling parameters
-#define DS_COL_PERIOD			(4)	// Capturing 1/2 pixels
-#define DS_ROW_PERIOD			(4)	// Capturing 1/4 rows
-#define DS_FRAME_PERIOD			(1)	// Capturing 1/1 frames
+#define DS_COL_PERIOD           (4) // Capturing 1/2 pixels
+#define DS_ROW_PERIOD           (4) // Capturing 1/4 rows
+#define DS_FRAME_PERIOD         (1) // Capturing 1/1 frames
 
 // Image output parameters
-#define DS_IMAGE_COLS			(30) // NATIVE_IMAGE_COLS/DS_COL_PERIOD
-#define DS_IMAGE_ROWS			(30) // NATIVE_IMAGE_ROWS/DS_ROW_PERIOD
+#define DS_IMAGE_COLS           (30) // NATIVE_IMAGE_COLS/DS_COL_PERIOD
+#define DS_IMAGE_ROWS           (30) // NATIVE_IMAGE_ROWS/DS_ROW_PERIOD
 
 // Default camera capture timings for QQVGA no subsampling, 25 fps
 #define ROW_ROW_TIME                    (32)
@@ -158,16 +158,16 @@ void camSetup(void) {
 
     CamFrame frame;
     unsigned int i;
-    
+
     is_ready = 0;    // Reset driver validity
 
     ovcamSetup();   // Set up device
     setupTimer7();  // Set up timer peripheral
-    
+
     irq_handler = NULL;   // Set up function pointers
     row_getter = &ovcamGetPixels;
     frame_waiter = &ovcamWaitForNewFrame;
-    
+
     next_row_index = 0;
     has_new_row = 0;
     latest_row = NULL;
@@ -183,9 +183,9 @@ void camSetup(void) {
     if(empty_frame_pool == NULL) { return; }
     full_frame_pool = carrayCreate(CAM_POOL_SIZE); // Initialize frame pool
     if(full_frame_pool == NULL) { return; }
-    
+
     for(i = 0; i < CAM_POOL_SIZE; i++) {
-        frame = camCreateFrame(DS_IMAGE_COLS, DS_IMAGE_ROWS);    
+        frame = camCreateFrame(DS_IMAGE_COLS, DS_IMAGE_ROWS);
         if(frame == NULL) { return; }
         carrayAddTail(empty_frame_pool, frame);
     }
@@ -196,40 +196,40 @@ void camSetup(void) {
     current_frame = getEmptyFrame();
     is_ready = 1;
     camRunCalib();  // Measure timing parameters
-    
-} 
+
+}
 
 // Interrupt handler for Timer 7
 // Syncs frame timings and captures camera rows. This timer is
-//	the highest priority with a medium execution time.
+//  the highest priority with a medium execution time.
 // TODO: Separate hardware and software downsampling
 void __attribute__((interrupt, no_auto_psv)) _T7Interrupt(void) {
-    
-    if(ct_state == CT_WAIT_VSYNC) { 
-        frame_waiter();      		// Avoid clock drift
-        WriteTimer7(0);				// Reset timer        
-        
+
+    if(ct_state == CT_WAIT_VSYNC) {
+        frame_waiter();             // Avoid clock drift
+        WriteTimer7(0);             // Reset timer
+
         cntrIncrement(frame_counter);
-        cntrSet(row_counter, 0);	// Reset row counter	
-        
+        cntrSet(row_counter, 0);    // Reset row counter
+
         if(cntrRead(frame_counter) % DS_FRAME_PERIOD == 0) {
-            ct_state = CT_WAIT_ROW;			// Wait for first row
-            PR7 = vsync_row_time;			// Set wait time	
+            ct_state = CT_WAIT_ROW;         // Wait for first row
+            PR7 = vsync_row_time;           // Set wait time
         } else {
             // ct_state == CT_WAIT_VSYNC (unchanged)
-            PR7 = vsync_vsync_time;			// Wait for next frame
-        }        
+            PR7 = vsync_vsync_time;         // Wait for next frame
+        }
     } else if(ct_state == CT_WAIT_ROW) {
-        
-        camCaptureRow();			// Capture row 
-        WriteTimer7(0);				// Reset timer
-        processRow();				// Process row
-        cntrAdd(row_counter, DS_ROW_PERIOD);	// Increment row count
+
+        camCaptureRow();            // Capture row
+        WriteTimer7(0);             // Reset timer
+        processRow();               // Process row
+        cntrAdd(row_counter, DS_ROW_PERIOD);    // Increment row count
 
         // Transition if captured last row
         if(cntrRead(row_counter) >= NATIVE_IMAGE_ROWS) {
             ct_state = CT_WAIT_VSYNC;
-            PR7 = row_vsync_time;            
+            PR7 = row_vsync_time;
             if(irq_handler != NULL) {
                 irq_handler(CAM_IRQ_FRAME_DONE);
             }
@@ -238,50 +238,50 @@ void __attribute__((interrupt, no_auto_psv)) _T7Interrupt(void) {
             if(irq_handler != NULL) {
                 irq_handler(CAM_IRQ_ROW_DONE);
             }
-        }                
+        }
     }
-    
+
     _T7IF = 0;
 
 }
 
 // Syncs the timer with the frame start event and begins the
-//	capture process.
+//  capture process.
 void camStart(void) {
 
     if(!is_ready) { return; }
 
-    DisableIntT7;				// Disable interrupt while syncing
+    DisableIntT7;               // Disable interrupt while syncing
     frame_waiter();             // Avoid clock drift
-    PR7 = VSYNC_ROW_TIME;		// Set wait time
-    WriteTimer7(0);				// Reset timer	
-    cntrSet(row_counter, 0);	// Reset row counter
-    cntrSet(frame_counter, 0);	// Reset frame counter
-    ct_state = CT_WAIT_ROW;		// Wait for first row
-    EnableIntT7;				// Re-enable interrupt
+    PR7 = VSYNC_ROW_TIME;       // Set wait time
+    WriteTimer7(0);             // Reset timer
+    cntrSet(row_counter, 0);    // Reset row counter
+    cntrSet(frame_counter, 0);  // Reset frame counter
+    ct_state = CT_WAIT_ROW;     // Wait for first row
+    EnableIntT7;                // Re-enable interrupt
 
 }
 
 // Measures camera timing parameters
 void camRunCalib(void) {
 
-    unsigned int tic, capture_time, i;    
+    unsigned int tic, capture_time, i;
 
     if(!is_ready) { return; }
 
     // Approximately 8*pixels cycles per row
     // Using 64:1 prescale
     capture_time = (NATIVE_CCD_COLS)/(8);
-    
+
     DisableIntT7;
 
     // VSYNC to VSYNC timing
     frame_waiter();
-    WriteTimer7(0);    
+    WriteTimer7(0);
     frame_waiter();
-    tic = ReadTimer7();        
+    tic = ReadTimer7();
     vsync_vsync_time = tic - VSYNC_VSYNC_OFFSET;
-    
+
     // VSYNC to row timing
     frame_waiter();
     WriteTimer7(0);
@@ -291,7 +291,7 @@ void camRunCalib(void) {
     camCaptureRow();
     tic = ReadTimer7();
     vsync_row_time = tic - capture_time - VSYNC_ROW_OFFSET;
-    
+
     // row to row timing
     frame_waiter();
     camCaptureRow();
@@ -301,17 +301,17 @@ void camRunCalib(void) {
     }
     tic = ReadTimer7();
     row_row_time = tic - capture_time - ROW_ROW_OFFSET;
-        
+
     // row to VSYNC timing
     frame_waiter();
     for(i = 0; i < WINDOW_END_ROW; i++) {
         camCaptureRow();
-    }        
+    }
     WriteTimer7(0);
     frame_waiter();
     tic = ReadTimer7();
     row_vsync_time = tic - ROW_VSYNC_OFFSET;
-    
+
 }
 
 void camSetIrqHandler(CamIrqHandler irq) {
@@ -329,17 +329,17 @@ unsigned char camHasNewFrame(void) {
 CamRow camGetRow(void) {
 
     return latest_row;
-    
+
 }
 
 CamFrame camGetFrame(void) {
-       
+
     return getOldestFullFrame();
-    
+
 }
 
 void camReturnFrame(CamFrame frame) {
-    
+
     if(frame == NULL) { return; }
     enqueueEmptyFrame(frame);
 
@@ -350,7 +350,7 @@ void camGetFrameSize(unsigned int *size) {
 
     size[0] = DS_IMAGE_COLS;
     size[1] = DS_IMAGE_ROWS;
-    
+
 }
 
 unsigned int camGetFrameNum(void) {
@@ -364,49 +364,49 @@ unsigned int camGetRowNum(void) {
 // =========== Private Functions ==============================================
 
 void camCaptureRow(void) {
-        
+
     CRITICAL_SECTION_START;
-    
-    // Fill and timestamp row buffer    
-    row_getter(row_buff->pixels, NATIVE_IMAGE_COLS);	
+
+    // Fill and timestamp row buffer
+    row_getter(row_buff->pixels, NATIVE_IMAGE_COLS);
     //row_buff->timestamp = sclockGetTicks();
     //row_buff->timestamp = swatchToc();
     row_buff->row_num = cntrRead(row_counter);
-    
+
     CRITICAL_SECTION_END;
-    
+
 }
 
 void processRow(void) {
 
-    unsigned int i, j;    
+    unsigned int i, j;
     CamRow nextRow;
     unsigned char *src_data, *dst_data;
 
     if(current_frame == NULL) { return; } // Make sure a frame is loaded
     nextRow = current_frame->rows[next_row_index]; // Write into current frame
-    
+
     dst_data = nextRow->pixels; // Optimized dereference
     src_data = row_buff->pixels;
-    
-    i = 0;    
+
+    i = 0;
     // TODO: Add N-pixel averaging and N-pixel maximum luminescence sampling modes
     for(j = WINDOW_START_COL; j < WINDOW_END_COL - 1; j += DS_COL_PERIOD ) {
         dst_data[i++] = src_data[j];
     }
     nextRow->timestamp = row_buff->timestamp; // Copy over fields
     nextRow->row_num = row_buff->row_num;
-    
+
     latest_row = nextRow; // Store reference for fast retrieval
     next_row_index++;
     has_new_row = 1;
-    
+
     // If all rows are filled, add the frame to the full frame buffer
     if(next_row_index >= DS_IMAGE_ROWS) {
         current_frame->frame_num = cntrRead(frame_counter); // write frame number
         enqueueFullFrame(current_frame); // Add to output queue
         current_frame = getEmptyFrame();
-        next_row_index = 0;    
+        next_row_index = 0;
     }
 
 }
@@ -414,18 +414,18 @@ void processRow(void) {
 CamRow camCreateRow(unsigned int size) {
 
     CamRow row;
-    
+
     row = (CamRow) calloc(1, sizeof(CamRowStruct));
     if(row == NULL) {
         return NULL;
     }
-    
+
     row->pixels = (unsigned char *) malloc(size*sizeof(unsigned char));
     if(row->pixels == NULL) {
         camDeleteRow(row);
         return NULL;
     }
-    
+
     return row;
 
 }
@@ -437,7 +437,7 @@ void camDeleteRow(CamRow row) {
             free(row->pixels);
         }
         free(row);
-    }		
+    }
 
 }
 
@@ -446,12 +446,12 @@ CamFrame camCreateFrame(unsigned int cols, unsigned int rows) {
     CamFrame frame;
     CamRow row;
     unsigned char i;
-    
+
     frame = malloc(sizeof(CamFrameStruct));
     if(frame == NULL) {
         return NULL;
     }
-    
+
     frame->num_rows = rows;
     frame->num_cols = cols;
     frame->frame_num = 0;
@@ -460,15 +460,15 @@ CamFrame camCreateFrame(unsigned int cols, unsigned int rows) {
     if(frame->rows == NULL) {
         camDeleteFrame(frame);
     }
-    
+
     for(i = 0; i < rows; i++) {
         row = camCreateRow(cols);
         if(row == NULL) {
             camDeleteFrame(frame);
             return NULL;
         }
-        frame->rows[i] = row;    
-    }    
+        frame->rows[i] = row;
+    }
     return frame;
 
 }
@@ -479,12 +479,12 @@ void camDeleteFrame(CamFrame frame) {
     CamRow row;
 
     if(frame != NULL) {
-        
+
         for(i = 0; i < frame->num_rows; i++) {
             row = frame->rows[i];
             if(row != NULL) {
                 camDeleteRow(row);
-            }            
+            }
         }
         free(frame);
     }
@@ -498,15 +498,15 @@ void camDeleteFrame(CamFrame frame) {
  * @return Next available frame for writing
  */
 static CamFrame getEmptyFrame(void) {
-    
+
     CamFrame frame;
-    
+
     frame = carrayPopHead(empty_frame_pool);
     if(frame == NULL) {
         frame = getOldestFullFrame(); // If no more empty frames, get oldest full
     }
     return frame;
-    
+
 }
 
 /**
@@ -517,7 +517,7 @@ static CamFrame getEmptyFrame(void) {
 static void enqueueEmptyFrame(CamFrame frame) {
 
     carrayAddTail(empty_frame_pool, frame);
-    
+
 }
 
 /**
@@ -528,7 +528,7 @@ static void enqueueEmptyFrame(CamFrame frame) {
 static CamFrame getOldestFullFrame(void) {
 
     CamFrame frame;
-    
+
     frame = carrayPopHead(full_frame_pool);
     if(carrayIsEmpty(full_frame_pool)) {
         has_new_frame = 0;
@@ -544,31 +544,31 @@ static CamFrame getOldestFullFrame(void) {
  * @param frame CamFrame object to enqueue
  */
 static void enqueueFullFrame(CamFrame frame) {
-    
+
     carrayAddTail(full_frame_pool, frame);
     has_new_frame = 1;
-    
+
 }
 
 static inline CamRow getLatestRow(void) {
-    
+
     return latest_row;
-    
+
 }
 
 // Camera acquisition timer setup
 static void setupTimer7(void) {
 
     unsigned int con_reg;
-    
-    con_reg = 	T7_ON &				// Enable module
-    T7_IDLE_CON &		// Continue running when idle
-    T7_GATE_OFF &		// Time accumulation disable
-    T7_PS_1_64 &		// Prescale 1:64
-    T7_SOURCE_INT;		// Internal clock
-    
+
+    con_reg =   T7_ON &             // Enable module
+    T7_IDLE_CON &       // Continue running when idle
+    T7_GATE_OFF &       // Time accumulation disable
+    T7_PS_1_64 &        // Prescale 1:64
+    T7_SOURCE_INT;      // Internal clock
+
     _T7IF = 0;
-    OpenTimer7(con_reg, 0);			// Configure timer
+    OpenTimer7(con_reg, 0);         // Configure timer
     ConfigIntTimer7(T7_INT_PRIOR_6 & T7_INT_OFF);
-    
+
 }

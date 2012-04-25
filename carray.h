@@ -31,13 +31,10 @@
  *
  * by Humphrey Hu
  *
- * v 0.1
- *
- * Usage:
- *
+ * v.0.1
  *
  */
- 
+
 #ifndef __CARRAY_H
 #define __CARRAY_H
 

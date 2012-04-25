@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Regents of the University of California
+ * Copyright (c) 2011-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,89 +27,90 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Digital signal processing module
+ * Digital filter module
  *
  * by Stanley S. Baek
  *
  * v.alpha
  */
 
-#ifndef __DSP_H
-#define __DSP_H
+#ifndef __DFILTER_H
+#define __DFILTER_H
 
 
 // At this moment, only floating point is available.
-// It would be nice to have different types such as double precision 
+// It would be nice to have different types such as double precision
 // and fixed point numbers.
 typedef enum {FILTER_TYPE_FLOAT, FILTER_TYPE_DOUBLE} FilterType;
 
 /*
  * xcoef -> b0 : b1 : b2 : ... : bn
  * ycoef -> a0 : a1 : a2 : ... : an; a0 is always 1, but never used anyway.
- * xold -> ... : x[k-n-1]: x[k-n] : x[k-1] : x[k-2] : x[k-3] : ...  
- * yold -> ... : y[k-n-1]: y[k-n] : y[k-1] : y[k-2] : y[k-3] : ...  
+ * xold -> ... : x[k-n-1]: x[k-n] : x[k-1] : x[k-2] : x[k-3] : ...
+ * yold -> ... : y[k-n-1]: y[k-n] : y[k-1] : y[k-2] : y[k-3] : ...
  * index -> the location of x[k-1] in the xold array.
- * When a new input x[k] at the time step k comes into the filter, 
+ * When a new input x[k] at the time step k comes into the filter,
  * the output y is calculated by
- * y[k] = b0*x[k] + b1*x[k-1] + ... + bn*x[k-n] - a1*y[k-1] - ... - an*y[k-n]. 
- * Then we need to replace y[k-n] and x[k-n] with y[k] and x[k], respectively. 
+ * y[k] = b0*x[k] + b1*x[k-1] + ... + bn*x[k-n] - a1*y[k-1] - ... - an*y[k-n].
+ * Then we need to replace y[k-n] and x[k-n] with y[k] and x[k], respectively.
  * The new index value should be updated to locate x[k-n] (or x[k] after replacing)
  */
 typedef struct {
     unsigned char order;     // order = n
     FilterType type;        // float, double, or fixed point (short or long)
-    float *xcoef;  // # of coeffs = n+1 
-    float *ycoef;  // # of coeffs = n 
-    float *yold;    // n prev y values 
-    float *xold;    // n prev x values 
+    float *xcoef;  // # of coeffs = n+1
+    float *ycoef;  // # of coeffs = n
+    float *yold;    // n prev y values
+    float *xold;    // n prev x values
     unsigned char index;
 } DigitalFilterStruct;
 
 typedef DigitalFilterStruct* DigitalFilter;
 
 // just put 0 or FILTER_TYPE_FLOAT for the type argument.
-DigitalFilter dspCreateFilter(unsigned char order, FilterType type, 
+DigitalFilter dfilterCreate(unsigned char order, FilterType type,
                 float* xcoeffs, float* ycoeffs);
 
-float dspApplyFilter(DigitalFilter f, float x);
+float dfilterApply(DigitalFilter f, float x);
 
-float* dspGetOutputValues(DigitalFilter f);
+float* dfilterGetOutputValues(DigitalFilter f);
 
-float* dspGetInputValues(DigitalFilter f);
+float* dfilterGetInputValues(DigitalFilter f);
 
 /*****************************************************************************
-* Function Name : dspGetLatestInputValues
+* Function Name : dfilterGetLatestInputValues
 * Description   : Get the latest output value entered from the filter.
 * Parameters    : digital filter
 * Return Value  : The latest output value from the filter
 *****************************************************************************/
-float dspGetLatestOutputValue(DigitalFilter f);
+float dfilterGetLatestOutputValue(DigitalFilter f);
 
 
 /*****************************************************************************
-* Function Name : dspGetLatestInputValues
+* Function Name : dfilterGetLatestInputValues
 * Description   : Get the latest input value entered to the filter.
 * Parameters    : digital filter
 * Return Value  : The latest input value to the filter
 *****************************************************************************/
-float dspGetLatestInputValue(DigitalFilter f);
+float dfilterGetLatestInputValue(DigitalFilter f);
 
 
 /*****************************************************************************
-* Function Name : dspGetIndex
+* Function Name : dfilterGetIndex
 * Description   : Get the index value of a digital filter.
 * Parameters    : digital filter
 * Return Value  : The index value of the filter
 *****************************************************************************/
-unsigned char dspGetIndex(DigitalFilter f);
+unsigned char dfilterGetIndex(DigitalFilter f);
 
 
 /*****************************************************************************
-* Function Name : dspDeleteFilter
+* Function Name : dfilterDeleteFilter
 * Description   : Delete the filter to free the memory allocated for the filter.
 * Parameters    : The filter to be deleted.
 * Return Value  : None
 *****************************************************************************/
-void dspDeleteFilter(DigitalFilter f);
+void dfilterDelete(DigitalFilter f);
 
-#endif  // __DSP_H
+
+#endif  // __DFILTER_H

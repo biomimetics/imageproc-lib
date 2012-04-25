@@ -31,12 +31,12 @@
  *
  * by Humphrey Hu
  *
- * v1.0
+ * v.1.0
  *
  * Usage:
- * 
+ *
  *  Initialization:
- * 
+ *
  *  Begin by initializing the module. This sets up the necessary peripherals,
  *  initializes memory and calibrates itself.. Should initialization fail, the
  *  module will not be able to start, but should not produce errors.
@@ -54,10 +54,10 @@
  *  Latency-sensitive applications can use the CamRow getter, which returns the
  *  newest row in the back frame. These row objects are direct references to rows
  *  in buffered frames, so they do not need to be returned. However, as a result,
- *  they are also volatile and should be processed quickly. Time-of-capture 
- *  timestamps are also saved. to each CamRow, and time-of-completion timestamps 
+ *  they are also volatile and should be processed quickly. Time-of-capture
+ *  timestamps are also saved. to each CamRow, and time-of-completion timestamps
  *  are saved to CamFrames.
- *  
+ *
  *
  *  unsigned int i, j;
  *  unsigned char pixel;
@@ -80,21 +80,21 @@
  *      row = camGetRow();
  *  }
  */
- 
+
 #ifndef __CAMERA_H
 #define __CAMERA_H
 
 // ============== Typedefs ====================================================
- 
-// These are status codes handed to an irq handler registered to the camera 
+
+// These are status codes handed to an irq handler registered to the camera
 // module that fire upon certain events.
 //
 // Events:  CAM_IRQ_ROW_DONE = Row capture completed
 //          CAM_IRQ_FRAME_DONE = Frame capture completed
 //          CAM_IRQ_ERROR = Some driver error (not yet implemented)
 typedef enum {
-	CAM_IRQ_ROW_DONE = 0,
-	CAM_IRQ_FRAME_DONE,
+    CAM_IRQ_ROW_DONE = 0,
+    CAM_IRQ_FRAME_DONE,
     CAM_IRQ_ERROR,
 } CamIrqCause;
 
@@ -114,11 +114,11 @@ typedef CamRowStruct *CamRow;
  *  time upon capture completion, and the rows.
  */
 typedef struct {
-	unsigned int num_rows;
-	unsigned int num_cols;
-	unsigned int frame_num;
-	unsigned long timestamp;
-	CamRow *rows;
+    unsigned int num_rows;
+    unsigned int num_cols;
+    unsigned int frame_num;
+    unsigned long timestamp;
+    CamRow *rows;
 } CamFrameStruct;
 
 typedef CamFrameStruct *CamFrame;
