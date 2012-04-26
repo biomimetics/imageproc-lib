@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011, Regents of the University of California
+ * Copyright (c) 2011-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,14 +31,9 @@
  *
  * by Humphrey Hu
  *
- * v. 0.2
- *
- * Revisions:
- *  Humphrey Hu		 2011-06-06    Initial implementation
- *                      
- * Notes:
+ * v. 0.4
  */
- 
+
 #ifndef __RADIO_H
 #define __RADIO_H
 
