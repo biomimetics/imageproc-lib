@@ -41,6 +41,7 @@
 */
 
 #include "utils.h"
+#include "init_default.h"
 #include "radio.h"
 #include "payload.h"
 #include "carray.h"
@@ -55,9 +56,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-// TODO: Move this to some central header!!
-#define FCY                                     (40000000)
 
 #define RADIO_DEFAULT_SRC_ADDR                  (0x1101)
 #define RADIO_DEFAULT_SRC_PAN                   (0x1001)
