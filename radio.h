@@ -42,24 +42,24 @@
 
 // Radio interrupt flags
 typedef enum {
-	RADIO_TX_SUCCESS,	// Transmission success
-	RADIO_TX_FAILURE,	// Transmission failure
-	RADIO_RX_START,		// Beginning of reception
-	RADIO_RX_SUCCESS,	// Reception success
-	RADIO_RX_FAILURE,	// Reception failure
-	RADIO_HW_FAILURE,	// Hardware failure
+    RADIO_TX_SUCCESS,   // Transmission success
+    RADIO_TX_FAILURE,   // Transmission failure
+    RADIO_RX_START,     // Beginning of reception
+    RADIO_RX_SUCCESS,   // Reception success
+    RADIO_RX_FAILURE,   // Reception failure
+    RADIO_HW_FAILURE,   // Hardware failure
 } RadioIrqSrc;
 
 // Represent the current radio state and operation
 typedef enum {
-    STATE_SLEEP = 0,		// Radio powered down (currently not implemented)
+    STATE_SLEEP = 0,        // Radio powered down (currently not implemented)
     STATE_OFF,              // Transceiver off
     STATE_IDLE,             // Transceiver off, PLL on
     STATE_TRANSITIONING,    // Radio in state transition
-    STATE_RX_IDLE,			// Radio in RX mode, listening
-    STATE_RX_BUSY,			// Radio in RX mode, receiving
-    STATE_TX_IDLE,			// Radio in TX mode, idling
-    STATE_TX_BUSY,			// Radio in TX mode, transmitting or preparing
+    STATE_RX_IDLE,          // Radio in RX mode, listening
+    STATE_RX_BUSY,          // Radio in RX mode, receiving
+    STATE_TX_IDLE,          // Radio in TX mode, idling
+    STATE_TX_BUSY,          // Radio in TX mode, transmitting or preparing
 } RadioState;
 
 // Setup and initialization

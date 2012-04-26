@@ -66,6 +66,7 @@
 
 #define RADIO_CALIB_PERIOD                      (300000) // 5 minutes
 
+
 // =========== Static variables ===============================================
 
 // State information
@@ -82,6 +83,7 @@ static CircArray tx_queue, rx_queue;
 // Local config information
 static unsigned int local_addr, local_pan, max_packet_retries;
 static unsigned char local_channel;
+
 
 // =========== Function stubs =================================================
 
@@ -102,6 +104,7 @@ static unsigned int radioSetStateRx(void);
 static unsigned int radioSetStateIdle(void);
 //static unsigned int radioSetStateOff(void);
 
+
 // =========== Public functions ===============================================
 
 // Initialize radio software and hardware
@@ -121,7 +124,7 @@ void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
     watchdog_state = 0;
 
     trxSetup(); // Configure transceiver IC
-    
+
     trxSetIrqCallback(&trxCallback); // Set IC driver callback
 
 
@@ -142,28 +145,28 @@ void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
 
     is_ready = 1;
 
-    trxSetStateRx();    
-    
+    trxSetStateRx();
+
 }
 
 void radioSetSrcAddr(unsigned int src_addr) {
 
     local_addr = src_addr;
     trxSetAddress(src_addr);
-    
+
 }
 
 unsigned int radioGetSrcAddr(void) {
-    
+
     return local_addr;
-    
+
 }
 
 void radioSetSrcPanID(unsigned int src_pan_id) {
 
     local_pan = src_pan_id;
     trxSetPan(src_pan_id);
-    
+
 }
 
 unsigned int radioGetSrcPanID(void) {
@@ -214,7 +217,7 @@ void radioSetWatchdogTime(unsigned int time) {
 
     watchdog_timeout = time;
     watchdogProgress();
-    
+
 }
 
 MacPacket radioDequeueRxPacket(void) {
@@ -224,7 +227,7 @@ MacPacket radioDequeueRxPacket(void) {
 }
 
 unsigned int radioEnqueueTxPacket(MacPacket packet) {
-    
+
     return carrayAddTail(tx_queue, packet);
 
 }
@@ -250,7 +253,7 @@ unsigned int radioGetTxQueueSize(void) {
 unsigned int radioRxQueueEmpty(void){
 
     return carrayIsEmpty(rx_queue);
-    
+
 }
 
 unsigned int radioRxQueueFull(void) {
@@ -279,14 +282,14 @@ void radioFlushQueues(void) {
 
 MacPacket radioRequestPacket(unsigned int data_size) {
 
-    MacPacket packet;   
+    MacPacket packet;
 
     packet = ppoolRequestFullPacket(data_size);
     if(packet == NULL) { return NULL; }
-    
+
     macSetSrc(packet, local_pan, local_addr);
     macSetDestPan(packet, local_pan);
-    
+
     return packet;
 
 }
@@ -295,17 +298,17 @@ MacPacket radioCreatePacket(unsigned int data_size) {
 
     MacPacket packet = macCreateDataPacket();
     if(packet == NULL) { return NULL; }
-    
+
     Payload pld = payCreateEmpty(data_size);
     if(pld == NULL) {
         macDeletePacket(packet);
         return NULL;
     }
-    
+
     macSetPayload(packet, pld);
     macSetSrc(packet, local_pan, local_addr);
     macSetDestPan(packet, local_pan);
-    
+
     return packet;
 
 }
@@ -317,14 +320,14 @@ unsigned int radioReturnPacket(MacPacket packet) {
 }
 
 void radioDeletePacket(MacPacket packet) {
-    
+
     if(packet != NULL) {
         if(packet->payload != NULL) {
             payDelete(packet->payload);
         }
         macDeletePacket(packet);
     }
-    
+
 }
 
 // The Big Function
@@ -339,14 +342,14 @@ void radioProcess(void) {
 
     // Process pending outgoing packets
     if(!radioTxQueueEmpty()) {
-        
+
         // Return if can't get to Tx state at the moment
         if(!radioSetStateTx()) { return; }
         watchdogProgress();
         radioProcessTx(); // Process outgoing buffer
         return;
-        
-    } 
+
+    }
 
 #if defined(RADIO_AUTOCALIBRATE) // Auto calibration routine
     // Check if calibration is necessary
@@ -357,7 +360,7 @@ void radioProcess(void) {
         last_calib_timestamp = currentTime;
     }
 #endif
-    
+
     // Default to Rx state
     if(!radioSetStateRx()) { return; }
 
@@ -366,12 +369,14 @@ void radioProcess(void) {
 
 }
 
+
 // =========== Private functions ==============================================
+
 void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
-    
+
     // Disable and reset timer
     DisableIntT3;
-    WriteTimer3(0);    
+    WriteTimer3(0);
     radioReset();
     _T3IF = 0;
 
@@ -390,84 +395,84 @@ static void radioReset(void) {
 
 /**
  * Transceiver interrupt handler
- * 
- * Note that this doesn't need critical sections since this will 
+ *
+ * Note that this doesn't need critical sections since this will
  * only be called in interrupt context
  *
  * @param irq_cause Interrupt source code
  */
 void trxCallback(unsigned int irq_cause) {
-    
-    if(radio_state == STATE_SLEEP) {        
-        // Shouldn't be here since sleep isn't implemented yet!    
-    } 
-    else if(radio_state == STATE_IDLE) {        
+
+    if(radio_state == STATE_SLEEP) {
+        // Shouldn't be here since sleep isn't implemented yet!
+    }
+    else if(radio_state == STATE_IDLE) {
         // Shouldn't be getting interrupts when idle
-    } 
-    else if(radio_state == STATE_RX_IDLE) {        
-    
+    }
+    else if(radio_state == STATE_RX_IDLE) {
+
         // Beginning reception process
-        if(irq_cause == RADIO_RX_START) {            
+        if(irq_cause == RADIO_RX_START) {
             LED_ORANGE = 1;
-            radio_state = STATE_RX_BUSY;                    
-        }        
-    
+            radio_state = STATE_RX_BUSY;
+        }
+
     } else if(radio_state == STATE_RX_BUSY) {
-        
+
         // Reception complete
-        if(irq_cause == RADIO_RX_SUCCESS) {                       
+        if(irq_cause == RADIO_RX_SUCCESS) {
             radioProcessRx();   // Process newly received data
             LED_ORANGE = 0;
-            radio_state = STATE_RX_IDLE;    // Transition after data processed            
-        }                
-    
-    } else if(radio_state == STATE_TX_IDLE) {        
+            radio_state = STATE_RX_IDLE;    // Transition after data processed
+        }
+
+    } else if(radio_state == STATE_TX_IDLE) {
         // Shouldn't be getting interrupts when waiting to transmit
     } else if(radio_state == STATE_TX_BUSY) {
-                
+
         radio_state = STATE_TX_IDLE;
         LED_ORANGE = 0;
         // Transmit successful
-        if(irq_cause == RADIO_TX_SUCCESS) {            
+        if(irq_cause == RADIO_TX_SUCCESS) {
             radioReturnPacket(carrayPopHead(tx_queue));
             radioSetStateRx();
-        } else if(irq_cause == RADIO_TX_FAILURE) {            
+        } else if(irq_cause == RADIO_TX_FAILURE) {
             // If no more retries, reset retry counter
             retries++;
-            if(retries > max_packet_retries) {                
-                retries = 0;                
+            if(retries > max_packet_retries) {
+                retries = 0;
                 radioReturnPacket((MacPacket)carrayPopHead(tx_queue));
                 radioSetStateRx();
-            }            
+            }
         }
-    } 
+    }
 
     // Hardware error
-    if(irq_cause == RADIO_HW_FAILURE) {                
-        // Reset everything        
+    if(irq_cause == RADIO_HW_FAILURE) {
+        // Reset everything
         trxReset();
-        //radioFlushQueues();               
-    }    
+        //radioFlushQueues();
+    }
 }
 
 /**
  * Set the radio to a transmit state
  */
 static unsigned int radioSetStateTx(void) {
-    
+
     unsigned int lockAcquired;
-    
-    // If already in Tx mode 
+
+    // If already in Tx mode
     if(radio_state == STATE_TX_IDLE) { return 1; }
-    
+
     // Attempt to begin transition
     lockAcquired = radioBeginTransition();
     if(!lockAcquired) { return 0; }
-    
+
     trxSetStateTx();
     radio_state = STATE_TX_IDLE;
     return 1;
-    
+
 }
 
 /**
@@ -476,38 +481,38 @@ static unsigned int radioSetStateTx(void) {
 static unsigned int radioSetStateRx(void) {
 
     unsigned int lockAcquired;
-    
-    // If already in Rx mode 
+
+    // If already in Rx mode
     if(radio_state == STATE_RX_IDLE) { return 1; }
-    
+
     // Attempt to begin transitionin
     lockAcquired = radioBeginTransition();
     if(!lockAcquired) { return 0; }
-    
+
     trxSetStateRx();
     radio_state = STATE_RX_IDLE;
     return 1;
-    
+
 }
 
-/** 
+/**
  * Sets the radio to an idle state
  */
 static unsigned int radioSetStateIdle(void) {
 
     unsigned int lockAcquired;
-    
-    // If already in idle mode 
+
+    // If already in idle mode
     if(radio_state == STATE_IDLE) { return 1; }
-    
+
     // Attempt to begin transitionin
     lockAcquired = radioBeginTransition();
     if(!lockAcquired) { return 0; }
-    
+
     trxSetStateIdle();
     radio_state = STATE_IDLE;
     return 1;
-    
+
 }
 
 ///**
@@ -532,7 +537,7 @@ static unsigned int radioSetStateIdle(void) {
 
 /**
  * Atomically checks and set the radio to transitioning state.
- * 
+ *
  * Note that the radio in transitioning state will capture but disregard
  * interrupts from the transceiver.
  *
@@ -543,43 +548,43 @@ static unsigned int radioBeginTransition(void) {
     unsigned int busy;
 
     CRITICAL_SECTION_START
-    
-    busy =  (radio_state == STATE_RX_BUSY) 
+
+    busy =  (radio_state == STATE_RX_BUSY)
     || (radio_state == STATE_TX_BUSY)
     || (radio_state == STATE_TRANSITIONING);
-    
+
     if(!busy) {
         radio_state = STATE_TRANSITIONING;
     }
-    
+
     CRITICAL_SECTION_END
 
     return !busy;
-    
+
 }
 
 /**
  * Process a pending packet send request
  */
 static void radioProcessTx(void) {
-    
+
     MacPacket packet;
 
     packet = (MacPacket) carrayPeekHead(tx_queue); // Find an outgoing packet
     if(packet == NULL) { return; }
-    
+
     // State should be STATE_TX_IDLE upon entering function
     radio_state = STATE_TX_BUSY;    // Update state
     LED_ORANGE = 1;                    // Indicate RX activity
-    
+
     macSetSeqNum(packet, packet_sqn++); // Set packet sequence number
-        
+
     trxWriteFrameBuffer(packet); // Write packet to transmitter and send
-    trxBeginTransmission();            
+    trxBeginTransmission();
 
 }
 
-/** 
+/**
  * Process a pending packet receive request
  */
 static void radioProcessRx(void) {
@@ -588,19 +593,19 @@ static void radioProcessRx(void) {
     unsigned char len;
 
     if(radioRxQueueFull()) { return; } // Don't bother if rx queue full
-    
+
     len = trxReadBufferDataLength(); // Read received frame data length
     packet = radioRequestPacket(len - PAYLOAD_HEADER_LENGTH); // Pull appropriate packet from pool
-    
+
     if(packet == NULL) { return; }
-    
+
     trxReadFrameBuffer(packet); // Retrieve frame from transceiver
     packet->timestamp = sclockGetLocalTicks(); // Mark local time of reception
-    
+
     if(!carrayAddTail(rx_queue, packet)) {
         radioReturnPacket(packet); // Check for failure
     }
-    
+
 }
 
 static inline void watchdogProgress(void) {
