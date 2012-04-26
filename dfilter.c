@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Regents of the University of California
+ * Copyright (c) 2011-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,26 +27,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Digital signal processing module
+ * Digital filter module
  *
  * by Stanley S. Baek
  *
  * v.alpha
  *
  * Revisions:
- *  Stanley S. Baek      2011-01-28    Initial release
+ *  Stanley S. Baek             2011-01-28  Initial release
+ *  Fernando L. Garcia Bermudez 2012-04-24  Changed module name to dfilter, to
+ *                                          prevent collisions with Microchip's
+ *                                          dsp module.
  */
 
-#include "dsp.h"
 #include <stdlib.h>
+#include "dfilter.h"
 
 
 /*-----------------------------------------------------------------------------
  *          Public functions
 -----------------------------------------------------------------------------*/
 
-float dspApplyFilter(DigitalFilter f, float x) {
-
+float dfilterApply(DigitalFilter f, float x)
+{
     int i;
     //unsigned char idx = f->index;
     float y = f->xcoef[0] * x;
@@ -54,24 +57,23 @@ float dspApplyFilter(DigitalFilter f, float x) {
     for (i = 1; i <= f->order; ++i) {
         y += f->xcoef[i]*f->xold[f->index] - f->ycoef[i]*f->yold[f->index];
         f->index = (f->index == f->order-1)? 0 : f->index + 1;
-    } 
+    }
 
     f->index = (f->index == 0)? f->order - 1 : f->index - 1;
     f->xold[f->index] = x;
     f->yold[f->index] = y;
 
     return y;
-
 }
 
 
-DigitalFilter dspCreateFilter(unsigned char order, FilterType type, 
-                float* xcoeffs, float* ycoeffs) {
-
+DigitalFilter dfilterCreate(unsigned char order, FilterType type,
+                float* xcoeffs, float* ycoeffs)
+{
     int i;
 
     if (order == 0) return NULL;
-   
+
     DigitalFilter f = (DigitalFilter)malloc(sizeof(DigitalFilterStruct));
     f->order = order;
     f->type = type;
@@ -90,37 +92,41 @@ DigitalFilter dspCreateFilter(unsigned char order, FilterType type,
 
     f->xcoef[order] = xcoeffs[order];
     f->ycoef[order] = ycoeffs[order];
-    
+
     return f;
 }
 
 
-float* dspGetOutputValues(DigitalFilter f) {
+float* dfilterGetOutputValues(DigitalFilter f)
+{
     return f->yold;
 }
 
-float* dspGetInputValues(DigitalFilter f) {
+float* dfilterGetInputValues(DigitalFilter f)
+{
     return f->xold;
 }
 
-float dspGetLatestOutputValue(DigitalFilter f) {
+float dfilterGetLatestOutputValue(DigitalFilter f)
+{
     return (f == NULL)? 0.0 : f->yold[f->index];
 }
 
-float dspGetLatestInputValue(DigitalFilter f) {
+float dfilterGetLatestInputValue(DigitalFilter f)
+{
     return (f == NULL)? 0.0 : f->xold[f->index];
 }
 
-unsigned char dspGetIndex(DigitalFilter f) {
+unsigned char dfilterGetIndex(DigitalFilter f)
+{
     return f->index;
 }
 
-void dspDeleteFilter(DigitalFilter f) {
-
+void dfilterDelete(DigitalFilter f)
+{
     free(f->xcoef);
     free(f->ycoef);
     free(f->xold);
     free(f->yold);
     free(f);
-
 }
