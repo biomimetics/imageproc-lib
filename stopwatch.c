@@ -35,7 +35,7 @@
  *
  * Revisions:
  *  Stanley S. Baek      2010-06-16     Initial release
- *                      
+ *
  * Notes:
  *  - MCU resources requied for this module:
  *      Timer8 & Timer9 are used for a 32-bit timer.
@@ -110,7 +110,7 @@ void swatchDelayUs(unsigned long delay) {
     swatch.half.lsw = TMR_LSW;
     swatch.half.msw = TMR_MSW;
     exit_time = swatch.time + delay*TIME_FACTOR;
-    
+
     while(swatch.time < exit_time) {
         swatch.half.lsw = TMR_LSW;
         swatch.half.msw = TMR_MSW;
@@ -123,7 +123,6 @@ void swatchDelayMs(unsigned long delay) {
 }
 
 
-
 /*-----------------------------------------------------------------------------
  * ----------------------------------------------------------------------------
  * The functions below are intended for internal use, i.e., static functions.
@@ -131,12 +130,11 @@ void swatchDelayMs(unsigned long delay) {
  * ----------------------------------------------------------------------------
 -----------------------------------------------------------------------------*/
 
-
 /*****************************************************************************
 * Timer8 & Timer9 are used for swatch module.
 * No Interrupt is associated with Timer8.
 * T8PER does not mean anything.
-* Timer increase by one every 0.2us  
+* Timer increase by one every 0.2us
 * Timer8 & Timer9 should be set up as 32-bit timer with prescale of 8
 * Then, the 32-bit timer will increase its value by one every 0.2us.
 * Interrupt for Timers is not used.
@@ -149,10 +147,6 @@ static void swatchSetupPeripheral(void) {
     // Period is set so that period = 1us (1MHz), MIPS = 40MHz
     // value = Fcy/(prescale*Ftimer)
     T8PERvalue = 40;    // this value doesn't really mean anything here.
-    OpenTimer8(T8CONvalue, T8PERvalue);	
+    OpenTimer8(T8CONvalue, T8PERvalue);
     T8CONbits.TON = 1;
 }
-
-
-
-

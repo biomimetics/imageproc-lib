@@ -34,11 +34,11 @@
  *
  * Notes:
  *  - MCU resources requied for this module:
- *      Timer8 & Timer9 are used for a 32-bit timer. 
+ *      Timer8 & Timer9 are used for a 32-bit timer.
  *
  * Usage:
  */
- 
+
 #include "timer.h"
 #include "sclock.h"
 
@@ -52,7 +52,7 @@ typedef union {
     struct {
         unsigned int lsw;
         unsigned int msw;
-    } half;    
+    } half;
 } Time;
 
 /*-----------------------------------------------------------------------------
@@ -116,7 +116,7 @@ unsigned long sclockGetLocalMillis(void) {
 }
 
 unsigned long sclockGetOffsetTicks(void) {
-    
+
     return sclock_offset.time;
 
 }
@@ -147,18 +147,14 @@ void sclockSetOffsetMillis(unsigned long offset) {
 static void sclockSetupPeripheral(void) {
 
     unsigned int T8CONvalue, T8PERvalue;
-    T8CONvalue =    T8_OFF &         
+    T8CONvalue =    T8_OFF &
                     T8_IDLE_CON &
                     T8_GATE_OFF &
                     T8_PS_1_64 &
                     T8_32BIT_MODE_ON &
                     T8_SOURCE_INT;
     T8PERvalue = 40;    // this value doesn't really mean anything here.
-    OpenTimer8(T8CONvalue, T8PERvalue);	
+    OpenTimer8(T8CONvalue, T8PERvalue);
     T8CONbits.TON = 1;
-    
+
 }
-
-
-
-

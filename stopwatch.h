@@ -35,7 +35,7 @@
  *
  * Revisions:
  *  Stanley S. Baek      2010-06-16     Initial release
- *                      
+ *
  * Notes:
  *  - MCU resources requied for this module:
  *      Timer8 & Timer9 are used for a 32-bit timer.
@@ -55,13 +55,13 @@
  *   swatchTic();
  *   // delay for 1 sec
  *   swatchDelayUs(1000000);
- *  
+ *
  *   // delay for 1 sec
  *   swatchDelayMs(1000);
  *
  *   time_elapsed = swatchToc();
  *   // time_elapsed will hold a value of ~2,000,000.
- * 
+ *
  * TODO: may need to change the name of this module to rtclock (real time clock)
  */
 
@@ -103,7 +103,7 @@ unsigned long swatchToc(void);
 /*****************************************************************************
 * Function Name : swatchDelayUs
 * Description   : Delay
-* Parameters    : dalay in microseconds. 
+* Parameters    : dalay in microseconds.
 *                 The delay value should not exceed 2^32/5 = 858,993,459
 * Return Value  : None
 * Note: delay_us defined in utils.h is also a good alternative.
@@ -113,7 +113,7 @@ void swatchDelayUs(unsigned long delay);
 /*****************************************************************************
 * Function Name : swatchDelayMs
 * Description   : Delay
-* Parameters    : dalay in miliseconds. 
+* Parameters    : dalay in miliseconds.
 *                 The delay value should not exceed 2^32/5000 = 858,993
 * Return Value  : None
 * Note: delay_ms defined in utils.h is also a good alternative.

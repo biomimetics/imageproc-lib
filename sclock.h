@@ -40,14 +40,14 @@
  *  Humphrey Hu         2012-04-26      Renamed file to "sclock"
  * Notes:
  *  - MCU resources requied for this module:
- *      Timer8 & Timer9 are used for a 32-bit timer. 
+ *      Timer8 & Timer9 are used for a 32-bit timer.
  *  - Timer is set to 625 ticks per millisecond
  *
  * Usage:
  */
 
-#ifndef __SYS_CLOCK_H
-#define __SYS_CLOCK_H
+#ifndef __SCLOCK_H
+#define __SCLOCK_H
 
 void sclockSetup(void);
 void sclockReset(void);
@@ -61,7 +61,7 @@ unsigned long sclockGetLocalMillis(void);
 unsigned long sclockGetOffsetTicks(void);
 unsigned long sclockGetOffsetMillis(void);
 
-void sclockSetOffsetTicks(unsigned long offset); 
+void sclockSetOffsetTicks(unsigned long offset);
 void sclockSetOffsetMillis(unsigned long offset);
 
-#endif //  __STOPWATCH_H
+#endif //  __SCLOCK_H
