@@ -44,7 +44,7 @@
 #include "payload.h"
 #include "carray.h"
 #include "mac_packet.h"
-#include "sys_clock.h"
+#include "sclock.h"
 #include "timer.h"
 #include "led.h"
 #include "ppool.h"
