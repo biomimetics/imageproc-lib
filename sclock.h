@@ -52,8 +52,8 @@
 #ifndef __SCLOCK_H
 #define __SCLOCK_H
 
+// Handles initialization of required peripherals and resets time to 0.
 void sclockSetup(void);
-void sclockReset(void);
 
 unsigned long sclockGetGlobalTicks(void);
 unsigned long sclockGetGlobalMillis(void);

@@ -68,22 +68,14 @@ static Time sclock_offset;
 -----------------------------------------------------------------------------*/
 
 static void sclockSetupPeripheral(void);
+static void sclockReset(void);
 
 // =========== Public Functions ===============================================
+
 void sclockSetup(void) {
 
     sclockSetupPeripheral();
     sclockReset();
-
-}
-
-// TODO: Make private
-void sclockReset(void) {
-
-    // do not change the order of the following two lines.
-    TMR_MSW = 0;
-    TMR_LSW = 0;
-    sclock_offset.time = 0;
 
 }
 
@@ -141,6 +133,7 @@ void sclockSetOffsetMillis(unsigned long offset) {
 
 }
 
+
 // =========== Private Functions ==============================================
 
 /**
@@ -158,5 +151,14 @@ static void sclockSetupPeripheral(void) {
     T8PERvalue = 40;    // this value doesn't really mean anything here.
     OpenTimer8(T8CONvalue, T8PERvalue);
     T8CONbits.TON = 1;
+
+}
+
+static void sclockReset(void) {
+
+    // do not change the order of the following two lines.
+    TMR_MSW = 0;
+    TMR_LSW = 0;
+    sclock_offset.time = 0;
 
 }
