@@ -29,14 +29,16 @@
  *
  * System Time Module
  *
- * by Humphrey Hu
- * based on "stopwatch.c" by Stanley S. Baek
+ * by Stanley S. Baek and Humphrey Hu
+ *
+ * v.0.1
+ *
+ * Revisions:
+ *  Stanley S. Baek     2010-06-16      Initial release
+ *  Humphrey Hu         2012-02-20      Restructuring module as sclock.
  *
  * Notes:
- *  - MCU resources requied for this module:
- *      Timer8 & Timer9 are used for a 32-bit timer.
- *
- * Usage:
+ *  - This module requires Timer 8 and 9 for setting up a 32-bit timer.
  */
 
 #include "timer.h"

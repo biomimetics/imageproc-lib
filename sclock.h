@@ -29,21 +29,24 @@
  *
  * System Time Module
  *
- * by Humphrey Hu
- * based on "stopwatch.c" by Stanley S. Baek
+ * by Stanley S. Baek and Humphrey Hu
  *
- * v.beta
- *
- * Revisions:
- *  Stanley S. Baek     2010-06-16      Initial release of "stopwatch.c"
- *  Humphrey Hu         2012-02-20      Initial release
- *  Humphrey Hu         2012-04-26      Renamed file to "sclock"
- * Notes:
- *  - MCU resources requied for this module:
- *      Timer8 & Timer9 are used for a 32-bit timer.
- *  - Timer is set to 625 ticks per millisecond
+ * v.0.1
  *
  * Usage:
+ *   #include "sclock.h"
+ *   #include "utils.h"
+ *
+ *   unsigned long time_elapsed;
+ *
+ *   // initialize system time module
+ *   sclockSetup();
+ *
+ *   // delay for 2 sec
+ *   delay_ms(2000);
+ *
+ *   time_elapsed = sclockGetGlobalMillis();
+ *   // time_elapsed should hold a value of ~2,000.
  */
 
 #ifndef __SCLOCK_H
