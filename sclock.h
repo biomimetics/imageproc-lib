@@ -52,19 +52,55 @@
 #ifndef __SCLOCK_H
 #define __SCLOCK_H
 
-// Handles initialization of required peripherals and resets time to 0.
+
+// Handles initialization of required timers and resets time to 0.
 void sclockSetup(void);
 
+// Requests number of ticks since the clock was started, added to a
+// specified offset, if any.
+//
+// 625 ticks add up to a millisecond elapsed.
+//
+// Returns : global ticks
 unsigned long sclockGetGlobalTicks(void);
+
+// Requests number of milliseconds since the clock was started, added to a
+// specified offset, if any.
+//
+// Returns : global milliseconds
 unsigned long sclockGetGlobalMillis(void);
 
+// Requests number of ticks since the clock was started.
+//
+// 625 ticks add up to a millisecond elapsed.
+//
+// Returns : local ticks
 unsigned long sclockGetLocalTicks(void);
+
+// Requests number of milliseconds since the clock was started.
+//
+// Returns : local milliseconds
 unsigned long sclockGetLocalMillis(void);
 
+// Requests the clock offset in ticks.
+//
+// Returns : offset ticks
 unsigned long sclockGetOffsetTicks(void);
+
+// Requests the clock offset in milliseconds.
+//
+// Returns : offset milliseconds
 unsigned long sclockGetOffsetMillis(void);
 
+// Sets the clock offset in ticks.
+//
+// Parameters : offset ticks
 void sclockSetOffsetTicks(unsigned long offset);
+
+// Sets the clock offset in milliseconds.
+//
+// Parameters : offset milliseconds
 void sclockSetOffsetMillis(unsigned long offset);
+
 
 #endif //  __SCLOCK_H
