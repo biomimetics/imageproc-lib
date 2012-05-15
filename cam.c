@@ -67,19 +67,19 @@
 
 // TODO: Integrate row windowing
 // Windowing parameters
-#define WINDOW_START_COL                (20)
-#define WINDOW_END_COL                  (140)
+#define WINDOW_START_COL                (0)
+#define WINDOW_END_COL                  (160)
 #define WINDOW_START_ROW                (0)
 #define WINDOW_END_ROW                  (120)
 
 // Downsampling parameters
-#define DS_COL_PERIOD           (4) // Capturing 1/2 pixels
-#define DS_ROW_PERIOD           (4) // Capturing 1/4 rows
+#define DS_COL_PERIOD           (1) // Capturing 1/1 pixels
+#define DS_ROW_PERIOD           (12) // Capturing 1/4 rows
 #define DS_FRAME_PERIOD         (1) // Capturing 1/1 frames
 
 // Image output parameters
-#define DS_IMAGE_COLS           (30) // NATIVE_IMAGE_COLS/DS_COL_PERIOD
-#define DS_IMAGE_ROWS           (30) // NATIVE_IMAGE_ROWS/DS_ROW_PERIOD
+#define DS_IMAGE_COLS           (160) // NATIVE_IMAGE_COLS/DS_COL_PERIOD
+#define DS_IMAGE_ROWS           (10) // NATIVE_IMAGE_ROWS/DS_ROW_PERIOD
 
 // Default camera capture timings for QQVGA no subsampling, 25 fps
 #define ROW_ROW_TIME                    (32)
@@ -93,7 +93,7 @@
 #define ROW_VSYNC_OFFSET                (8) // 512 cycles
 #define VSYNC_VSYNC_OFFSET              (8) // 512 cycles
 
-#define CAM_POOL_SIZE                   (4) // 4 frames shared with system
+#define CAM_POOL_SIZE                   (3) // 4 frames shared with system
 
 // The timer states describe what the timer is waiting for
 // i.e. VSYNC state means timer is waiting for VSYNC event
@@ -552,6 +552,7 @@ static void enqueueFullFrame(CamFrame frame) {
 
 static inline CamRow getLatestRow(void) {
 
+    has_new_row = 0;
     return latest_row;
 
 }
