@@ -73,7 +73,7 @@
 #define WINDOW_END_ROW                  (120)
 
 // Downsampling parameters
-#define DS_COL_PERIOD           (4) // Capturing 1/2 pixels
+#define DS_COL_PERIOD           (4) // Capturing 1/4 pixels
 #define DS_ROW_PERIOD           (4) // Capturing 1/4 rows
 #define DS_FRAME_PERIOD         (1) // Capturing 1/1 frames
 
@@ -552,6 +552,7 @@ static void enqueueFullFrame(CamFrame frame) {
 
 static inline CamRow getLatestRow(void) {
 
+    has_new_row = 0;
     return latest_row;
 
 }
