@@ -48,8 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cam.h"
-//#include "sys_clock.h" // Pick either sys_clock or stopwatch for timestamps
-//#include "stopwatch.h"
+#include "stopwatch.h"
 #include "led.h"
 
 // TODO: Read native image size from device driver, then calculate image size
@@ -73,7 +72,7 @@
 #define WINDOW_END_ROW                  (120)
 
 // Downsampling parameters
-#define DS_COL_PERIOD           (4) // Capturing 1/2 pixels
+#define DS_COL_PERIOD           (4) // Capturing 1/4 pixels
 #define DS_ROW_PERIOD           (4) // Capturing 1/4 rows
 #define DS_FRAME_PERIOD         (1) // Capturing 1/1 frames
 
@@ -369,8 +368,7 @@ void camCaptureRow(void) {
 
     // Fill and timestamp row buffer
     row_getter(row_buff->pixels, NATIVE_IMAGE_COLS);
-    //row_buff->timestamp = sclockGetTicks();
-    //row_buff->timestamp = swatchToc();
+    row_buff->timestamp = swatchToc();
     row_buff->row_num = cntrRead(row_counter);
 
     CRITICAL_SECTION_END;
@@ -552,6 +550,7 @@ static void enqueueFullFrame(CamFrame frame) {
 
 static inline CamRow getLatestRow(void) {
 
+    has_new_row = 0;
     return latest_row;
 
 }
