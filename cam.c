@@ -327,6 +327,7 @@ unsigned char camHasNewFrame(void) {
 
 CamRow camGetRow(void) {
 
+    has_new_row = 0;
     return latest_row;
 
 }
@@ -550,7 +551,6 @@ static void enqueueFullFrame(CamFrame frame) {
 
 static inline CamRow getLatestRow(void) {
 
-    has_new_row = 0;
     return latest_row;
 
 }
