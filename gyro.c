@@ -133,8 +133,6 @@ unsigned char* gyroGetCalibParam(void) {
 
 void gyroRunCalib(unsigned int count){
 
-	_T5IE = 0;
-
     unsigned int i;
     long x, y, z;
     x = 0;
@@ -164,8 +162,6 @@ void gyroRunCalib(unsigned int count){
     GyroOffset.fdata[1] = 1.0*y/count;
     GyroOffset.fdata[2] = 1.0*z/count;
 
-	_T5IE = 1;
-    
 }
 
 float gyroGetFloatTemp(void) {    
