@@ -108,7 +108,6 @@ void gyroSetup(void) {
     delay_ms(1);   // PLL Settling time
 
     gyroRunCalib(300);  // quick calibration. better to run this with > 1000.
-	Nop();
 }
 
 void gyroSetSampleRate(unsigned char rate) {
