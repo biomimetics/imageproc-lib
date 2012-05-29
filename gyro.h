@@ -262,7 +262,6 @@ unsigned char* gyroReadXYZ(void);
 *****************************************************************************/
 void gyroGetXYZ(unsigned char *data);
 
+void gyroGetOffsets(int*);
+
 #endif
-
-
-
