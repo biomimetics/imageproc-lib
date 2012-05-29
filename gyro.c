@@ -69,6 +69,7 @@ static union {
     unsigned char cdata[12];
 } GyroOffset;
 
+int offsx, offsy, offsz;
 
 /*-----------------------------------------------------------------------------
  *          Declaration of static functions
@@ -106,8 +107,7 @@ void gyroSetup(void) {
     gyroWrite(0x3e, 0x03);
     delay_ms(1);   // PLL Settling time
 
-    gyroRunCalib(100);  // quick calibration. better to run this with > 1000.
-
+    gyroRunCalib(300);  // quick calibration. better to run this with > 1000.
 }
 
 void gyroSetSampleRate(unsigned char rate) {
@@ -138,6 +138,8 @@ void gyroRunCalib(unsigned int count){
     y = 0;
     z = 0;
 
+	delay_ms(6); //From datasheet, standard settling time
+
     // throw away first 200 data. sometimes they are bad at the beginning.
     for (i = 0; i < 200; ++i) {
         gyroReadXYZ();
@@ -149,13 +151,16 @@ void gyroRunCalib(unsigned int count){
         x += GyroData.int_data[1];
         y += GyroData.int_data[2];
         z += GyroData.int_data[3];
-        delay_us(100);
+        delay_us(200);
     }
+	offsx = x/count;
+	offsy = y/count;
+	offsz = z/count;
 
     GyroOffset.fdata[0] = 1.0*x/count;
     GyroOffset.fdata[1] = 1.0*y/count;
     GyroOffset.fdata[2] = 1.0*z/count;
-    
+
 }
 
 float gyroGetFloatTemp(void) {    
@@ -268,7 +273,11 @@ void gyroGetXYZ(unsigned char *data) {
 
 }
 
-
+void gyroGetOffsets(int* data){
+	data[0] = offsx;
+	data[1] = offsy;
+	data[2] = offsz;
+}
 
 /*-----------------------------------------------------------------------------
  * ----------------------------------------------------------------------------
@@ -399,7 +408,3 @@ static inline void gyroSetupPeripheral(void) {
     OpenI2C2(I2C2CONvalue, I2C2BRGvalue);
     IdleI2C2();
 }
-
-
-
-
