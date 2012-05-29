@@ -1,7 +1,7 @@
 //filter-avg.c
 //Averaging filter, using a circular buffer.
 
-#include "filter-avg.h"
+#include "dfilter_avg.h"
 #include<stdlib.h>
 
 //Creates a filter and returns a point.
