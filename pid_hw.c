@@ -89,7 +89,7 @@ void pidSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd) {
 }
 
 //void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd) {
-void pidSetFracCoeffs(tPID* , fractional Kp, fractional Ki, fractional Kd) {
+void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd) {
 	//unsigned int* test3 = (unsigned int*)(controller);
 
     fractional kCoeffs[3];
@@ -98,8 +98,7 @@ void pidSetFracCoeffs(tPID* , fractional Kp, fractional Ki, fractional Kd) {
     kCoeffs[1] = Ki;
     kCoeffs[2] = Kd;
 
-    //PIDCoeffCalc(&kCoeffs[0], controller);
-    PIDCoeffCalc(&(kCoeffs[0]), &(PIDs[pid_num]));
+    PIDCoeffCalc(&kCoeffs[0], controller);
 }
 
 void pidSetReference(tPID* controller, fractional reference) {

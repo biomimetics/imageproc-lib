@@ -54,7 +54,7 @@
 void pidCreate(tPID* controller, fractional* abcCoefficients, fractional* controlHistory);
 void pidSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
 //void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd);
-void pidSetFracCoeffs(unsigned int pid_num, fractional Kp, fractional Ki, fractional Kd);
+void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd);
 void pidSetReference(tPID* controller, fractional reference);
 fractional pidRun(tPID* controller, fractional feedback);
 //void dspPIDSetup();
