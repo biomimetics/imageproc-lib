@@ -27,14 +27,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * PID
+ * Generalized integer PID module
  *
- * by Kevin Peterson
+ * by Andrew Pullin
  *
  * v.beta
  *
  * Revisions:
- *  Kevin Peterson      2012-04-05    Initial release
+ *  Andrew Pullin    2012-06-03    Initial release
  *
  * Notes:
  */
@@ -61,6 +61,9 @@
 #define DEFAULT_FF  0
 #define MOTOR_PID_ERR_SCALER 32
 #endif
+
+#define PID_ON 1
+#define PID_OFF 0
 
 //Structures and enums
 //PID Continer structure

@@ -123,7 +123,7 @@ void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int ff) {
     pid->Kd = Kd;
     pid->Kaw = Kaw;
     pid->feedforward = ff;
-    pid->onoff = 0;
+    pid->onoff = PID_OFF;
     pid->error = 0;
 #ifdef PID_HARDWARE
     pidHWSetFracCoeffs(&(pid->dspPID), pid->Kp, pid->Ki, pid->Kd);
