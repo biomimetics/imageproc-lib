@@ -45,19 +45,15 @@
 #include <dsp.h>
 #include <libq.h>
 
-#define DEAFULT_KP_FRAC 0.1
-#define DEAFULT_KI_FRAC 0.01
-#define DEAFULT_KD_FRAC 0.0
+#define DEAFULT_KP_FLOAT 0.1
+#define DEAFULT_KI_FLOAT 0.01
+#define DEAFULT_KD_FLOAT 0.0
 
-//typedef tPID* pPID;
-
-void pidCreate(tPID* controller, fractional* abcCoefficients, fractional* controlHistory);
-void pidSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
-//void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd);
-void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd);
-void pidSetReference(tPID* controller, fractional reference);
-fractional pidRun(tPID* controller, fractional feedback);
-//void dspPIDSetup();
+void pidHWCreate(tPID* controller, fractional* abcCoefficients, fractional* controlHistory);
+void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
+void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd);
+void pidHWSetReference(tPID* controller, fractional reference);
+fractional pidHWRun(tPID* controller, fractional feedback);
 
 #endif //__PID_HW_H
 

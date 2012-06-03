@@ -45,29 +45,12 @@
 #include <stdarg.h>     // variable number of arguments
 #include "pid.h"
 
-extern pidT pidObjs[NUM_PIDS];
-
-//The data model in the build options must be set to Large Data Model for this
+//The memory model in the build options must be set to Large Data Model for this
 //code to properly compile.  libdsp-coff.a and libdsp-elf.a must also be added
 //to the project
 
-tPID PIDs[NUM_PIDS];
 
-fractional abcCoeffs[NUM_PIDS][3] __attribute__ ((section (".xbss, bss, xmemory")));
-fractional controlHists[NUM_PIDS][3] __attribute__ ((section (".ybss, bss, ymemory")));
-
-/*void dspPIDSetup() {
-    int j = 0;
-    for (j = 0; j < NUM_PIDS; j++) {
-        pidCreate(&(PIDs[j]), abcCoeffs[j], controlHists[j]);
-        //pidSetCoeffs(&(PIDs[j]), DEAFULT_KP_FRAC , DEAFULT_KI_FRAC, DEAFULT_KD_FRAC);
-        //pidSetFracCoeffs(&(PIDs[j]), pidObjs[j].Kp, pidObjs[j].Ki, pidObjs[j].Kd);
-        pidSetFracCoeffs(j, pidObjs[j].Kp, pidObjs[j].Ki, pidObjs[j].Kd);
-    }
-
-}*/
-
- void pidCreate(tPID* controller, fractional* coeffs, fractional* hist) {
+ void pidHWCreate(tPID* controller, fractional* coeffs, fractional* hist) {
     // Set up pointers to the derived coefficents and controller histories
      controller->abcCoefficients = coeffs;
      controller->controlHistory = hist;
@@ -77,7 +60,7 @@ fractional controlHists[NUM_PIDS][3] __attribute__ ((section (".ybss, bss, ymemo
 }
 
 // !!!!!!! PID gains must be between -1 and 1 !!!!!!!
-void pidSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd) {
+void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd) {
 
     fractional kCoeffs[3];
 
@@ -89,7 +72,7 @@ void pidSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd) {
 }
 
 //void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd) {
-void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd) {
+void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd) {
 	//unsigned int* test3 = (unsigned int*)(controller);
 
     fractional kCoeffs[3];
@@ -101,14 +84,11 @@ void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional
     PIDCoeffCalc(&kCoeffs[0], controller);
 }
 
-void pidSetReference(tPID* controller, fractional reference) {
-
-    //controller->controlReference = Q15(reference);
-	controller->controlReference = reference;
-
+void pidHWSetReference(tPID* controller, fractional reference) {
+    controller->controlReference = reference;
 }
 
-fractional pidRun(tPID* controller, fractional feedback) {
+fractional pidHWRun(tPID* controller, fractional feedback) {
 
     controller->measuredOutput = feedback;
     PID(controller);
