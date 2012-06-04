@@ -81,7 +81,8 @@ void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fraction
     kCoeffs[1] = Ki;
     kCoeffs[2] = Kd;
 
-    PIDCoeffCalc(&kCoeffs[0], controller);
+    //PIDCoeffCalc(&kCoeffs[0], controller);
+    PIDCoeffCalc(kCoeffs, controller);
 }
 
 void pidHWSetReference(tPID* controller, fractional reference) {
