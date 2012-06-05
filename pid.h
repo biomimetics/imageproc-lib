@@ -80,7 +80,7 @@ typedef struct {
     int inputOffset;
     int feedforward;
     int maxVal, minVal;
-    int satVal;
+    int satValPos, satValNeg;
 #ifdef PID_HARDWARE
     tPID dspPID;
 #endif

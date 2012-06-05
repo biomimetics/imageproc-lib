@@ -95,12 +95,11 @@ void pidUpdate(pidObj *pid, int feedback) {
     pid->dspPID.controlReference = pid->input;
     temp = pidHWRun(&(pid->dspPID), feedback);   //Do PID calculate via DSP lib
 
-    //Saturation
-    if ((int)(pid->dspPID.controlOutput) < pid->minVal) {
-        temp = pid->minVal;
+    if (pid->dspPID.controlOutput  >  pid->satValPos) {
+        temp = pid->satValPos;
     }
-    if ((int)(pid->dspPID.controlOutput) > pid->satVal) {
-        temp = pid->satVal;
+    else if (pid->dspPID.controlOutput  <  pid->satValNeg) {
+        temp = pid->satValNeg;
     }
 
     pid->output = temp;
