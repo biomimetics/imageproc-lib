@@ -50,10 +50,6 @@
 #include <stdlib.h> // for malloc
 #include "leg_ctrl.h" //ONLY for getT1_ticks, to be fixed later!
 
-
-//Choose between software PID and DSP core hardware PID
-#define PID_HARDWARE
-
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
 
 //This is an option to force the PID outputs back to zero when there is no input.
@@ -73,40 +69,43 @@ void pidUpdate(pidObj *pid, int feedback) {
     pid->p = (long) pid->Kp * pid->error;
     pid->i = (long) pid->Ki * pid->iState;
     //Filtered derivative action applied directly to measurement
-    pid->d = ((long) pid->Kd * (long) pid->d * (long) GAIN_SCALER) / ((long) pid->Kd + (long) pid->Kp * (long) pid->N) -
-            ((long) pid->Kd * (long) pid->Kp * (long) pid->N * ((long) y - (long) pid->y_old)) /
+    pid->d = ((long) pid->Kd * (long) pid->d * (long) SOFT_GAIN_SCALER) / ((long) pid->Kd + (long) pid->Kp * (long) pid->N) -
+            ((long) pid->Kd * (long) pid->Kp * (long) pid->N * ((long) feedback - (long) pid->y_old)) /
             ((long) pid->Kd + (long) pid->Kp * (long) pid->N);
 
-    pid->preSat = pid->feedforward + ((pid->p + pid->i + pid->d) * (long) pid->maxVal) / ((long) GAIN_SCALER * (long) (pid->inputOffset));
-    //pid->preSat = ((pid->p + pid->i + pid->d) * (long)FULLTHROT) / ((long)GAIN_SCALER * (long)ADC_Offset);
-    //pid->preSat = (pid->p * (long)FULLTHROT) / ((long)GAIN_SCALER * (long)ADC_MAX);
+    pid->preSat = ((pid->p + pid->i + pid->d) * (long) pid->maxVal) / 
+            ((long) SOFT_GAIN_SCALER * (long)(pid->inputOffset));
 
-    if (pid->preSat > pid->satVal) {
-        pid->output = pid->satVal;
-    } else {
-        pid->output = pid->preSat;
-    }
+    pid->iState += (long)(pid->error) + (long) (pid->Kaw) * ((long) (pid->output) - (long) (pid->preSat))
+            / ((long) SOFT_GAIN_SCALER);
+    pid->y_old = feedback;
 
-    //pid->iState += (long)(pid->error) + (long)(pid->Kaw) * ((long)(pid->output) - (long)(pid->preSat));
-    pid->iState += (long) (pid->error) + (long) (pid->Kaw) * ((long) (pid->output) - (long) (pid->preSat)) / ((long) GAIN_SCALER);
-    pid->y_old = y;
 #elif defined PID_HARDWARE
     int temp;
     pid->dspPID.controlReference = pid->input;
     temp = pidHWRun(&(pid->dspPID), feedback);   //Do PID calculate via DSP lib
-
-    if (pid->dspPID.controlOutput  >  pid->satValPos) {
-        temp = pid->satValPos;
-    }
-    else if (pid->dspPID.controlOutput  <  pid->satValNeg) {
-        temp = pid->satValNeg;
-    }
-
-    pid->output = temp;
+    pid->preSat = temp;
 #endif
+
+    //Feedforward term
+    long fftemp = (long)(pid->Kff)*(long)(pid->input);
+    fftemp = fftemp / (long)FF_SCALER;
+    pid->preSat += fftemp;
+
+    if (pid->preSat  >  pid->satValPos) {
+        pid->output = pid->satValPos;
+    }
+    else if (pid->preSat  <  pid->satValNeg) {
+        pid->output = pid->satValNeg;
+    }
+    else {
+        pid->output = pid->preSat;
+    }
+    
+
 }
 
-void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int ff) {
+void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {
     pid->input = 0;
     pid->dState = 0;
     pid->iState = 0;
@@ -121,7 +120,7 @@ void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int ff) {
     pid->Ki = Ki;
     pid->Kd = Kd;
     pid->Kaw = Kaw;
-    pid->feedforward = ff;
+    pid->Kff = Kff;
     pid->onoff = PID_OFF;
     pid->error = 0;
 #ifdef PID_HARDWARE
@@ -146,13 +145,13 @@ void pidSetInput(pidObj* pid, int input_val) {
     pid->y_old = input_val;
 }
 
-void pidSetGains(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int ff) {
+void pidSetGains(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {
     //Gains to our pidObj are always set
     pid->Kp = Kp;
     pid->Ki = Ki;
     pid->Kd = Kd;
     pid->Kaw = Kaw;
-    pid->feedforward = ff;
+    pid->Kff = Kff;
 
     //If we are using the DSP core PID, we need to recalculate gain coeffs
 #ifdef PID_HARDWARE

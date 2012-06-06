@@ -45,12 +45,18 @@
 //Select DSP core PID
 #define PID_HARDWARE
 
+//Fallback definition
+#ifndef PID_HARDWARE
+#define PID_SOFTWARE
+#endif
+
 #ifdef PID_SOFTWARE
 #define DEFAULT_KP  200
 #define DEFAULT_KI  5
 #define DEFAULT_KD  0
 #define DEFAULT_KAW 5
-#define DEFAULT_FF  0
+#define DEFAULT_KFF  0
+#define SOFT_GAIN_SCALER 512
 
 #elif defined PID_HARDWARE
 #include <dsp.h>
@@ -58,9 +64,11 @@
 #define DEFAULT_KI  500
 #define DEFAULT_KD  150
 #define DEFAULT_KAW 0
-#define DEFAULT_FF  0
-#define MOTOR_PID_ERR_SCALER 32
+#define DEFAULT_KFF  0
+#define MOTOR_PID_SCALER 32
 #endif
+
+#define FF_SCALER 1024;
 
 #define PID_ON 1
 #define PID_OFF 0
@@ -78,7 +86,7 @@ typedef struct {
     unsigned long run_time;
     unsigned long start_time;
     int inputOffset;
-    int feedforward;
+    int Kff;
     int maxVal, minVal;
     int satValPos, satValNeg;
 #ifdef PID_HARDWARE
