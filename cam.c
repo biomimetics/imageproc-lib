@@ -49,7 +49,6 @@
 #include <string.h>
 #include "cam.h"
 #include "stopwatch.h"
-#include "led.h"
 
 // TODO: Read native image size from device driver, then calculate image size
 // after subsampling
