@@ -153,7 +153,6 @@ void camRunCalib(void);
 
 // Control asynchronous capture procedure
 void camStart(void);
-void camPause(void);
 void camStop(void);
 
 // Set function to be called after various events
