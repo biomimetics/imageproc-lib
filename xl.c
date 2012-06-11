@@ -35,7 +35,7 @@
  *
  * Revisions:
  *  Stanley S. Baek      2010-06-05    Initial release
- *                      
+ *
  * Notes:
  *  - Uses an I2C port for communicating with the accelerometer chip
  *  - MCU resources requied for this module:
@@ -53,9 +53,8 @@
 #define XL_ADDR_RD             0xA7
 #define XL_ADDR_WR             0xA6
 #define XL_DEFAULT_SCALE       0.03832  // = 9.81/256
-#define XL_I2C_CHAN 		   1
-
 //#define xlReadString(a,b,c) MastergetsI2C1(a,b,c)
+#define XL_I2C_CHAN            1
 
 
 /*-----------------------------------------------------------------------------
@@ -88,8 +87,8 @@ static inline void xlSetupPeripheral(void);
 void xlSetup(void) {
 
     xlSetupPeripheral();
-        
-    ConfigINT3(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3); 
+
+    ConfigINT3(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3);
 
     delay_ms(25);   // power up delay, may not need...
 
@@ -105,7 +104,7 @@ void xlSetup(void) {
     xlWrite(0x2a, 0x00); // disable single/double tap fuctions
 
     xlWrite(0x2c, 0x0d); // normal power mode & 800Hz output rate
-    xlWrite(0x2d, 0x08); // normal mode 
+    xlWrite(0x2d, 0x08); // normal mode
 
     //interrupt enable/disable
     xlWrite(0x2e, 0x80); // DATA_READY is enabled. others are disabled
@@ -117,7 +116,7 @@ void xlSetup(void) {
     // full resolution mode
     // right justified mode
     // +-8g range
-    xlWrite(0x31, 0b00001010);   
+    xlWrite(0x31, 0b00001010);
 
     xlWrite(0x38, 0x00); // FIFO control is bypassed
 
@@ -136,13 +135,13 @@ void xlSetIntEn(unsigned char flag) {
 
 void xlSetRange(unsigned char range) {
     if (range == 2) {
-        xlWrite(0x31, 0b00001000); 
+        xlWrite(0x31, 0b00001000);
     } else if (range == 4) {
-        xlWrite(0x31, 0b00001001); 
+        xlWrite(0x31, 0b00001001);
     } else if (range == 8) {
-        xlWrite(0x31, 0b00001010); 
+        xlWrite(0x31, 0b00001010);
     } else if (range == 16) {
-        xlWrite(0x31, 0b00001011); 
+        xlWrite(0x31, 0b00001011);
     }
     // else do not change anything
 }
@@ -192,18 +191,18 @@ void xlSaveCalibParam(void){
 
 unsigned char xlGetID(void) {
     unsigned char c;
+
     i2cStartTx(XL_I2C_CHAN);
     i2cSendByte(XL_I2C_CHAN, XL_ADDR_WR);
     i2cSendByte(XL_I2C_CHAN, 0x00);
     i2cEndTx(XL_I2C_CHAN);
     i2cStartTx(XL_I2C_CHAN);
     i2cSendByte(XL_I2C_CHAN, XL_ADDR_RD);
-    c = i2cReceiveByte(XL_I2C_CHAN);    
+    c = i2cReceiveByte(XL_I2C_CHAN);
     i2cEndTx(XL_I2C_CHAN);
 
     return c;
-}    
-
+}
 
 void xlGetFloatXYZ(float* data){
     data[0] = XlData.int_data[0]*CalibParam.f_data[0] + CalibParam.f_data[3];
@@ -226,9 +225,8 @@ void xlDumpData(unsigned char* buffer) {
     }
 }
 
-
 unsigned char* xlReadXYZ(void)  {
-	i2cStartTx(XL_I2C_CHAN);
+    i2cStartTx(XL_I2C_CHAN);
     i2cSendByte(XL_I2C_CHAN, XL_ADDR_WR);
     i2cSendByte(XL_I2C_CHAN, 0x32);
     i2cEndTx(XL_I2C_CHAN);
@@ -238,21 +236,18 @@ unsigned char* xlReadXYZ(void)  {
     i2cEndTx(XL_I2C_CHAN);
 
     return XlData.chr_data;
-
 }
 
 void xlGetXYZ(unsigned char *data)  {
-	i2cStartTx(XL_I2C_CHAN);
+    i2cStartTx(XL_I2C_CHAN);
     i2cSendByte(XL_I2C_CHAN,XL_ADDR_WR);
     i2cSendByte(XL_I2C_CHAN,0x32);
     i2cEndTx(XL_I2C_CHAN);
     i2cStartTx(XL_I2C_CHAN);
     i2cSendByte(XL_I2C_CHAN, XL_ADDR_RD);
     i2cReadString(XL_I2C_CHAN, 6, data, 1000);
-    i2cEndTx(XL_I2C_CHAN); 
+    i2cEndTx(XL_I2C_CHAN);
 }
-
-
 
 
 /*-----------------------------------------------------------------------------
@@ -266,7 +261,7 @@ void xlGetXYZ(unsigned char *data)  {
  * Interrupt hander for Accelerometer
  * ************************************************/
 void __attribute__((interrupt, no_auto_psv)) _INT3Interrupt(void) {
-    
+
     _INT3IF = 0;    // Clear the interrupt flag
 }
 
@@ -283,10 +278,10 @@ static inline void xlSetupPeripheral(void) {
                    I2C1_SM_DIS & I2C1_GCALL_DIS & I2C1_STR_DIS &
                    I2C1_NACK & I2C1_ACK_DIS & I2C1_RCV_DIS &
                    I2C1_STOP_DIS & I2C1_RESTART_DIS & I2C1_START_DIS;
-	
+
     // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 400KHz
     //Maximum ADC data rate of 800 Hz
-    I2C1BRGvalue = 95; 
+    I2C1BRGvalue = 95;
     OpenI2C1(I2C1CONvalue, I2C1BRGvalue);
     IdleI2C1();
 }
