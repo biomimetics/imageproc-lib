@@ -35,22 +35,21 @@
  *
  * Revisions:
  *  Stanley S. Baek      2010-05-30    Initial release
- *                      
+ *
  * Notes:
  *  - This module uses an I2C port for communicating with the gyroscope chip
  */
-
 
 #include "ports.h"      // for external interrupt
 #include "i2c.h"
 #include "gyro.h"
 #include "utils.h"
 
-#define GYRO_ADDR_RD        0b11010001    
-#define GYRO_ADDR_WR        0b11010000    
+#define GYRO_ADDR_RD        0b11010001
+#define GYRO_ADDR_WR        0b11010000
 
 #define LSB2DEG             0.0695652174        // 14.375 LSB/(deg/s)
-#define LSB2RAD             0.00121414209          
+#define LSB2RAD             0.00121414209
 
 
 /*-----------------------------------------------------------------------------
@@ -68,6 +67,8 @@ static union {
     float fdata[3];
     unsigned char cdata[12];
 } GyroOffset;
+
+int offsets[3];
 
 
 /*-----------------------------------------------------------------------------
@@ -91,13 +92,13 @@ static inline void gyroSetupPeripheral(void);
 
 
 void gyroSetup(void) {
-    
+
     // setup I2C port
     gyroSetupPeripheral();
 
-    // external interrupt configuration. 
+    // external interrupt configuration.
     // it is NOT USED at this moment.
-    ConfigINT1(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3); 
+    ConfigINT1(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3);
 
     delay_ms(25);   // power up delay, may not need...
     //gyroWrite(0x16, 0x1A);  // 2000 deg/sec, 1 kHz Sampling rate, 98Hz LPF
@@ -106,12 +107,11 @@ void gyroSetup(void) {
     gyroWrite(0x3e, 0x03);
     delay_ms(1);   // PLL Settling time
 
-    gyroRunCalib(100);  // quick calibration. better to run this with > 1000.
-
+    gyroRunCalib(300);  // quick calibration. better to run this with > 1000.
 }
 
 void gyroSetSampleRate(unsigned char rate) {
-    gyroWrite(0x16, rate);  
+    gyroWrite(0x16, rate);
 }
 
 void gyroSetIntEn(unsigned char flag) {
@@ -130,6 +130,12 @@ unsigned char* gyroGetCalibParam(void) {
     return GyroOffset.cdata;
 }
 
+void gyroGetOffsets(int* data){
+    data[0] = offsets[0];
+    data[1] = offsets[1];
+    data[2] = offsets[2];
+}
+
 void gyroRunCalib(unsigned int count){
 
     unsigned int i;
@@ -138,7 +144,9 @@ void gyroRunCalib(unsigned int count){
     y = 0;
     z = 0;
 
-    // throw away first 200 data. sometimes they are bad at the beginning.
+    delay_ms(6); //From datasheet, standard settling time
+
+    // throw away first 200 data. Sometimes they are bad at the beginning.
     for (i = 0; i < 200; ++i) {
         gyroReadXYZ();
         delay_us(100);
@@ -149,24 +157,27 @@ void gyroRunCalib(unsigned int count){
         x += GyroData.int_data[1];
         y += GyroData.int_data[2];
         z += GyroData.int_data[3];
-        delay_us(100);
+        delay_us(200);
     }
+
+    offsets[0] = x/count;
+    offsets[1] = y/count;
+    offsets[2] = z/count;
 
     GyroOffset.fdata[0] = 1.0*x/count;
     GyroOffset.fdata[1] = 1.0*y/count;
     GyroOffset.fdata[2] = 1.0*z/count;
-    
 }
 
-float gyroGetFloatTemp(void) {    
+float gyroGetFloatTemp(void) {
     int x;
     x = gyroGetIntTemp();
     return (35 + (x+13200)/280.0);
-}    
+}
 
-int gyroGetIntTemp(void) {    
+int gyroGetIntTemp(void) {
     return GyroData.int_data[0];
-}    
+}
 
 void gyroReadTemp(void) {
     unsigned char temp_data[2];
@@ -192,7 +203,6 @@ void gyroGetRadXYZ(float* data) {
     }
 }
 
-
 float gyroGetRadX(void) {
     return (GyroData.int_data[1] - GyroOffset.fdata[0])*LSB2RAD;
 }
@@ -204,7 +214,6 @@ float gyroGetRadY(void) {
 float gyroGetRadZ(void) {
     return (GyroData.int_data[3] - GyroOffset.fdata[2])*LSB2RAD;
 }
-
 
 void gyroGetDegXYZ(float* data) {
     unsigned char i;
@@ -238,10 +247,10 @@ unsigned char* gyroReadXYZ(void) {
     gyroEndTx();
 
     GyroData.chr_data[2] = gyro_data[1];
-    GyroData.chr_data[3] = gyro_data[0];    
+    GyroData.chr_data[3] = gyro_data[0];
     GyroData.chr_data[4] = gyro_data[3];
-    GyroData.chr_data[5] = gyro_data[2];    
-    GyroData.chr_data[6] = gyro_data[5];    
+    GyroData.chr_data[5] = gyro_data[2];
+    GyroData.chr_data[6] = gyro_data[5];
     GyroData.chr_data[7] = gyro_data[4];
 
     return GyroData.chr_data + 2;
@@ -260,14 +269,13 @@ void gyroGetXYZ(unsigned char *data) {
     gyroEndTx();
 
     data[0] = gyro_data[1];
-    data[1] = gyro_data[0];    
+    data[1] = gyro_data[0];
     data[2] = gyro_data[3];
-    data[3] = gyro_data[2];    
-    data[4] = gyro_data[5];    
+    data[3] = gyro_data[2];
+    data[4] = gyro_data[5];
     data[5] = gyro_data[4];
 
 }
-
 
 
 /*-----------------------------------------------------------------------------
@@ -394,12 +402,8 @@ static inline void gyroSetupPeripheral(void) {
                    I2C2_NACK & I2C2_ACK_DIS & I2C2_RCV_DIS &
                    I2C2_STOP_DIS & I2C2_RESTART_DIS & I2C2_START_DIS;
 
-    // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 400KHz 	
-    I2C2BRGvalue = 95; 
+    // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 400KHz
+    I2C2BRGvalue = 95;
     OpenI2C2(I2C2CONvalue, I2C2BRGvalue);
     IdleI2C2();
 }
-
-
-
-

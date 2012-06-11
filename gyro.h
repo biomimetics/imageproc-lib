@@ -35,7 +35,7 @@
  *
  * Revisions:
  *  Stanley S. Baek      2010-05-30    Initial release
- *                      
+ *
  * Notes:
  *  - Uses an I2C port for communicating with the gyroscope chip
  *
@@ -47,7 +47,7 @@
  *
  *  // initialize gyro module
  *  gyroSetup();
- * 
+ *
  *  // run calibration with 1000 gyro data
  *  gyroRunCalib(1000)
  *
@@ -56,7 +56,7 @@
  *
  *  // convert data into floating point values in deg/s
  *  gyroGetDegXYZ(gyroData);
- *  // gyroGetRadXYZ(gyroData);  // in radian/s  
+ *  // gyroGetRadXYZ(gyroData);  // in radian/s
  *
  *  // read the data in raw string format
  *  // gyroStrData[0] = lower byte of x-axis data
@@ -79,7 +79,6 @@
 *****************************************************************************/
 void gyroSetup(void);
 
-
 /*****************************************************************************
 * Function Name : gyroSetSampleRate
 * Description   : Change sampling rate and LPF bandwidth.  Please refer to
@@ -89,26 +88,23 @@ void gyroSetup(void);
 *****************************************************************************/
 void gyroSetSampleRate(unsigned char rate);
 
-
 /******************************************************************************
 * Function Name : gyroSetIntEn
-* Description   : Enable or disable External Interrupt 1. 
+* Description   : Enable or disable External Interrupt 1.
 * Parameters    : 1 (TRUE) to enable and 0 (FALSE) to disable
 * Return Value  : None
 ******************************************************************************/
 void gyroSetIntEn(unsigned char flag);
 
-
 /*****************************************************************************
 * Function Name : gyroSleep
 * Description   : Put gyroscope into sleep mode
-*                 It is recommended to use this function to save power if a 
+*                 It is recommended to use this function to save power if a
 *                 user is not using gyroscope\.
 * Parameters    : None
 * Return Value  : None
 *****************************************************************************/
 void gyroSleep(void);
-
 
 /*****************************************************************************
 * Function Name : gyroWake
@@ -117,7 +113,6 @@ void gyroSleep(void);
 * Return Value  : None
 ******************************************************************************/
 void gyroWake(void);
-
 
 /*****************************************************************************
 * Function Name : gyroGetCalibParam
@@ -128,17 +123,23 @@ void gyroWake(void);
 ******************************************************************************/
 unsigned char* gyroGetCalibParam(void);
 
+/*****************************************************************************
+* Function Name : gyroGetOffsets
+* Description   : Get the calibration offsets for gyroscope.
+* Parameters    : An array of 3 integers where to save the offsets.
+* Return Value  : None
+*******************************************************************************/
+void gyroGetOffsets(int* data);
 
 /*****************************************************************************
 * Function Name : gyroRunCalib
 * Description   : Calibrate gyroscope
 * Parameters    : An unsigned integer value for the number of data to read
 *                 from gyroscope for calibration. It takes count*1ms to finish
-*                 calibration. 
+*                 calibration.
 * Return Value  : None
 *****************************************************************************/
 void gyroRunCalib(unsigned int count);
-
 
 /*****************************************************************************
 * Function Name : gyroGetFloatTemp
@@ -149,7 +150,6 @@ void gyroRunCalib(unsigned int count);
 *****************************************************************************/
 float gyroGetFloatTemp(void);
 
-
 /*****************************************************************************
 * Function Name : gyroGetIntTemp
 * Description   : Get temperature in raw integer format.
@@ -158,15 +158,13 @@ float gyroGetFloatTemp(void);
 *****************************************************************************/
 int gyroGetIntTemp(void);
 
-
 /*****************************************************************************
 * Function Name : gyroReadTemp
-* Description   : Read temperature from gyroscopeand save into internal buffer 
+* Description   : Read temperature from gyroscopeand save into internal buffer
 * Parameters    : None
 * Return Value  : None
 *****************************************************************************/
 void gyroReadTemp(void);
-
 
 /*****************************************************************************
 * Function Name : gyroGetRadXYZ
@@ -177,7 +175,6 @@ void gyroReadTemp(void);
 *****************************************************************************/
 void gyroGetRadXYZ(float* data);
 
-
 /*****************************************************************************
 * Function Name : gyroGetRadX
 * Description   : Get the x-axis gyro data in floating point format.
@@ -186,7 +183,6 @@ void gyroGetRadXYZ(float* data);
 * Return Value  : The x-axis gyro data.
 *****************************************************************************/
 float gyroGetRadX(void);
-
 
 /*****************************************************************************
 * Function Name : gyroGetRadY
@@ -197,7 +193,6 @@ float gyroGetRadX(void);
 *****************************************************************************/
 float gyroGetRadY(void);
 
-
 /*****************************************************************************
 * Function Name : gyroGetRadZ
 * Description   : Get the z-axis gyro data in floating point format.
@@ -206,7 +201,6 @@ float gyroGetRadY(void);
 * Return Value  : The z-axis gyro data.
 *****************************************************************************/
 float gyroGetRadZ(void);
-
 
 /*****************************************************************************
 * Function Name : gyroGetDegXYZ
@@ -219,50 +213,44 @@ float gyroGetRadZ(void);
 *****************************************************************************/
 void gyroGetDegXYZ(float* data);
 
-
 /*****************************************************************************
 * Function Name : gyroToString
 * Description   : Get X, Y, and Z gyro data in raw string format.
 * Parameters    : None
-* Return Value  : pointer of the internal buffer holding 6 characters 
+* Return Value  : pointer of the internal buffer holding 6 characters
 *                 representing the 3-axis gyro data.
 *****************************************************************************/
 unsigned char* gyroToString(void);
 
-
 /*****************************************************************************
 * Function Name : gyroDumpData
 * Description   : Get X, Y, and Z gyro data in raw string format.
-* Parameters    : buffer is an char array holding 6 characters 
+* Parameters    : buffer is an char array holding 6 characters
 *                 representing the 3-axis gyro data.
 * Return Value  : None
 *****************************************************************************/
 void gyroDumpData(unsigned char* buffer);
 
-
 /*****************************************************************************
 * Function Name : gyroReadXYZ
-* Description   : Read X, Y, and Z gyro outputs and save into internal 
+* Description   : Read X, Y, and Z gyro outputs and save into internal
 *                 buffer and return X, Y, and Z gyro data in raw string format.
-*                 It will take about 250us for this function. 
+*                 It will take about 250us for this function.
 * Parameters    : None
-* Return Value  : pointer of the internal buffer holding 6 characters 
+* Return Value  : pointer of the internal buffer holding 6 characters
 *                 representing the 3-axis gyro data.
 *****************************************************************************/
 unsigned char* gyroReadXYZ(void);
 
-
 /*****************************************************************************
 * Function Name : gyroGetXYZ
-* Description   : Read X, Y, and Z gyro outputs and save into the array passed 
-*                 into this function. It will take about 250us for this 
+* Description   : Read X, Y, and Z gyro outputs and save into the array passed
+*                 into this function. It will take about 250us for this
 *                 function.
-* Parameters    : An array of 6 characters to store 3-axis gyro data. 
+* Parameters    : An array of 6 characters to store 3-axis gyro data.
 * Return Value  : None
 *****************************************************************************/
 void gyroGetXYZ(unsigned char *data);
 
-#endif
 
-
-
+#endif // __GYRO_H
