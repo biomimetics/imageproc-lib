@@ -38,9 +38,9 @@
 #define __DFILTER_AVG_H
 
 typedef struct {
-	unsigned int windowLen;
-	unsigned int index;
-	int* data;
+    unsigned int windowLen;
+    unsigned int index;
+    int* data;
 } filterAvgInt_t;
 
 void filterAvgCreate(filterAvgInt_t*, unsigned int);
