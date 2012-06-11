@@ -123,6 +123,13 @@ void gyroWake(void);
 ******************************************************************************/
 unsigned char* gyroGetCalibParam(void);
 
+/*****************************************************************************
+* Function Name : gyroGetOffsets
+* Description   : Get the calibration offsets for gyroscope.
+* Parameters    : An array of 3 integers where to save the offsets.
+* Return Value  : None
+*******************************************************************************/
+void gyroGetOffsets(int* data);
 
 /*****************************************************************************
 * Function Name : gyroRunCalib
@@ -245,6 +252,5 @@ unsigned char* gyroReadXYZ(void);
 *****************************************************************************/
 void gyroGetXYZ(unsigned char *data);
 
-void gyroGetOffsets(int*);
 
 #endif // __GYRO_H
