@@ -66,12 +66,9 @@ static union gyrodata {
 static union {
     float fdata[3];
     unsigned char cdata[12];
-} GyroOffsetFloat;
-
-static union {
-    int idata[3];
-    unsigned char cdata[6];
 } GyroOffset;
+
+int offsets[3];
 
 
 /*-----------------------------------------------------------------------------
@@ -130,13 +127,13 @@ void gyroWake(void) {
 }
 
 unsigned char* gyroGetCalibParam(void) {
-    return GyroOffsetFloat.cdata;
+    return GyroOffset.cdata;
 }
 
 void gyroGetOffsets(int* data){
-    data[0] = GyroOffset.data[0];
-    data[1] = GyroOffset.data[1];
-    data[2] = GyroOffset.data[2];
+    data[0] = offsets[0];
+    data[1] = offsets[1];
+    data[2] = offsets[2];
 }
 
 void gyroRunCalib(unsigned int count){
@@ -163,13 +160,13 @@ void gyroRunCalib(unsigned int count){
         delay_us(200);
     }
 
-    GyroOffset.data[0] = x/count;
-    GyroOffset.data[1] = y/count;
-    GyroOffset.data[2] = z/count;
+    offsets[0] = x/count;
+    offsets[1] = y/count;
+    offsets[2] = z/count;
 
-    GyroOffsetFloat.fdata[0] = 1.0*x/count;
-    GyroOffsetFloat.fdata[1] = 1.0*y/count;
-    GyroOffsetFloat.fdata[2] = 1.0*z/count;
+    GyroOffset.fdata[0] = 1.0*x/count;
+    GyroOffset.fdata[1] = 1.0*y/count;
+    GyroOffset.fdata[2] = 1.0*z/count;
 }
 
 float gyroGetFloatTemp(void) {
@@ -202,26 +199,26 @@ void gyroReadTemp(void) {
 void gyroGetRadXYZ(float* data) {
     unsigned char i;
     for (i = 0; i < 3; ++i) {
-        data[i] = (GyroData.int_data[i+1] - GyroOffsetFloat.fdata[i])*LSB2RAD;
+        data[i] = (GyroData.int_data[i+1] - GyroOffset.fdata[i])*LSB2RAD;
     }
 }
 
 float gyroGetRadX(void) {
-    return (GyroData.int_data[1] - GyroOffsetFloat.fdata[0])*LSB2RAD;
+    return (GyroData.int_data[1] - GyroOffset.fdata[0])*LSB2RAD;
 }
 
 float gyroGetRadY(void) {
-    return (GyroData.int_data[2] - GyroOffsetFloat.fdata[1])*LSB2RAD;
+    return (GyroData.int_data[2] - GyroOffset.fdata[1])*LSB2RAD;
 }
 
 float gyroGetRadZ(void) {
-    return (GyroData.int_data[3] - GyroOffsetFloat.fdata[2])*LSB2RAD;
+    return (GyroData.int_data[3] - GyroOffset.fdata[2])*LSB2RAD;
 }
 
 void gyroGetDegXYZ(float* data) {
     unsigned char i;
     for (i = 0; i < 3; ++i) {
-        data[i] = (GyroData.int_data[i+1] - GyroOffsetFloat.fdata[i])*LSB2DEG;
+        data[i] = (GyroData.int_data[i+1] - GyroOffset.fdata[i])*LSB2DEG;
     }
 }
 
