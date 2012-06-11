@@ -38,25 +38,24 @@
  *
  * Notes:
  *  - This file is derived from the I2C machinery previously in gyro/xl.
+ *  - TODO (apullin): Module configuration might get centralized.
  */
 
 #include "i2c_driver.h"
 #include "utils.h"
 #include <stdio.h>
 
-///////////////   Private functions  //////////////////
-void i2cConfig(void) {
-	//Configuration is actually done by each module independently.
-	//This may change in the future.
-}
+
+//////////////   Private declarations  ////////////////
+//void i2cConfig(void);
 
 
 ///////////////   Public functions  //////////////////
 //This is the PUBLIC setup function;
-void i2cSetup(void){
-	i2cConfig();
-	//Do any other setup....
-}
+//void i2cSetup(void){
+//    i2cConfig();
+//    //Do any other setup....
+//}
 
 /*****************************************************************************
 * Function Name : i2cStartTx
@@ -144,3 +143,9 @@ unsigned int i2cReadString(unsigned char channel, unsigned length, unsigned char
 	}
 	return res;
 }
+
+///////////////   Private functions  //////////////////
+//void i2cConfig(void) {
+//    //Configuration is actually done by each module independently.
+//    //This may change in the future.
+//}
