@@ -36,8 +36,8 @@
  * v.0.1
  */
 
-#ifndef __IPI2C_H
-#define __IPI2C_H
+#ifndef __I2C_DRIVER_H
+#define __I2C_DRIVER_H
 
 //Public functions
 void i2cSetup(void);
@@ -49,4 +49,6 @@ unsigned char i2cReceiveByte(unsigned char);
 void i2cSendByte(unsigned char, unsigned char);
 unsigned int i2cReadString(unsigned char, unsigned, unsigned char* ,unsigned int);
 
-#endif
+
+
+#endif // __I2C_DRIVER_H
