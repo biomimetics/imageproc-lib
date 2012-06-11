@@ -46,6 +46,7 @@
 
 #include "ports.h"      // for external interrupt
 #include "i2c_driver.h"
+#include "i2c.h"        // kept only for peripheral setup
 #include "xl.h"
 #include "utils.h"
 

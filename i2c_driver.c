@@ -42,6 +42,8 @@
  */
 
 #include "i2c_driver.h"
+#include "i2c.h"
+#include "generic_typedefs.h"
 #include "utils.h"
 #include <stdio.h>
 

@@ -1,5 +1,3 @@
-#include "i2c.h"
-#include "generic_typedefs.h"
 /*
  * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
