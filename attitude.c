@@ -39,8 +39,7 @@
  *  Humphrey Hu         2012-02-16      Updated interface to use objects
  */
 
-#include "sys_clock.h"
-#include "telemetry.h"
+#include "stopwatch.h"
 #include "attitude.h"
 #include "quat.h"
 #include "xl.h"
@@ -178,7 +177,7 @@ void attEstimatePose(void) {
     if(!is_running) { return; }
 
     gyroGetRadXYZ(rate); // Get last read gyro values
-    timestamp = sclockGetGlobalTicks(); // Record timestamp
+    //timestamp = swatchToc(); // Record timestamp
     
     // Calculate magnitude and disiplacement
     norm = sqrtf(rate[0]*rate[0] + rate[1]*rate[1] + rate[2]*rate[2]);    
@@ -308,10 +307,3 @@ static void calculateEulerAngles(void) {
 //
 //}
 
-void attUpdateTelemetryB(TelemetryB telemetry) {
-
-    telemetry->pose[0] = (unsigned int) attGetPitchBAMS();
-    telemetry->pose[1] = (unsigned int) attGetRollBAMS();
-    telemetry->pose[2] = (unsigned int) attGetYawBAMS();
-    
-}
