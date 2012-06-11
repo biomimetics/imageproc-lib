@@ -37,7 +37,6 @@
 #ifndef __ATTITUDE_H
 #define __ATTITUDE_H
 
-#include "telemetry.h"
 #include "bams.h"
 
 typedef struct {
@@ -49,34 +48,82 @@ typedef struct {
 
 typedef PoseEstimateStruct *PoseEstimate;
 
-/*****************************************************************************
-* Function Name : attSetup
-* Description   : Sets up module for operation
-* Parameters    : Estimator period in seconds
-* Return Value  : None                                                     
-*****************************************************************************/
+/**
+ * Initialize module for operation.
+ * @param ts - Estimation period in seconds
+ */
 void attSetup(float ts);
+
+/**
+ * Reset module to initial state and estimate to default.
+ */
 void attReset(void);
 
+/**
+ * Use accelerometer to estimate pitch and roll. Requires XL values be
+ * read from the IC already.
+ */
 void attZero(void);
 
+/**
+ * Fetch the pitch angle in radians.
+ * @return Pitch angle in radians
+ */
 float attGetPitch(void);
+
+/**
+ * Fetch the roll angle in radians.
+ * @return Roll angle in radians
+ */
 float attGetRoll(void);
+
+/**
+ * Fetch the yaw angle in radians.
+ * @return Yaw angle in radians
+ */
 float attGetYaw(void);
 
+/**
+ * Fetch the pitch angle in binary angle units.
+ * @return Pitch angle in BAMS
+ */
 bams16_t attGetPitchBAMS(void);
+
+/**
+ * Fetch the roll angle in binary angle units.
+ * @return Roll angle in BAMS
+ */
 bams16_t attGetRollBAMS(void);
+
+/**
+ * Fetch the yaw angle in binary angle units.
+ * @return Yaw angle in BAMS
+ */
 bams16_t attGetYawBAMS(void);
 
+/**
+ * Fetch the latest pose estimate into a data structure.
+ * @param pose - Structure to write into.
+ */
 void attGetPose(PoseEstimate pose);
 
+/**
+ * See if module is running or not.
+ * @return 0 if not running, 1 if running
+ */
 unsigned char attIsRunning(void);
+
+/**
+ * Set the module running state.
+ * @param flag - State to set to
+ */
 void attSetRunning(unsigned char flag);
 
+/**
+ * Compute latest pose estimate. This method should be called at a fixed
+ * frequency as specified in module initialization.
+ */
 void attEstimatePose(void);
 
-void attUpdateTelemetryB(TelemetryB);
-
 #endif  // __ATTITUDE_H
-
 
