@@ -39,16 +39,67 @@
 #ifndef __I2C_DRIVER_H
 #define __I2C_DRIVER_H
 
-//Public functions
-void i2cSetup(void);
 
-void i2cStartTx(unsigned char);
-void i2cEndTx(unsigned char);
-void i2cSendNACK(unsigned char);
-unsigned char i2cReceiveByte(unsigned char);
-void i2cSendByte(unsigned char, unsigned char);
-unsigned int i2cReadString(unsigned char, unsigned, unsigned char* ,unsigned int);
+/***********************************************************************
+* Function Name : i2cSetup
+* Description   : Setup I2C transmission
+* Parameters    : None
+* Return Value  : None
+***********************************************************************/
+//void i2cSetup(void);
 
+/***********************************************************************
+* Function Name : i2cStartTx
+* Description   : Start I2C transmission on a specified I2C channel
+* Parameters    : channel is the channel number
+* Return Value  : None
+***********************************************************************/
+void i2cStartTx(unsigned char channel);
+
+/***********************************************************************
+* Function Name : i2cEndTx
+* Description   : End I2C transmission on a specified I2C channel
+* Parameters    : channel is the channel number
+* Return Value  : None
+***********************************************************************/
+void i2cEndTx(unsigned char channel);
+
+/***********************************************************************
+* Function Name : i2cSendNACK
+* Description   : Send NACK to a specified I2C channel
+* Parameters    : channel is the channel number
+* Return Value  : None
+***********************************************************************/
+void i2cSendNACK(unsigned char channel);
+
+/***********************************************************************
+* Function Name : i2cReceiveByte
+* Description   : Receive a byte from a specified I2C channel
+* Parameters    : channel is the channel number
+* Return Value  : None
+***********************************************************************/
+unsigned char i2cReceiveByte(unsigned char channel);
+
+/***********************************************************************
+* Function Name : i2cSendByte
+* Description   : Send a byte to a specified I2C channel
+* Parameters    : channel is the channel number
+*                 byte - a byte to send
+* Return Value  : None
+***********************************************************************/
+void i2cSendByte(unsigned char channel, unsigned char byte);
+
+/***********************************************************************
+* Function Name : i2cReadString
+* Description   : It reads a predetermined data string from the I2C bus.
+* Parameters    : channel is the I2C channel to read from
+*                 length is the string length to read
+*                 data is the storage for received gyro data
+*                 data_wait is the timeout value
+* Return Value  : Number of bytes read before timeout.
+************************************************************************/
+unsigned int i2cReadString(unsigned char channel, unsigned length,
+                           unsigned char * data, unsigned int data_wait);
 
 
 #endif // __I2C_DRIVER_H
