@@ -74,7 +74,7 @@ void i2cSendNACK(unsigned char channel){
 
 unsigned char i2cReceiveByte(unsigned char channel) {
     unsigned char temp;
-    if      (channel == 1) { temp = MasterReadI2C2(); }
+    if      (channel == 1) { temp = MasterReadI2C1(); }
     else if (channel == 2) { temp = MasterReadI2C2(); }
     return temp;
 }
