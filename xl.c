@@ -53,7 +53,6 @@
 #define XL_ADDR_RD             0xA7
 #define XL_ADDR_WR             0xA6
 #define XL_DEFAULT_SCALE       0.03832  // = 9.81/256
-//#define xlReadString(a,b,c) MastergetsI2C1(a,b,c)
 #define XL_I2C_CHAN            1
 
 
@@ -265,6 +264,21 @@ void __attribute__((interrupt, no_auto_psv)) _INT3Interrupt(void) {
     _INT3IF = 0;    // Clear the interrupt flag
 }
 
+/*****************************************************************************
+* Function Name : xlWrite
+* Description   : Write a data to a register
+* Parameters    : regaddr - address of register
+*                 data - value to be written to the register
+* Return Value  : None
+*****************************************************************************/
+static void xlWrite(unsigned char regaddr, unsigned char data ){
+    i2cStartTx(XL_I2C_CHAN);
+    i2cSendByte(XL_I2C_CHAN, XL_ADDR_WR);
+    i2cSendByte(XL_I2C_CHAN, regaddr);
+    i2cSendByte(XL_I2C_CHAN, data);
+    i2cEndTx(XL_I2C_CHAN);
+}
+
 /******************************************************************************
 * Function Name : xlSetupPeripheral
 * Description   : This routine sets up I2C bus for this module
@@ -284,25 +298,4 @@ static inline void xlSetupPeripheral(void) {
     I2C1BRGvalue = 95;
     OpenI2C1(I2C1CONvalue, I2C1BRGvalue);
     IdleI2C1();
-}
-
-/*****************************************************************************
-* Function Name : xlWrite
-* Description   : Write a data to a register
-* Parameters    : regaddr - address of register
-*                 data - value to be written to the register
-* Return Value  : None
-*****************************************************************************/
-static void xlWrite(unsigned char regaddr, unsigned char data ){
-    /*xlStartTx();
-    xlSendByte(XL_ADDR_WR);
-    xlSendByte(regaddr);
-    xlSendByte(data);
-    xlEndTx();*/
-
-	i2cStartTx(XL_I2C_CHAN);
-    i2cSendByte(XL_I2C_CHAN, XL_ADDR_WR);
-    i2cSendByte(XL_I2C_CHAN, regaddr);
-    i2cSendByte(XL_I2C_CHAN, data);
-    i2cEndTx(XL_I2C_CHAN);
 }
