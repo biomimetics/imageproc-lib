@@ -43,8 +43,14 @@ typedef struct {
     int* data;
 } filterAvgInt_t;
 
+// Creates a filter and returns a point.
+// Caller should check for NULL returns.
 void filterAvgCreate(filterAvgInt_t*, unsigned int);
+
+// Add a value to the circular buffer, incrementing index
 void filterAvgUpdate(filterAvgInt_t*, int);
+
+// Calculate and return average value;
 int filterAvgCalc(filterAvgInt_t*);
 
 #endif // __DFILTER_AVG_H
