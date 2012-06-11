@@ -13,10 +13,10 @@ Download code:
  https://github.com/biomimetics/imageproc-lib
 
 Usage:
- Place this library under the embedded source directory where your ImageProc
- project resides (e.g. embedded/imageproc-lib/ if your project is in
- embedded/project/), then modify your project so that it knows where to find
- the library, and finally compile.
+ Place this library under the embedded source directory where your
+ ImageProc project resides (e.g. embedded/imageproc-lib/ if your project
+ is in embedded/project/), then modify your project so that it knows
+ where to find the library, and finally compile.
 
 Citing the library:
  If you would like to reference this code in a publication, please cite
