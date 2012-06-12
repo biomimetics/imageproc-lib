@@ -37,10 +37,8 @@
  *  Andrew Pullin   2012-5-28   Initial release.
  */
 
-#include "utils.h"
 #include "dfilter_avg.h"
 #include <stdlib.h>
-#include <dsp.h>
 
 
 ///////////////   Public functions  //////////////////
