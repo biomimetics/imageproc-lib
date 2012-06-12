@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,16 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * PID
+ * Hardware PID module
  *
  * by Kevin Peterson
  *
- * v.beta
- *
- * Revisions:
- *  Kevin Peterson      2012-04-05    Initial release
- *                      
- * Notes:
+ * v.0.1
  */
 
 #ifndef __PID_HW_H
@@ -49,11 +44,12 @@
 #define DEAFULT_KI_FLOAT 0.01
 #define DEAFULT_KD_FLOAT 0.0
 
-void pidHWCreate(tPID* controller, fractional* abcCoefficients, fractional* controlHistory);
+void pidHWCreate(tPID* controller, fractional* abcCoefficients,
+                                   fractional* controlHistory);
 void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
-void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd);
+void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki,
+                                                         fractional Kd);
 void pidHWSetReference(tPID* controller, fractional reference);
 fractional pidHWRun(tPID* controller, fractional feedback);
 
 #endif //__PID_HW_H
-

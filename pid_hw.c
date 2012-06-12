@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,17 +27,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * PID
+ * Hardware PID module
  *
  * by Kevin Peterson
  *
- * v.beta
+ * v.0.1
  *
  * Revisions:
  *  Kevin Peterson      2012-04-05    Initial release
- *                      
- * Notes: This file is a wrapper for the built in dsp PID controller on the dsPIC
  *
+ * Notes:
+ *  - !!!!!!! PID gains must be between -1 and 1 !!!!!!!
+ *  - This file is a wrapper for the built in dsp PID controller on the dsPIC
+ *  - The memory model in the build options must be set to Large Data Model for
+ *    this code to properly compile. Also, under "Project Properties/XC16
+ *    (Global Options)/xc16-ld", add -ldsp-elf in the "Additional options" field
  */
 
 #include <dsp.h>
@@ -45,21 +49,16 @@
 #include <stdarg.h>     // variable number of arguments
 #include "pid.h"
 
-//The memory model in the build options must be set to Large Data Model for this
-//code to properly compile.  libdsp-coff.a and libdsp-elf.a must also be added
-//to the project
 
-
- void pidHWCreate(tPID* controller, fractional* coeffs, fractional* hist) {
+void pidHWCreate(tPID* controller, fractional* coeffs, fractional* hist) {
     // Set up pointers to the derived coefficents and controller histories
-     controller->abcCoefficients = coeffs;
-     controller->controlHistory = hist;
+    controller->abcCoefficients = coeffs;
+    controller->controlHistory = hist;
 
     // Initialize the PID controller
     PIDInit(controller);
 }
 
-// !!!!!!! PID gains must be between -1 and 1 !!!!!!!
 void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd) {
 
     fractional kCoeffs[3];
@@ -71,17 +70,14 @@ void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd) {
     PIDCoeffCalc(&kCoeffs[0], controller);
 }
 
-//void pidSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd) {
-void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki, fractional Kd) {
-	//unsigned int* test3 = (unsigned int*)(controller);
-
+void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki,
+                                                         fractional Kd) {
     fractional kCoeffs[3];
 
     kCoeffs[0] = Kp;
     kCoeffs[1] = Ki;
     kCoeffs[2] = Kd;
 
-    //PIDCoeffCalc(&kCoeffs[0], controller);
     PIDCoeffCalc(kCoeffs, controller);
 }
 
@@ -95,6 +91,4 @@ fractional pidHWRun(tPID* controller, fractional feedback) {
     PID(controller);
 
     return controller->controlOutput;
-
 }
-
