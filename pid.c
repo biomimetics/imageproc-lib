@@ -44,7 +44,6 @@
 
 #include "pid.h"
 #include "pid_hw.h"
-#include "timer.h"
 #include <stdlib.h> // for malloc
 
 

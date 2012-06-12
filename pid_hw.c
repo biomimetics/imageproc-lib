@@ -44,10 +44,9 @@
  *    (Global Options)/xc16-ld", add -ldsp-elf in the "Additional options" field
  */
 
-#include <dsp.h>
 #include "pid_hw.h"
-#include <stdarg.h>     // variable number of arguments
-#include "pid.h"
+#include <dsp.h>
+#include <libq.h>
 
 
 void pidHWCreate(tPID* controller, fractional* coeffs, fractional* hist) {
