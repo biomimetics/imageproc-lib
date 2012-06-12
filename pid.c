@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,23 +31,23 @@
  *
  * by Andrew Pullin
  *
- * v.beta
+ * v.0.1
  *
  * Revisions:
  *  Andrew Pullin    2012-06-03    Initial release
  *
  * Notes:
- * For DSP hardware PID, the user MUST set the abcCoeffs and controlHists
- * pointers for the dspPID variable. Those arrays are decalred in special
- * X and Y section memory, and cannot be allocated dynamically.
+ *  - For DSP hardware PID, the user MUST set the abcCoeffs and controlHists
+ *    pointers for the dspPID variable. Those arrays are declared in special
+ *    X and Y section memory, and cannot be allocated dynamically.
  */
 
 #include "pid_hw.h"
 #include "pid.h"
 #include "timer.h"
 #include "math.h"
-#include<dsp.h>
-#include <stdlib.h> // for malloc
+#include <dsp.h>
+#include <stdlib.h>   // for malloc
 #include "leg_ctrl.h" //ONLY for getT1_ticks, to be fixed later!
 
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
@@ -69,21 +69,24 @@ void pidUpdate(pidObj *pid, int feedback) {
     pid->p = (long) pid->Kp * pid->error;
     pid->i = (long) pid->Ki * pid->iState;
     //Filtered derivative action applied directly to measurement
-    pid->d = ((long) pid->Kd * (long) pid->d * (long) SOFT_GAIN_SCALER) / ((long) pid->Kd + (long) pid->Kp * (long) pid->N) -
-            ((long) pid->Kd * (long) pid->Kp * (long) pid->N * ((long) feedback - (long) pid->y_old)) /
-            ((long) pid->Kd + (long) pid->Kp * (long) pid->N);
+    pid->d = ((long) pid->Kd * (long) pid->d * (long) SOFT_GAIN_SCALER) /
+             ((long) pid->Kd + (long) pid->Kp * (long) pid->N) -
+             ((long) pid->Kd * (long) pid->Kp * (long) pid->N *
+             ((long) feedback - (long) pid->y_old)) / ((long) pid->Kd +
+             (long) pid->Kp * (long) pid->N);
 
-    pid->preSat = ((pid->p + pid->i + pid->d) * (long) pid->maxVal) / 
+    pid->preSat = ((pid->p + pid->i + pid->d) * (long) pid->maxVal) /
             ((long) SOFT_GAIN_SCALER * (long)(pid->inputOffset));
 
-    pid->iState += (long)(pid->error) + (long) (pid->Kaw) * ((long) (pid->output) - (long) (pid->preSat))
-            / ((long) SOFT_GAIN_SCALER);
+    pid->iState += (long)(pid->error) + (long) (pid->Kaw) *
+                   ((long) (pid->output) - (long) (pid->preSat)) /
+                   ((long) SOFT_GAIN_SCALER);
     pid->y_old = feedback;
 
 #elif defined PID_HARDWARE
     int temp;
     pid->dspPID.controlReference = pid->input;
-    temp = pidHWRun(&(pid->dspPID), feedback);   //Do PID calculate via DSP lib
+    temp = pidHWRun(&(pid->dspPID), feedback); //Do PID calculate via DSP lib
     pid->preSat = temp;
 #endif
 
@@ -101,8 +104,6 @@ void pidUpdate(pidObj *pid, int feedback) {
     else {
         pid->output = pid->preSat;
     }
-    
-
 }
 
 void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {

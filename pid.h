@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,7 @@
  *
  * by Andrew Pullin
  *
- * v.beta
- *
- * Revisions:
- *  Andrew Pullin    2012-06-03    Initial release
- *
- * Notes:
+ * v.0.1
  */
 
 #ifndef __PID_H
@@ -102,4 +97,4 @@ void pidSetInput(pidObj *pid, int feedback);
 void pidSetGains(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
 void pidOnOff(pidObj *pid, unsigned char state);
 
-#endif
+#endif // __PID_H
