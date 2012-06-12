@@ -252,5 +252,4 @@ unsigned char* gyroReadXYZ(void);
 *****************************************************************************/
 void gyroGetXYZ(unsigned char *data);
 
-
-#endif // __GYRO_H
+#endif // __GYRO_H
