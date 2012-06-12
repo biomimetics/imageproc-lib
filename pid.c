@@ -41,9 +41,8 @@
  * pointers for the dspPID variable. Those arrays are decalred in special
  * X and Y section memory, and cannot be allocated dynamically.
  */
-
-#include "pid_hw.h"
 #include "pid.h"
+#include "pid_hw.h"
 #include "timer.h"
 #include "math.h"
 #include<dsp.h>
@@ -104,7 +103,6 @@ void pidUpdate(pidObj *pid, int feedback) {
         pid->output = pid->preSat;
     }
     
-
 }
 
 void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {
@@ -136,7 +134,8 @@ void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {
 
 void pidSetInput(pidObj* pid, int input_val) {
     pid->input = input_val;
-    pid->start_time = getT1_ticks();
+    //pid->start_time = getT1_ticks();
+    pid->start_time = t1_ticks;
     //zero out running PID values
     pid->iState = 0;
     pid->dState = 0;
