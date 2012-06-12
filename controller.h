@@ -38,7 +38,7 @@
 #define __CONTROLLER_H
 
 
-#include "dsp.h"
+#include "dfilter.h"
 
 typedef struct {
     char running;
