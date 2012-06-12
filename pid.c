@@ -42,13 +42,16 @@
  *    X and Y section memory, and cannot be allocated dynamically.
  */
 
-#include "pid_hw.h"
 #include "pid.h"
+#include "pid_hw.h"
 #include "timer.h"
 #include "math.h"
 #include <dsp.h>
-#include <stdlib.h>   // for malloc
-#include "leg_ctrl.h" //ONLY for getT1_ticks, to be fixed later!
+#include <stdlib.h> // for malloc
+
+
+//1 kHz timer ticks; this will be moved away from an extern later
+extern volatile unsigned long t1_ticks;
 
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
 
@@ -135,7 +138,7 @@ void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {
 
 void pidSetInput(pidObj* pid, int input_val) {
     pid->input = input_val;
-    pid->start_time = getT1_ticks();
+    pid->start_time = t1_ticks;
     //zero out running PID values
     pid->iState = 0;
     pid->dState = 0;
