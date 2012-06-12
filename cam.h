@@ -151,8 +151,9 @@ void camRunCalib(void);
 // Set camera hardware auto exposure mode
 //void camSetAutoExposure(unsigned char);
 
-// Begin asynchronous capture procedure
+// Control asynchronous capture procedure
 void camStart(void);
+void camStop(void);
 
 // Set function to be called after various events
 void camSetIrqHandler(CamIrqHandler irq);

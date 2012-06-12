@@ -49,7 +49,6 @@
 #include <string.h>
 #include "cam.h"
 #include "sclock.h"
-#include "led.h"
 
 // TODO: Read native image size from device driver, then calculate image size
 // after subsampling
@@ -261,6 +260,12 @@ void camStart(void) {
 
 }
 
+void camStop(void) {
+
+    DisableIntT7;
+
+}
+
 // Measures camera timing parameters
 void camRunCalib(void) {
 
@@ -327,6 +332,7 @@ unsigned char camHasNewFrame(void) {
 
 CamRow camGetRow(void) {
 
+    has_new_row = 0;
     return latest_row;
 
 }
@@ -550,7 +556,6 @@ static void enqueueFullFrame(CamFrame frame) {
 
 static inline CamRow getLatestRow(void) {
 
-    has_new_row = 0;
     return latest_row;
 
 }

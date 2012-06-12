@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2010, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,49 +27,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Control block module
+ * Averaging filter using a circular buffer
  *
- * by Stanley S. Baek
+ * by Andrew Pullin
  *
- * v.beta
+ * v.0.1
+ *
+ * Revisions:
+ *  Andrew Pullin   2012-5-28   Initial release.
  */
 
-#ifndef __CONTROLLER_H
-#define __CONTROLLER_H
+#include "dfilter_avg.h"
+#include<stdlib.h>
 
 
-#include "dfilter.h"
+///////////////   Public functions  //////////////////
 
-typedef struct {
-    char running;
-    float ref;
-    float offset;
-    float ts;   // sampling interval
-    float kp;   // proportional control gain 
-    float ki;   // integral control gain in discrete time (= cont. time gain * ts)
-    float kd;   // derivative control gain in discrete time (= cont. time gain / ts)
-    float beta; // reference weight for proportional control
-    float gamma; // reference weight for derivative control
-    float umax;
-    float umin;
-    float iold;
-    float derrold;
-} CtrlPidParamStruct;
+void filterAvgCreate(filterAvgInt_t* filt, unsigned int length){
+    filt->data = calloc(length, sizeof(int)); //Initialize data to 0
+    filt->windowLen = length;
+    filt->index = 0;
+}
 
-typedef CtrlPidParamStruct* CtrlPidParam;
+void filterAvgUpdate(filterAvgInt_t* filt, int newval){
+    filt->data[filt->index] = newval;
+    filt->index = (filt->index + 1) % filt->windowLen;
+}
 
-float ctrlGetRef(CtrlPidParam pid);
-void ctrlSetRef(CtrlPidParam pid, float ref);
-float ctrlRunPid(CtrlPidParam pid, float y, DigitalFilter lpf); 
-CtrlPidParam ctrlCreatePidParams(float ts);
-void ctrlSetPidParams(CtrlPidParam pid, float ref, float kp, float ki, float kd);
-void ctrlSetPidOffset(CtrlPidParam pid, float offset);
-float ctrlGetPidOffset(CtrlPidParam pid);
-void ctrlSetRefWeigts(CtrlPidParam pid, float beta, float gamma);
-void ctrlSetSaturation(CtrlPidParam pid, float max, float min);
-unsigned char ctrlIsRunning(CtrlPidParam pid);
-void ctrlStart(CtrlPidParam pid);
-void ctrlStop(CtrlPidParam pid);
-
-
-#endif  // __CONTROLLER_H
+// TODO (apullin) : more efficient calculation? DSP? delta?
+int filterAvgCalc(filterAvgInt_t* filt){
+    int i;
+    long acc = 0;
+    for(i = 0; i < filt->windowLen; i++){
+        acc += filt->data[i];
+    }
+    return acc/(filt->windowLen); //Integer division
+}
