@@ -45,7 +45,7 @@
 #include <dsp.h>
 #endif
 
-#define PID_ON 1
+#define PID_ON  1
 #define PID_OFF 0
 
 //Structures and enums

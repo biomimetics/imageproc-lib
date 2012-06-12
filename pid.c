@@ -56,20 +56,9 @@
 
 //Default gains
 #ifdef PID_SOFTWARE
-#define DEFAULT_KP  200
-#define DEFAULT_KI  5
-#define DEFAULT_KD  0
-#define DEFAULT_KAW 5
-#define DEFAULT_KFF  0
 #define SOFT_GAIN_SCALER 512
-
 #elif defined PID_HARDWARE
 #include <dsp.h>
-#define DEFAULT_KP  15000
-#define DEFAULT_KI  500
-#define DEFAULT_KD  150
-#define DEFAULT_KAW 0
-#define DEFAULT_KFF  0
 #define MOTOR_PID_SCALER 32
 #endif
 

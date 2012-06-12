@@ -40,10 +40,6 @@
 #include <dsp.h>
 #include <libq.h>
 
-#define DEAFULT_KP_FLOAT 0.1
-#define DEAFULT_KI_FLOAT 0.01
-#define DEAFULT_KD_FLOAT 0.0
-
 void pidHWCreate(tPID* controller, fractional* abcCoefficients,
                                    fractional* controlHistory);
 void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
