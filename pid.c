@@ -44,12 +44,11 @@
 #include "pid.h"
 #include "pid_hw.h"
 #include "timer.h"
-#include "math.h"
-#include<dsp.h>
+
 #include <stdlib.h> // for malloc
 
 //1 kHz timer ticks; this will be moved away from an extern later
-extern volatile unsigned long t1_ticks;
+//extern volatile unsigned long t1_ticks;
 
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
 
@@ -58,11 +57,28 @@ extern volatile unsigned long t1_ticks;
 //It may not be needed anymore.
 #define PID_ZEROING_ENABLE 1
 
-//////////////////////////
+//Default gains
+#ifdef PID_SOFTWARE
+#define DEFAULT_KP  200
+#define DEFAULT_KI  5
+#define DEFAULT_KD  0
+#define DEFAULT_KAW 5
+#define DEFAULT_KFF  0
+#define SOFT_GAIN_SCALER 512
 
-void pidSetup() {
-    //Nothing to do here
-}
+#elif defined PID_HARDWARE
+#include <dsp.h>
+#define DEFAULT_KP  15000
+#define DEFAULT_KI  500
+#define DEFAULT_KD  150
+#define DEFAULT_KAW 0
+#define DEFAULT_KFF  0
+#define MOTOR_PID_SCALER 32
+#endif
+
+#define FF_SCALER 1024;
+
+//////////////////////////
 
 void pidUpdate(pidObj *pid, int feedback) {
 #ifdef PID_SOFTWARE
@@ -135,7 +151,6 @@ void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {
 void pidSetInput(pidObj* pid, int input_val) {
     pid->input = input_val;
     //pid->start_time = getT1_ticks();
-    pid->start_time = t1_ticks;
     //zero out running PID values
     pid->iState = 0;
     pid->dState = 0;
