@@ -48,7 +48,9 @@
 #include "math.h"
 #include<dsp.h>
 #include <stdlib.h> // for malloc
-#include "leg_ctrl.h" //ONLY for getT1_ticks, to be fixed later!
+
+//1 kHz timer ticks; this will be moved away from an extern later
+extern volatile unsigned long t1_ticks;
 
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
 
