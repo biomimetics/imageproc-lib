@@ -198,9 +198,10 @@ void gyroReadTemp(void) {
 
 
 void gyroGetRadXYZ(float* data) {
+
     unsigned char i;
     int temp;
-    
+
     for (i = 0; i < 3; ++i) {
         temp = GyroData.int_data[i + 1] - offsets[i];
         if(temp < DEAD_ZONE && temp > -DEAD_ZONE) {
@@ -223,10 +224,10 @@ float gyroGetRadZ(void) {
 }
 
 void gyroGetDegXYZ(float* data) {
-    
+
     unsigned char i;
     int temp;
-    
+
     for (i = 0; i < 3; ++i) {
         temp = GyroData.int_data[i + 1] - offsets[i];
         if(temp < DEAD_ZONE && temp > -DEAD_ZONE) {
