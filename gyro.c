@@ -51,6 +51,7 @@
 #define LSB2DEG             0.0695652174        // 14.375 LSB/(deg/s)
 #define LSB2RAD             0.00121414209
 
+#define DEAD_ZONE           (25)
 
 /*-----------------------------------------------------------------------------
  *          Static Variables
@@ -198,8 +199,14 @@ void gyroReadTemp(void) {
 
 void gyroGetRadXYZ(float* data) {
     unsigned char i;
+    int temp;
+    
     for (i = 0; i < 3; ++i) {
-        data[i] = (GyroData.int_data[i+1] - GyroOffset.fdata[i])*LSB2RAD;
+        temp = GyroData.int_data[i + 1] - offsets[i];
+        if(temp < DEAD_ZONE && temp > -DEAD_ZONE) {
+            temp = 0;
+        }
+        data[i] = temp*LSB2RAD;
     }
 }
 
@@ -216,9 +223,16 @@ float gyroGetRadZ(void) {
 }
 
 void gyroGetDegXYZ(float* data) {
+    
     unsigned char i;
+    int temp;
+    
     for (i = 0; i < 3; ++i) {
-        data[i] = (GyroData.int_data[i+1] - GyroOffset.fdata[i])*LSB2DEG;
+        temp = GyroData.int_data[i + 1] - offsets[i];
+        if(temp < DEAD_ZONE && temp > -DEAD_ZONE) {
+            temp = 0;
+        }
+        data[i] = temp*LSB2DEG;
     }
 }
 
