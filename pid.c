@@ -67,8 +67,8 @@
 //////////////////////////
 
 void pidUpdate(pidObj *pid, int feedback) {
-#ifdef PID_SOFTWARE
     pid->error = pid->input - feedback;
+#ifdef PID_SOFTWARE
     pid->p = (long) pid->Kp * pid->error;
     pid->i = (long) pid->Ki * pid->iState;
     //Filtered derivative action applied directly to measurement
@@ -87,10 +87,8 @@ void pidUpdate(pidObj *pid, int feedback) {
     pid->y_old = feedback;
 
 #elif defined PID_HARDWARE
-    int temp;
     pid->dspPID.controlReference = pid->input;
-    temp = pidHWRun(&(pid->dspPID), feedback); //Do PID calculate via DSP lib
-    pid->preSat = temp;
+    pid->preSat = pidHWRun(&(pid->dspPID), feedback); //Do PID calculate via DSP lib
 #endif
 
     //Feedforward term
