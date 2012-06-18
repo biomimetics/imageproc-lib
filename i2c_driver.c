@@ -75,10 +75,8 @@ void i2cSendNACK(unsigned char channel){
 }
 
 unsigned char i2cReceiveByte(unsigned char channel) {
-    unsigned char temp;
-    if      (channel == 1) { temp = MasterReadI2C1(); }
-    else if (channel == 2) { temp = MasterReadI2C2(); }
-    return temp;
+    if      (channel == 1) { return MasterReadI2C1(); }
+    else                   { return MasterReadI2C2(); }
 }
 
 void i2cSendByte(unsigned char channel, unsigned char byte) {
@@ -96,10 +94,8 @@ void i2cSendByte(unsigned char channel, unsigned char byte) {
 
 unsigned int i2cReadString(unsigned char channel, unsigned length,
                            unsigned char * data, unsigned int data_wait) {
-    unsigned int res;
-    if      (channel == 1) { res = MastergetsI2C1(length, data, data_wait); }
-    else if (channel == 2) { res = MastergetsI2C2(length, data, data_wait); }
-    return res;
+    if      (channel == 1) { return MastergetsI2C1(length, data, data_wait); }
+    else                   { return MastergetsI2C2(length, data, data_wait); }
 }
 
 ///////////////   Private functions  //////////////////
