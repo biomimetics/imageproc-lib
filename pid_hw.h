@@ -27,33 +27,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Averaging filter using a circular buffer
+ * Hardware PID module
  *
- * by Andrew Pullin
+ * by Kevin Peterson
  *
  * v.0.1
  */
 
-#ifndef __DFILTER_AVG_H
-#define __DFILTER_AVG_H
+#ifndef __PID_HW_H
+#define __PID_HW_H
 
+#include <dsp.h>
+#include <libq.h>
 
-typedef struct {
-    unsigned int windowLen;
-    unsigned int index;
-    int* data;
-    long accum;
-} filterAvgInt_t;
+void pidHWCreate(tPID* controller, fractional* abcCoefficients,
+                                   fractional* controlHistory);
+void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
+void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki,
+                                                         fractional Kd);
+void pidHWSetReference(tPID* controller, fractional reference);
+fractional pidHWRun(tPID* controller, fractional feedback);
 
-// Creates a filter and returns a point.
-// Caller should check for NULL returns.
-void filterAvgCreate(filterAvgInt_t*, unsigned int);
-
-// Add a value to the circular buffer, incrementing index
-void filterAvgUpdate(filterAvgInt_t*, int);
-
-// Calculate and return average value;
-int filterAvgCalc(filterAvgInt_t*);
-
-
-#endif // __DFILTER_AVG_H
+#endif //__PID_HW_H

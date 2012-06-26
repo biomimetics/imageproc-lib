@@ -32,6 +32,10 @@
  * by Andrew Pullin
  *
  * v.0.1
+ *
+ * Note: For functions in which the I2C channel is specified, if the value
+ * passed for the channel number is anything other than 1, then channel 2
+ * will be used by default.
  */
 
 #ifndef __I2C_DRIVER_H
