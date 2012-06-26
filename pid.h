@@ -38,7 +38,7 @@
 #define __PID_H
 
 //Select DSP core PID
-#define PID_HARDWARE
+//#define PID_HARDWARE
 
 //DSP dependent include
 #ifdef PID_HARDWARE
