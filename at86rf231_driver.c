@@ -403,7 +403,7 @@ void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_SUCCESS_DATA_PENDING) {
                 irqCallback(RADIO_TX_SUCCESS);
-            } else if(trx_state == TRAC_CHANNEL_ACCESS_FAILURE) {
+            } else if(status == TRAC_CHANNEL_ACCESS_FAILURE) {
                 irqCallback(RADIO_TX_FAILURE);            
             } else if(status == TRAC_NO_ACK) {
                 irqCallback(RADIO_TX_FAILURE);            
