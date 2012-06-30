@@ -44,15 +44,17 @@
 #include "quat.h"
 #include "xl.h"
 #include "gyro.h"
-#include <math.h>
 #include "bams.h"
-#include <stdlib.h>
 #include "utils.h"
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #define QUAT_POLE_LIMIT         (0.499)
-#define PI                  (3.14159265)
-#define PI_2                (1.57079633)
-#define GRAVITY             (9.80665)   // Gravitational acceleration
+#define PI                      (3.14159265)
+#define PI_2                    (1.57079633)
+#define GRAVITY                 (9.80665)   // Gravitational acceleration
 #define GRAVITY_SQUARED         (96.1703842)
 
 #define SCALE_CALIB_SAMPLES     (100)
@@ -89,14 +91,15 @@ void attSetup(float ts) {
     is_running = 0;
 
     sample_period = ts;
+    is_ready = 1;
+
     //measureXLScale(SCALE_CALIB_SAMPLES);
     xlReadXYZ();
     attZero();
     attReset();
-    swatchReset();
-    swatchTic();
 
-    is_ready = 1;
+    //swatchReset();
+    //swatchTic();
 
 }
 
@@ -127,6 +130,12 @@ bams16_t attGetYawBAMS(void) {
     return psi;
 }
 
+void attGetQuat(Quaternion *quat) {
+
+    memcpy(quat, &pose_quat, sizeof(Quaternion));    
+
+}
+
 // TODO: Implement flip-buffer to avoid timestamp mismatch
 void attGetPose(PoseEstimate pose) {
     pose->yaw = bams16ToFloatRad(psi);
@@ -143,6 +152,7 @@ void attSetRunning(unsigned char flag) {
     is_running = flag;
 }
 
+// TODO: Fix!
 void attZero(void) {
 
     float gxy, sina_2, xl[3], temp;
@@ -171,7 +181,7 @@ void attZero(void) {
 // 12000 cycles?
 void attEstimatePose(void) {
 
-    Quaternion displacement_quat;
+    Quaternion displacement_quat, pose_conj;
     float rate[3], norm, sina_2;
     bams32_t a_2;
 
