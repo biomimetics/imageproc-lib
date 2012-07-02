@@ -485,3 +485,11 @@ static inline void gyroSetupPeripheral(void) {
     OpenI2C2(I2C2CONvalue, I2C2BRGvalue);
     IdleI2C2();
 }
+
+// Dead zone a value
+static int applyDeadZone(int val) {
+
+    if(val < dead_zone && val > -dead_zone) { val = 0; }
+    return val;
+    
+}
