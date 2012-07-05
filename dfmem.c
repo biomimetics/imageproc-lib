@@ -235,7 +235,7 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     // TODO (humhu) : Abstract this line into something like dfmemMassTransfer?
     spic2MassTransmit(length, data, 2*length);
     // Wait until transmit finishes?
-    while(checkMutex() != MUTEX_FREE);
+    //while(checkMutex() != MUTEX_FREE);
 
     dfmemDeselectChip();
 }
@@ -268,7 +268,7 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
 
     spic2MassTransmit(length, data, 2*length);
 
-    while(checkMutex() != MUTEX_FREE);
+    //while(checkMutex() != MUTEX_FREE);
 
     dfmemDeselectChip();
 }
