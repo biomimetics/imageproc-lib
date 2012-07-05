@@ -168,8 +168,6 @@ union {
     unsigned char chr_addr[4];
 } MemAddr;
 
-static unsigned char mutex;    // Ghetto mutex
-
 /*----------------------------------------------------------------------------
  *          Declaration of private functions
  ---------------------------------------------------------------------------*/
@@ -183,8 +181,6 @@ static void dfmemSetupPeripheral(void);
 static void dfmemGeometrySetup(void);
 
 static void spiCallback(unsigned int irq_source);
-static unsigned char checkMutex(void);
-static void setMutex(unsigned char);
 
 /*-----------------------------------------------------------------------------
  *          Public functions
@@ -193,7 +189,6 @@ static void setMutex(unsigned char);
 void dfmemSetup(void)
 {
     dfmemSetupPeripheral();
-    dfmemDeselectChip();
 
     spic2SetCallback(&spiCallback);
 
@@ -225,14 +220,9 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
-    setMutex(MUTEX_LOCKED);
-
     // TODO (humhu) : Abstract this line into something like dfmemMassTransfer?
     spic2MassTransmit(length, data, 2*length);
-    // Wait until transmit finishes?
-    //while(checkMutex() != MUTEX_FREE);
 
-    dfmemDeselectChip();
 }
 
 void dfmemWriteBuffer (unsigned char *data, unsigned int length,
@@ -259,13 +249,8 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
-    setMutex(MUTEX_LOCKED);
-
     spic2MassTransmit(length, data, 2*length);
 
-    //while(checkMutex() != MUTEX_FREE);
-
-    dfmemDeselectChip();
 }
 
 void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
@@ -345,16 +330,14 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
     dfmemWriteByte(0x00);
     dfmemWriteByte(0x00);
 
-    setMutex(MUTEX_LOCKED);
-
     unsigned int read_bytes;
     read_bytes = spic2MassTransmit(length, NULL, 2*length);
-
-    while(checkMutex() != MUTEX_FREE);
-
+    dfmemSelectChip(); // Busy wait
+    
+    dfmemDeselectChip();
+    
     spic2ReadBuffer(read_bytes, data);
 
-    dfmemDeselectChip();
 }
 
 void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
@@ -625,32 +608,13 @@ void spiCallback(unsigned int irq_source) {
 
     if(irq_source == SPIC_TRANS_SUCCESS) {
 
-        spic2EndTransaction();
-        setMutex(MUTEX_FREE);    // Unblock anything waiting on transfer
+        dfmemDeselectChip();        
 
     } else if(irq_source == SPIC_TRANS_TIMEOUT) {
 
-        spic2Reset();   // Reset hardware?
+        spic2Reset();   // Reset hardware
 
     }
-
-}
-
-static unsigned char checkMutex(void) {
-
-    unsigned char stat;
-    CRITICAL_SECTION_START;
-    stat = mutex;
-    CRITICAL_SECTION_END;
-    return stat;
-
-}
-
-static void setMutex(unsigned char stat) {
-
-    CRITICAL_SECTION_START;
-    mutex = stat;
-    CRITICAL_SECTION_END;
 
 }
 
