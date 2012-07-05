@@ -55,6 +55,18 @@
 #ifndef __DFMEM_H
 #define __DFMEM_H
 
+typedef struct {
+    unsigned int byte_address_bits;
+    unsigned int max_sector;
+    unsigned int max_pages;
+    unsigned int buffer_size;
+    unsigned int bytes_per_page;
+    unsigned int pages_per_block;
+    unsigned int blocks_per_sector;
+    unsigned int pages_per_sector;
+} DfmemGeometryStruct;
+
+typedef DfmemGeometryStruct* DfmemGeometry;
 
 // Handles initialization of communication peripherals and makes sure the
 // memory is initially deselected.
@@ -194,6 +206,9 @@ unsigned char dfmemGetStatus (void);
 //
 // Returns : manufacturer id
 unsigned char dfmemGetManufacturerID (void);
+
+// Reads out dfmem geometry parameters
+void dfmemGetGeometryParams(DfmemGeometry geo);
 
 // Requests dfmem device ID data, returning the memory density.
 //

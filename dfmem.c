@@ -57,6 +57,8 @@
  // TODO (humhu) : Add defines to switch between DMA/bitbang modes
 
 #include <stdlib.h>
+#include <string.h>
+
 #include "p33Fxxxx.h"
 #include "spi.h"
 #include "dfmem.h"
@@ -147,14 +149,7 @@
 -----------------------------------------------------------------------------*/
 
 // Memory geometry
-static unsigned int dfmem_byte_address_bits;
-static unsigned int dfmem_max_sector;
-static unsigned int dfmem_max_pages;
-static unsigned int dfmem_buffersize;
-static unsigned int dfmem_bytes_per_page;
-static unsigned int dfmem_pages_per_block;
-static unsigned int dfmem_blocks_per_sector;
-static unsigned int dfmem_pages_per_sector;
+static DfmemGeometryStruct dfmem_geo;
 
 // Placeholders
 static unsigned int currentBuffer = 0;
@@ -221,7 +216,7 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
 
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + byte address bits
-    MemAddr.address = (((unsigned long)page) << dfmem_byte_address_bits) + byte;
+    MemAddr.address = (((unsigned long)page) << dfmem_geo.byte_address_bits) + byte;
 
     // Write data to memory
     dfmemSelectChip();
@@ -288,7 +283,7 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
 
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + don't care bits
-    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    MemAddr.address = ((unsigned long)page) << dfmem_geo.byte_address_bits;
 
     // Write data to memory
     dfmemSelectChip();
@@ -335,7 +330,7 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
 
     // Restructure page/byte addressing
     // 1 don't care bit + 13 page address bits + byte address bits
-    MemAddr.address = (((unsigned long)page) << dfmem_byte_address_bits) + byte;
+    MemAddr.address = (((unsigned long)page) << dfmem_geo.byte_address_bits) + byte;
 
     // Read data from memory
     dfmemSelectChip();
@@ -376,7 +371,7 @@ void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
     }
 
     // 1 don't care bit + 13 page address bits + don't care bits
-    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    MemAddr.address = ((unsigned long)page) << dfmem_geo.byte_address_bits;
 
     // Write data to memory
     dfmemSelectChip();
@@ -394,7 +389,7 @@ void dfmemErasePage (unsigned int page)
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
-    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    MemAddr.address = ((unsigned long)page) << dfmem_geo.byte_address_bits;
 
     // Write data to memory
     dfmemSelectChip();
@@ -412,7 +407,7 @@ void dfmemEraseBlock (unsigned int page)
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
-    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    MemAddr.address = ((unsigned long)page) << dfmem_geo.byte_address_bits;
 
     // Write data to memory
     dfmemSelectChip();
@@ -430,7 +425,7 @@ void dfmemEraseSector (unsigned int page)
     while(!dfmemIsReady());
 
     // Restructure page/byte addressing
-    MemAddr.address = ((unsigned long)page) << dfmem_byte_address_bits;
+    MemAddr.address = ((unsigned long)page) << dfmem_geo.byte_address_bits;
 
     // Write data to memory
     dfmemSelectChip();
@@ -532,7 +527,7 @@ void dfmemResumeFromDeepSleep()
 void dfmemSave(unsigned char* data, unsigned int length)
 {
     //If this write will fit into the buffer, then just put it there
-    if (currentBufferOffset + length >= dfmem_buffersize) {
+    if (currentBufferOffset + length >= dfmem_geo.buffer_size) {
         dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
         currentBuffer = (currentBuffer) ? 0 : 1;
         currentBufferOffset = 0;
@@ -561,7 +556,7 @@ void dfmemSync()
 
 void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char *data)
 {
-    unsigned int samplesPerPage = dfmem_bytes_per_page / sampLen; //round DOWN int division
+    unsigned int samplesPerPage = dfmem_geo.bytes_per_page / sampLen; //round DOWN int division
     unsigned int pagenum = sampNum / samplesPerPage;
     unsigned int byteOffset = (sampNum - pagenum*samplesPerPage)*sampLen;
 
@@ -579,9 +574,9 @@ void dfmemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
     if(numSamples == 0){ return;}
 
     //Saves to dfmem will NOT overlap page boundaries, so we need to do this level by level:
-    unsigned int samplesPerPage = dfmem_bytes_per_page / sampLen; //round DOWN int division
+    unsigned int samplesPerPage = dfmem_geo.bytes_per_page / sampLen; //round DOWN int division
     unsigned int numPages = (numSamples + samplesPerPage - 1) / samplesPerPage; //round UP int division
-    unsigned int numSectors = ( numPages + dfmem_pages_per_sector-1) / dfmem_pages_per_sector;
+    unsigned int numSectors = ( numPages + dfmem_geo.pages_per_sector-1) / dfmem_geo.pages_per_sector;
 
     //At this point, it is impossible for numSectors == 0
     //Sector 0a and 0b will be erased together always, for simplicity
@@ -592,7 +587,7 @@ void dfmemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
 
     //Start erasing the rest from Sector 1:
     for(i=1; i <= numSectors; i++){
-        firstPageOfSector = dfmem_pages_per_sector * i;
+        firstPageOfSector = dfmem_geo.pages_per_sector * i;
         //hold off until dfmem is ready for secort erase command
         while(!dfmemIsReady());
         //LED should blink indicating progress
@@ -614,6 +609,13 @@ void dfmemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
     nextPage = 0;
 }
 
+void dfmemGetGeometryParams(DfmemGeometry geo) {
+
+    if(geo == NULL) { return; }
+    
+    memcpy(geo, &dfmem_geo, sizeof(DfmemGeometryStruct));
+
+}
 
 /*-----------------------------------------------------------------------------
  *          Private functions
@@ -723,44 +725,44 @@ static void dfmemGeometrySetup(void)
 
     switch(size){
         case DFMEM_8MBIT:
-            dfmem_max_sector        = FLASH_8MBIT_MAX_SECTOR;
-            dfmem_max_pages         = FLASH_8MBIT_MAX_PAGES;
-            dfmem_buffersize        = FLASH_8MBIT_BUFFERSIZE;
-            dfmem_bytes_per_page    = FLASH_8MBIT_BYTES_PER_PAGE;
-            dfmem_pages_per_block   = FLASH_8MBIT_PAGES_PER_BLOCK;
-            dfmem_blocks_per_sector = FLASH_8MBIT_BLOCKS_PER_SECTOR;
-            dfmem_pages_per_sector  = FLASH_8MBIT_PAGES_PER_SECTOR;
-            dfmem_byte_address_bits = FLASH_8MBIT_BYTE_ADDRESS_BITS;
+            dfmem_geo.max_sector        = FLASH_8MBIT_MAX_SECTOR;
+            dfmem_geo.max_pages         = FLASH_8MBIT_MAX_PAGES;
+            dfmem_geo.buffer_size        = FLASH_8MBIT_BUFFERSIZE;
+            dfmem_geo.bytes_per_page    = FLASH_8MBIT_BYTES_PER_PAGE;
+            dfmem_geo.pages_per_block   = FLASH_8MBIT_PAGES_PER_BLOCK;
+            dfmem_geo.blocks_per_sector = FLASH_8MBIT_BLOCKS_PER_SECTOR;
+            dfmem_geo.pages_per_sector  = FLASH_8MBIT_PAGES_PER_SECTOR;
+            dfmem_geo.byte_address_bits = FLASH_8MBIT_BYTE_ADDRESS_BITS;
             break;
         case DFMEM_16MBIT:
-            dfmem_max_sector        = FLASH_16MBIT_MAX_SECTOR;
-            dfmem_max_pages         = FLASH_16MBIT_MAX_PAGES;
-            dfmem_buffersize        = FLASH_16MBIT_BUFFERSIZE;
-            dfmem_bytes_per_page    = FLASH_16MBIT_BYTES_PER_PAGE;
-            dfmem_pages_per_block   = FLASH_16MBIT_PAGES_PER_BLOCK;
-            dfmem_blocks_per_sector = FLASH_16MBIT_BLOCKS_PER_SECTOR;
-            dfmem_pages_per_sector  = FLASH_16MBIT_PAGES_PER_SECTOR;
-            dfmem_byte_address_bits = FLASH_16MBIT_BYTE_ADDRESS_BITS;
+            dfmem_geo.max_sector        = FLASH_16MBIT_MAX_SECTOR;
+            dfmem_geo.max_pages         = FLASH_16MBIT_MAX_PAGES;
+            dfmem_geo.buffer_size        = FLASH_16MBIT_BUFFERSIZE;
+            dfmem_geo.bytes_per_page    = FLASH_16MBIT_BYTES_PER_PAGE;
+            dfmem_geo.pages_per_block   = FLASH_16MBIT_PAGES_PER_BLOCK;
+            dfmem_geo.blocks_per_sector = FLASH_16MBIT_BLOCKS_PER_SECTOR;
+            dfmem_geo.pages_per_sector  = FLASH_16MBIT_PAGES_PER_SECTOR;
+            dfmem_geo.byte_address_bits = FLASH_16MBIT_BYTE_ADDRESS_BITS;
             break;
         case DFMEM_32MBIT:
-            dfmem_max_sector        = FLASH_32MBIT_MAX_SECTOR;
-            dfmem_max_pages         = FLASH_32MBIT_MAX_PAGES;
-            dfmem_buffersize        = FLASH_32MBIT_BUFFERSIZE;
-            dfmem_bytes_per_page    = FLASH_32MBIT_BYTES_PER_PAGE;
-            dfmem_pages_per_block   = FLASH_32MBIT_PAGES_PER_BLOCK;
-            dfmem_blocks_per_sector = FLASH_32MBIT_BLOCKS_PER_SECTOR;
-            dfmem_pages_per_sector  = FLASH_32MBIT_PAGES_PER_SECTOR;
-            dfmem_byte_address_bits = FLASH_32MBIT_BYTE_ADDRESS_BITS;
+            dfmem_geo.max_sector        = FLASH_32MBIT_MAX_SECTOR;
+            dfmem_geo.max_pages         = FLASH_32MBIT_MAX_PAGES;
+            dfmem_geo.buffer_size        = FLASH_32MBIT_BUFFERSIZE;
+            dfmem_geo.bytes_per_page    = FLASH_32MBIT_BYTES_PER_PAGE;
+            dfmem_geo.pages_per_block   = FLASH_32MBIT_PAGES_PER_BLOCK;
+            dfmem_geo.blocks_per_sector = FLASH_32MBIT_BLOCKS_PER_SECTOR;
+            dfmem_geo.pages_per_sector  = FLASH_32MBIT_PAGES_PER_SECTOR;
+            dfmem_geo.byte_address_bits = FLASH_32MBIT_BYTE_ADDRESS_BITS;
             break;
         case DFMEM_64MBIT:
-            dfmem_max_sector        = FLASH_64MBIT_MAX_SECTOR;
-            dfmem_max_pages         = FLASH_64MBIT_MAX_PAGES;
-            dfmem_buffersize        = FLASH_64MBIT_BUFFERSIZE;
-            dfmem_bytes_per_page    = FLASH_64MBIT_BYTES_PER_PAGE;
-            dfmem_pages_per_block   = FLASH_64MBIT_PAGES_PER_BLOCK;
-            dfmem_blocks_per_sector = FLASH_64MBIT_BLOCKS_PER_SECTOR;
-            dfmem_pages_per_sector  = FLASH_64MBIT_PAGES_PER_SECTOR;
-            dfmem_byte_address_bits = FLASH_64MBIT_BYTE_ADDRESS_BITS;
+            dfmem_geo.max_sector        = FLASH_64MBIT_MAX_SECTOR;
+            dfmem_geo.max_pages         = FLASH_64MBIT_MAX_PAGES;
+            dfmem_geo.buffer_size        = FLASH_64MBIT_BUFFERSIZE;
+            dfmem_geo.bytes_per_page    = FLASH_64MBIT_BYTES_PER_PAGE;
+            dfmem_geo.pages_per_block   = FLASH_64MBIT_PAGES_PER_BLOCK;
+            dfmem_geo.blocks_per_sector = FLASH_64MBIT_BLOCKS_PER_SECTOR;
+            dfmem_geo.pages_per_sector  = FLASH_64MBIT_PAGES_PER_SECTOR;
+            dfmem_geo.byte_address_bits = FLASH_64MBIT_BYTE_ADDRESS_BITS;
             break;
         default:
             // TODO (apullin, fgb) : Do something. Probably communicate back with user.
