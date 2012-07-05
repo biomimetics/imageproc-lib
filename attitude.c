@@ -136,7 +136,6 @@ void attGetQuat(Quaternion *quat) {
 
 }
 
-// TODO: Implement flip-buffer to avoid timestamp mismatch
 void attGetPose(PoseEstimate pose) {
     pose->yaw = bams16ToFloatRad(psi);
     pose->pitch = bams16ToFloatRad(theta);
@@ -178,23 +177,26 @@ void attZero(void) {
 
 }
 
-// 12000 cycles?
+// 3750 cycles
 void attEstimatePose(void) {
 
-    Quaternion displacement_quat, pose_conj;
+    Quaternion displacement_quat;
     float rate[3], norm, sina_2;
     bams32_t a_2;
 
     if(!is_ready) { return; }
     if(!is_running) { return; }
 
-    gyroGetRadXYZ(rate); // Get last read gyro values
-    timestamp = swatchToc(); // Record timestamp
+    gyroGetRadXYZ(rate);    // Get last read gyro values
+    rate[1] = -rate[1];     // Reorient axes
+    rate[2] = -rate[2];
+
+    //timestamp = swatchToc(); // Record timestamp
 
     // Calculate magnitude and disiplacement
     norm = sqrtf(rate[0]*rate[0] + rate[1]*rate[1] + rate[2]*rate[2]);
 
-    // Special case when no movement occurs due to simplification below
+    // Special case when no movements
     if(norm == 0.0) {
 
         displacement_quat.w = 1.0;
@@ -215,6 +217,7 @@ void attEstimatePose(void) {
         displacement_quat.y = sina_2*rate[1];
         displacement_quat.z = sina_2*rate[2];
         quatNormalize(&displacement_quat);
+        
     }
 
     // Apply displacement to pose
@@ -222,7 +225,7 @@ void attEstimatePose(void) {
 
     // Normalize pose quaternion to account for unnormalized displacement quaternion
     quatNormalize(&pose_quat);
-    calculateEulerAngles();
+    //calculateEulerAngles();
 
 }
 
