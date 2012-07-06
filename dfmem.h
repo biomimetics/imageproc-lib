@@ -184,6 +184,8 @@ void dfmemEraseBlock(unsigned int page);
 // Parameters : page = 0-8191 (13 bits).
 void dfmemEraseSector(unsigned int page);
 
+void dfmemEraseChip(void);
+
 // Erase the contents of the whole memory chip.
 //
 // It's an implementation of the dfmem's "Chip Erase" command.

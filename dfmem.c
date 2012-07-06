@@ -52,9 +52,7 @@
 
  // TODO (humhu) : Divide into generic nvmem (non-volatile memory) device class interface and
  //                DFMEM-specific driver to match radio class/driver
- // TODO (humhu) : Use a better non-ghetto mutex
  // TODO (humhu) : Add a rudimentary filesystem
- // TODO (humhu) : Add defines to switch between DMA/bitbang modes
 
 #include <stdlib.h>
 #include <string.h>
@@ -140,10 +138,6 @@
 #define ERASE_BLOCK     0x50
 #define ERASE_SECTOR    0x7C
 
-// Ghetto mutex constants
-#define MUTEX_LOCKED    (0x01)
-#define MUTEX_FREE        (0x00)
-
 /*-----------------------------------------------------------------------------
  *          Private variables
 -----------------------------------------------------------------------------*/
@@ -192,6 +186,7 @@ void dfmemSetup(void)
 
     spic2SetCallback(&spiCallback);
 
+    while(!dfmemIsReady());
     dfmemGeometrySetup();
 }
 
@@ -219,8 +214,7 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     dfmemWriteByte(MemAddr.chr_addr[2]);
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
-
-    // TODO (humhu) : Abstract this line into something like dfmemMassTransfer?
+    
     spic2MassTransmit(length, data, 2*length);
 
 }
