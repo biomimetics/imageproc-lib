@@ -105,6 +105,7 @@ static unsigned char frame_buffer[FRAME_BUFFER_SIZE];
 void trxSetup(void) {
 
     setupSPI();     // Set up SPI com port
+    spicSetupChannel1();
     spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
     trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts          
     trxSetStateOff();       // Transition to TRX_OFF for configuring device    
@@ -384,7 +385,7 @@ static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsig
 
 void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
 
-    unsigned char irq_cause, status; //, crc_valid;
+    unsigned char irq_cause, status;
     irq_cause = 0;
     status = 0xFF;
     

@@ -85,7 +85,8 @@ typedef void (*SpicIrqHandler) (unsigned int irq_cause);
  *
  * This must be run before module port access methods can be used.
  */
-void spicSetup(void);
+void spicSetupChannel1(void);
+void spicSetupChannel2(void);
 
 /**
  * Set the interrupt handler for port 1.
