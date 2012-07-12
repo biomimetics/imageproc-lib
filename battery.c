@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2010, Regents of the University of California
+ * Copyright (c) 2007-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -117,12 +117,6 @@ static void batDefaultCallback(void) {
 
 }
 
-/*****************************************************************************
-* Function Name : _INT0Interrupt/_INT2Interrupt
-* Description   : Interrupt handler for Battery Supervisor
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
 #if defined(__IMAGEPROC1)
 void __attribute__((interrupt, no_auto_psv)) _INT0Interrupt(void) {
     
