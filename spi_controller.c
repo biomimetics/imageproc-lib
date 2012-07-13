@@ -180,8 +180,7 @@ void spic1Reset(void) {
     SPIC1_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC1_DMAW_CONbits.CHEN = 0;
     SPI1STATbits.SPIROV = 0;        // Clear overwrite bit
-    port_status[0] = STAT_SPI_OPEN;    // Release lock on channel
-    //stopTimer();                    // Stop watchdog timer
+    port_status[0] = STAT_SPI_OPEN;    // Release lock on channel    
     
 }
 
@@ -189,7 +188,8 @@ void spic2Reset(void) {
 
     SPI2_CS = SPI_CS_IDLE;          // Disable chip select
     SPIC2_DMAR_CONbits.CHEN = 0;    // Disable DMA module
-    //stopTimer();                    // Stop watchdog timer
+    SPIC2_DMAW_CONbits.CHEN = 0;
+    SPI2STATbits.SPIROV = 0;
     port_status[1] = STAT_SPI_OPEN;    // Release lock on channel
 
 }
@@ -264,8 +264,7 @@ unsigned int spic1MassTransmit(unsigned int len, unsigned char *buff, unsigned i
     }
     
     SPIC1_DMAR_CNT = len;   // Set number of bytes to send
-    SPIC1_DMAW_CNT = len;
-    //startTimer(timeout);    // Start timeout timer
+    SPIC1_DMAW_CNT = len;    
     SPIC1_DMAR_CONbits.CHEN = 1;    // Begin transmission
     SPIC1_DMAW_CONbits.CHEN = 1;
     SPIC1_DMAW_REQbits.FORCE = 1;
@@ -291,8 +290,7 @@ unsigned int spic2MassTransmit(unsigned int len, unsigned char *buff, unsigned i
     }
     
     SPIC2_DMAR_CNT = len;   // Set number of bytes to send
-    SPIC2_DMAW_CNT = len;
-    //startTimer(timeout);        // Start timeout timer
+    SPIC2_DMAW_CNT = len;  
     SPIC2_DMAR_CONbits.CHEN = 1;    // Begin transmission
     SPIC2_DMAW_CONbits.CHEN = 1;
     SPIC2_DMAW_REQbits.FORCE = 1;
