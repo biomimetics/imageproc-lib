@@ -78,9 +78,9 @@ unsigned char radioGetRetries(void);
 // Radio no longer uses fixed destination addresses
 // See mac packet address set and packet creation methods
 
-RadioState radioGetState(void); // For debug..
-
 void radioSetWatchdogState(unsigned char state);
+void radioEnableWatchdog(void);
+void radioDisableWatchdog(void);
 void radioSetWatchdogTime(unsigned int time);
 
 // Queue interface
@@ -105,9 +105,8 @@ void radioProcess(void);
 MacPacket radioRequestPacket(unsigned int data_size);
 // Return a packet + payload to the preinitialized pool
 unsigned int radioReturnPacket(MacPacket packet);
-// Create a packet + payload (Scheduled for deprecation)
-MacPacket radioCreatePacket(unsigned int data_size);
-// Delete a created packet + payload (Scheduled for deprecation)
-void radioDeletePacket(MacPacket packet);
+
+MacPacket __attribute__ ((deprecated)) radioCreatePacket(unsigned int data_size);
+void __attribute__ ((deprecated)) radioDeletePacket(MacPacket packet);
 
 #endif // __RADIO_H

@@ -52,7 +52,6 @@
 #include "at86rf231.h"  // Current transceiver IC
 #include "at86rf231_driver.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #define RADIO_DEFAULT_SRC_ADDR                  (0x1101)
@@ -62,10 +61,9 @@
 
 #define RADIO_DEFAULT_PACKET_RETRIES            (2)
 #define TX_TIMEOUT_MS                           (75)
-#define WATCHDOG_TIMEOUT_MS                     (1000)
+#define DEFAULT_WATCHDOG_TIME                     (1000)
 
 #define RADIO_CALIB_PERIOD                      (300000) // 5 minutes
-
 
 // =========== Static variables ===============================================
 
@@ -75,7 +73,7 @@ static RadioState radio_state;
 static unsigned char packet_sqn, retries;
 
 static unsigned long last_calib_timestamp, progress_timestamp;
-static unsigned int watchdog_timeout, watchdog_state;
+static unsigned int watchdog_timeout, watchdog_running;
 
 // In/out packet FIFO queues
 static CircArray tx_queue, rx_queue;
@@ -102,45 +100,31 @@ static unsigned int radioBeginTransition(void);
 static unsigned int radioSetStateTx(void);
 static unsigned int radioSetStateRx(void);
 static unsigned int radioSetStateIdle(void);
-//static unsigned int radioSetStateOff(void);
+static unsigned int radioSetStateOff(void);
 
 
 // =========== Public functions ===============================================
 
 // Initialize radio software and hardware
 void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
+    
+    tx_queue = carrayCreate(tx_queue_length);
+    rx_queue = carrayCreate(rx_queue_length);
 
-    // Initialize FIFO buffers
-    tx_queue = carrayCreate(tx_queue_length);    // Initialize TX queue
-    rx_queue = carrayCreate(rx_queue_length);    // Initialize RX queue
-
-    // Reset radio_state
-    packet_sqn = 0;                            // Initialize packet number
-    retries = 0;                            // Initialize retry counter
-    max_packet_retries = RADIO_DEFAULT_PACKET_RETRIES;
+    packet_sqn = 0;
+    retries = 0;
     last_calib_timestamp = 0;
-    watchdogProgress();
-    watchdog_timeout = WATCHDOG_TIMEOUT_MS;
-    watchdog_state = 0;
+        
+    radioDisableWatchdog();
+    radioSetWatchdogTime(DEFAULT_WATCHDOG_TIME);        
 
-    trxSetup(); // Configure transceiver IC
+    trxSetup(); // Configure transceiver IC and driver
+    trxSetIrqCallback(&trxCallback);
 
-    trxSetIrqCallback(&trxCallback); // Set IC driver callback
-
-
-    // set default address
-    trxSetAddress(RADIO_DEFAULT_SRC_ADDR);
-    local_addr = RADIO_DEFAULT_SRC_ADDR;
-
-    // set default PAN ID
-    trxSetPan(RADIO_DEFAULT_SRC_PAN);
-    local_pan = RADIO_DEFAULT_SRC_PAN;
-
-    // set default radio channel
-    trxSetChannel(RADIO_DEFAULT_CHANNEL);
-    local_channel = RADIO_DEFAULT_CHANNEL;
-
-    // Set number of frame transmit retries
+    radioSetSrcAddr(RADIO_DEFAULT_SRC_ADDR);
+    radioSetSrcPanID(RADIO_DEFAULT_SRC_PAN);
+    radioSetChannel(RADIO_DEFAULT_CHANNEL);
+    radioSetRetries(RADIO_DEFAULT_PACKET_RETRIES);    
     trxSetRetries(RADIO_DEFAULT_RETRIES);
 
     is_ready = 1;
@@ -150,134 +134,98 @@ void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
 }
 
 void radioSetSrcAddr(unsigned int src_addr) {
-
     local_addr = src_addr;
     trxSetAddress(src_addr);
-
 }
 
 unsigned int radioGetSrcAddr(void) {
-
     return local_addr;
-
 }
 
 void radioSetSrcPanID(unsigned int src_pan_id) {
-
     local_pan = src_pan_id;
     trxSetPan(src_pan_id);
-
 }
 
 unsigned int radioGetSrcPanID(void) {
-
     return local_pan;
-
 }
 
 void radioSetChannel(unsigned char channel) {
-
     local_channel = channel;
     trxSetChannel(channel);
-
 }
 
 unsigned char radioGetChannel(void) {
-
     return local_channel;
-
 }
 
 void radioSetRetries(unsigned char retries) {
-
     max_packet_retries = retries;
-
 }
 
 unsigned char radioGetRetries(void) {
-
     return max_packet_retries;
-
-}
-
-RadioState radioGetState(void) {
-
-    return radio_state;
-
 }
 
 void radioSetWatchdogState(unsigned char state) {
+    if(state == 0) { radioDisableWatchdog(); }
+    else if(state == 1) { radioEnableWatchdog(); }
+}
 
-    watchdog_state = state;
+void radioEnableWatchdog(void) {
+    watchdog_running = 1;
     watchdogProgress();
+}
 
+void radioDisableWatchdog(void) {
+    watchdog_running = 0;
 }
 
 void radioSetWatchdogTime(unsigned int time) {
-
     watchdog_timeout = time;
     watchdogProgress();
-
 }
 
 MacPacket radioDequeueRxPacket(void) {
-
     return (MacPacket)carrayPopTail(rx_queue);
-
 }
 
 unsigned int radioEnqueueTxPacket(MacPacket packet) {
-
     return carrayAddTail(tx_queue, packet);
-
 }
 
 unsigned int radioTxQueueEmpty(void) {
-
     return carrayIsEmpty(tx_queue);
-
 }
 
 unsigned int radioTxQueueFull(void) {
-
     return carrayIsFull(tx_queue);
-
 }
 
 unsigned int radioGetTxQueueSize(void) {
-
     return carrayGetSize(tx_queue);
-
 }
 
 unsigned int radioRxQueueEmpty(void){
-
     return carrayIsEmpty(rx_queue);
-
 }
 
 unsigned int radioRxQueueFull(void) {
-
     return carrayIsFull(rx_queue);
-
 }
 
 unsigned int radioGetRxQueueSize(void) {
-
     return carrayGetSize(rx_queue);
-
 }
 
 void radioFlushQueues(void) {
-
     while (!carrayIsEmpty(tx_queue)) {
         radioReturnPacket((MacPacket)carrayPopTail(tx_queue));
     }
-
     while (!carrayIsEmpty(rx_queue)) {
         radioReturnPacket((MacPacket)carrayPopTail(rx_queue));
     }
-
 }
 
 MacPacket radioRequestPacket(unsigned int data_size) {
@@ -295,46 +243,26 @@ MacPacket radioRequestPacket(unsigned int data_size) {
 }
 
 MacPacket radioCreatePacket(unsigned int data_size) {
-
-    MacPacket packet = macCreateDataPacket();
-    if(packet == NULL) { return NULL; }
-
-    Payload pld = payCreateEmpty(data_size);
-    if(pld == NULL) {
-        macDeletePacket(packet);
-        return NULL;
-    }
-
-    macSetPayload(packet, pld);
-    macSetSrc(packet, local_pan, local_addr);
-    macSetDestPan(packet, local_pan);
-
-    return packet;
-
+    return NULL;
 }
 
 unsigned int radioReturnPacket(MacPacket packet) {
-
     return ppoolReturnFullPacket(packet);
-
 }
 
 void radioDeletePacket(MacPacket packet) {
-
-    if(packet != NULL) {
-        if(packet->payload != NULL) {
-            payDelete(packet->payload);
-        }
-        macDeletePacket(packet);
-    }
-
+    return;
 }
 
 // The Big Function
 void radioProcess(void) {
 
-    if(watchdog_state) {
-        if(sclockGetLocalMillis() - progress_timestamp > WATCHDOG_TIMEOUT_MS) {
+    unsigned long currentTime;
+    
+    currentTime = sclockGetLocalMillis();
+
+    if(watchdog_running) {
+        if(currentTime - progress_timestamp > DEFAULT_WATCHDOG_TIME) {
             radioReset();
             return;
         }
@@ -353,7 +281,7 @@ void radioProcess(void) {
 
 #if defined(RADIO_AUTOCALIBRATE) // Auto calibration routine
     // Check if calibration is necessary
-    unsigned long currentTime = sclockGetLocalMillis();
+    currentTime = sclockGetLocalMillis();
     if(currentTime - last_calib_timestamp > RADIO_CALIB_PERIOD) {
         if(!radioSetStateOff()) { return; }
         trxCalibrate();
@@ -383,11 +311,11 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
 }
 
 static void radioReset(void) {
-
-    progress_timestamp = sclockGetLocalMillis();
+    
     trxReset();
     radio_state = STATE_OFF;
     radioSetStateIdle();
+    watchdogProgress();
     LED_ORANGE = 0;
     LED_RED = ~LED_RED;
 
@@ -398,7 +326,6 @@ static void radioReset(void) {
  *
  * Note that this doesn't need critical sections since this will
  * only be called in interrupt context
- *
  * @param irq_cause Interrupt source code
  */
 void trxCallback(unsigned int irq_cause) {
@@ -515,32 +442,31 @@ static unsigned int radioSetStateIdle(void) {
 
 }
 
-///**
-// * Sets the radio to an off state
-// */
-//static unsigned int radioSetStateOff(void) {
-//
-//    unsigned int lockAcquired;
-//
-//    // If already in idle mode
-//    if(radio_state == STATE_OFF) { return 1; }
-//
-//    // Attempt to begin transitionin
-//    lockAcquired = radioBeginTransition();
-//    if(!lockAcquired) { return 0; }
-//
-//    trxSetStateOff();
-//    radio_state = STATE_OFF;
-//    return 1;
-//
-//}
+/**
+* Sets the radio to an off state
+*/
+static unsigned int radioSetStateOff(void) {
+
+   unsigned int lockAcquired;
+
+   // If already in idle mode
+   if(radio_state == STATE_OFF) { return 1; }
+
+   // Attempt to begin transitionin
+   lockAcquired = radioBeginTransition();
+   if(!lockAcquired) { return 0; }
+
+   trxSetStateOff();
+   radio_state = STATE_OFF;
+   return 1;
+
+}
 
 /**
  * Atomically checks and set the radio to transitioning state.
  *
  * Note that the radio in transitioning state will capture but disregard
  * interrupts from the transceiver.
- *
  * @return 1 if lock acquired, 0 otherwise
  */
 static unsigned int radioBeginTransition(void) {
