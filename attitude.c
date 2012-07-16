@@ -30,7 +30,7 @@
  * Orientation Estimation Module (Quaternion and Binary Angle Representation)
  *
  *  by Humphrey Hu
- *  v.beta
+ *  v.0.4
  *
  *
  * Revision History:
@@ -148,8 +148,18 @@ unsigned char attIsRunning(void) {
 }
 
 void attSetRunning(unsigned char flag) {
-    is_running = flag;
+    if(flag == 0) { attStop(); }
+    else if(flag == 1) { attStart(); }
 }
+
+void attStart(void) {
+    is_running = 1;
+}
+
+void attStop(void) {
+    is_running = 0;
+}
+
 
 // TODO: Fix!
 void attZero(void) {

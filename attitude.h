@@ -30,7 +30,7 @@
  * Orientation Estimation Module (Quaternion and Binary Angle Representation)
  *
  *  by Humphrey Hu 
- *	v.beta
+ *	v.0.4
  *
  */
 
@@ -78,6 +78,8 @@ unsigned char attIsRunning(void);
  * @param flag - State to set to
  */
 void attSetRunning(unsigned char flag);
+void attStart(void);
+void attStop(void);
 
 /**
  * Fetch the pitch/roll/yaw angle in radians.
