@@ -61,7 +61,7 @@
 
 #define RADIO_DEFAULT_PACKET_RETRIES            (2)
 #define TX_TIMEOUT_MS                           (75)
-#define DEFAULT_WATCHDOG_TIME                     (1000)
+#define DEFAULT_WATCHDOG_TIME                   (1000)
 
 #define RADIO_CALIB_PERIOD                      (300000) // 5 minutes
 
@@ -82,7 +82,6 @@ static CircArray tx_queue, rx_queue;
 static unsigned int local_addr, local_pan, max_packet_retries;
 static unsigned char local_channel;
 
-
 // =========== Function stubs =================================================
 
 // IRQ handlers
@@ -102,12 +101,13 @@ static unsigned int radioSetStateRx(void);
 static unsigned int radioSetStateIdle(void);
 static unsigned int radioSetStateOff(void);
 
-
 // =========== Public functions ===============================================
 
 // Initialize radio software and hardware
 void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
-    
+
+    ppoolInit();
+
     tx_queue = carrayCreate(tx_queue_length);
     rx_queue = carrayCreate(rx_queue_length);
 
