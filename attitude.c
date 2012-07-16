@@ -85,22 +85,15 @@ static void calculateEulerAngles(void);
 
 // =========== Public Functions ===============================================
 
-void attSetup(float ts) {
+void attSetup(float ts) {    
 
-    is_ready = 0;
-    is_running = 0;
-
-    sample_period = ts;
-    is_ready = 1;
-
-    //measureXLScale(SCALE_CALIB_SAMPLES);
+    sample_period = ts;        
     xlReadXYZ();
     attZero();
     attReset();
-
-    //swatchReset();
-    //swatchTic();
-
+    
+    is_running = 0;
+    is_ready = 1;
 }
 
 void attReset(void) {
