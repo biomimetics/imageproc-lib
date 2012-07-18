@@ -94,12 +94,12 @@ static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsig
 
 
 // =========== Static variables ===============================================
-
+static unsigned char is_ready = 0; // Mostly for debugging - no checking so code is faster
 static TrxIrqHandler irqCallback;
 // See at86rf231.h
 static tal_trx_status_t trx_state;
 static unsigned char frame_buffer[FRAME_BUFFER_SIZE];
-
+static unsigned char last_rssi;
 // =========== Public functions ===============================================
 
 void trxSetup(void) {
@@ -108,21 +108,23 @@ void trxSetup(void) {
     spicSetupChannel1();
     spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
     trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts          
-    trxSetStateOff();       // Transition to TRX_OFF for configuring device    
-    trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END);   // Interrupt at end of transceive
-    trxWriteSubReg(SR_SLOTTED_OPERATION, 0);    // Disable slotted operation
-    trxWriteSubReg(SR_TX_AUTO_CRC_ON, 1);   // Enable automatic TX CRC
-    trxWriteSubReg(SR_CLKM_CTRL, CLKM_NO_CLOCK);    // No clock on CLKM pin
-    trxWriteSubReg(SR_IRQ_MASK_MODE, IRQ_MASK_MODE_ON);    // Turn off interrupt polling
-    trxWriteSubReg(SR_MAX_CSMA_RETRIES, DEFAULT_CSMA_RETRIES);  // Set CSMA attempts
-    trxWriteSubReg(SR_MAX_FRAME_RETRIES, DEFAULT_FRAME_RETRIES);    // Set resend attempts
-    trxWriteSubReg(SR_RX_SAFE_MODE, 0);
-    trxWriteSubReg(SR_AACK_FVN_MODE, FRAME_VERSION_IGNORED);
-//    trxWriteSubReg(SR_AACK_PROM_MODE, 1);
-//    trxWriteSubReg(SR_AACK_DIS_ACK, 1);
+    trxSetStateOff(); // Transition to TRX_OFF for configuring device    
+    trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
+    trxWriteSubReg(SR_SLOTTED_OPERATION, 0);  // Disable slotted operation
+    trxWriteSubReg(SR_TX_AUTO_CRC_ON, 1); // Enable automatic TX CRC
+    trxWriteSubReg(SR_CLKM_CTRL, CLKM_NO_CLOCK); // No clock on CLKM pin
+    trxWriteSubReg(SR_IRQ_MASK_MODE, IRQ_MASK_MODE_ON); // Turn off interrupt polling
+    trxWriteSubReg(SR_MAX_CSMA_RETRIES, DEFAULT_CSMA_RETRIES); // Set CSMA attempts
+    trxWriteSubReg(SR_MAX_FRAME_RETRIES, DEFAULT_FRAME_RETRIES); // Set resend attempts
+    trxWriteSubReg(SR_RX_SAFE_MODE, 0); // Disable frame buffer protection
+    trxWriteSubReg(SR_AACK_FVN_MODE, FRAME_VERSION_IGNORED); // Ignore frame version
+    trxWriteSubReg(SR_SPI_CMD_MODE, 2); // First byte of SPI is RSSI register
     trxSetStateIdle();
     ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_4); // Radio IC interrupt
 
+    last_rssi = 0;
+    is_ready = 1;
+    
 }
 
 
@@ -187,6 +189,18 @@ void trxReadId(unsigned char *id) {
     id[1] = trxReadReg(RG_VERSION_NUM);   // should be 2
     id[2] = trxReadReg(RG_MAN_ID_1);      // should be 0x1F
     id[3] = trxReadReg(RG_MAN_ID_0);      // should be 0
+
+}
+
+unsigned char trxReadRSSI(void) {
+
+    return last_rssi;
+
+}
+
+unsigned char trxReadED(void) {
+
+    return trxReadReg(RG_PHY_ED_LEVEL);
 
 }
  
@@ -462,13 +476,14 @@ static void trxSpiCallback(unsigned int interrupt_code) {
     
 }
 
+// TODO: Optimize to read only packet length, not whole buffer
 /**
  * Begin transfer of frame data from transceiver into DMA buffer
  */
-static void trxFillBuffer(void) {
+static void trxFillBuffer(void) {    
     
     spic1BeginTransaction();
-    spic1Transmit(TRX_CMD_FR);  // Begin frame read
+    last_rssi = spic1Transmit(TRX_CMD_FR);  // Begin write (returns RSSI because of SPI_CMD_MODE)
     //current_phy_len = spic1Receive(); // Read physical frame size
     //spic1MassTransmit(current_phy_len, NULL, current_phy_len*3); // DMA rest into buffer                                                    
     spic1MassTransmit(FRAME_BUFFER_SIZE, NULL, FRAME_BUFFER_SIZE*3); // DMA entire frame buffer into memory

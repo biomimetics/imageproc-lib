@@ -31,11 +31,12 @@
  *
  * by Humphrey Hu
  *
- * v. 0.4
+ * v.0.5
  *
  * Revisions:
- *  Humphrey Hu      2011-06-06      Initial implementation
- *  Humphrey Hu      2012-02-03      Structural changes to reduce irq handler runtime
+ *  Humphrey Hu     2011-06-06      Initial implementation
+ *  Humphrey Hu     2012-02-03      Structural changes to reduce irq handler runtime
+ *  Humphrey Hu     2012-070-18     Consolidated state into data structures
  */
 
 #include "utils.h"
@@ -53,37 +54,29 @@
 #include "at86rf231_driver.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #define RADIO_DEFAULT_SRC_ADDR                  (0x1101)
 #define RADIO_DEFAULT_SRC_PAN                   (0x1001)
 #define RADIO_DEFAULT_CHANNEL                   (0x15)
-#define RADIO_DEFAULT_RETRIES                   (3)
+#define RADIO_DEFAULT_HARD_RETRIES              (3)
+#define RADIO_DEFAULT_SOFT_RETRIES              (2)
+#define RADIO_DEFAULT_WATCHDOG_STATE                  (1) // Default on
+#define RADIO_DEFAULT_WATCHDOG_TIME                   (400) // 400 ms timeout
 
-#define RADIO_DEFAULT_PACKET_RETRIES            (2)
-#define TX_TIMEOUT_MS                           (75)
-#define DEFAULT_WATCHDOG_TIME                   (1000)
-
+//#define RADIO_AUTOCALIBRATE   // Define to enable auto calibration
 #define RADIO_CALIB_PERIOD                      (300000) // 5 minutes
 
 // =========== Static variables ===============================================
-
 // State information
 static unsigned char is_ready = 0;
-static RadioState radio_state;
-static unsigned char packet_sqn, retries;
-
-static unsigned long last_calib_timestamp, progress_timestamp;
-static unsigned int watchdog_timeout, watchdog_running;
+static RadioStatus status;
+static RadioConfiguration configuration;
 
 // In/out packet FIFO queues
 static CircArray tx_queue, rx_queue;
 
-// Local config information
-static unsigned int local_addr, local_pan, max_packet_retries;
-static unsigned char local_channel;
-
 // =========== Function stubs =================================================
-
 // IRQ handlers
 void trxCallback(unsigned int irq_cause);
 static inline void watchdogProgress(void);
@@ -106,66 +99,95 @@ static unsigned int radioSetStateOff(void);
 // Initialize radio software and hardware
 void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
 
+    RadioConfiguration conf;
+    
     ppoolInit();
-
-    tx_queue = carrayCreate(tx_queue_length);
-    rx_queue = carrayCreate(rx_queue_length);
-
-    packet_sqn = 0;
-    retries = 0;
-    last_calib_timestamp = 0;
-        
-    radioDisableWatchdog();
-    radioSetWatchdogTime(DEFAULT_WATCHDOG_TIME);        
-
     trxSetup(); // Configure transceiver IC and driver
     trxSetIrqCallback(&trxCallback);
 
-    radioSetSrcAddr(RADIO_DEFAULT_SRC_ADDR);
-    radioSetSrcPanID(RADIO_DEFAULT_SRC_PAN);
-    radioSetChannel(RADIO_DEFAULT_CHANNEL);
-    radioSetRetries(RADIO_DEFAULT_PACKET_RETRIES);    
-    trxSetRetries(RADIO_DEFAULT_RETRIES);
-
+    tx_queue = carrayCreate(tx_queue_length);
+    rx_queue = carrayCreate(rx_queue_length);    
+    
+    status.state = STATE_IDLE;
+    status.packets_sent = 0;
+    status.packets_received = 0;
+    status.sequence_number = 0;
+    status.retry_number = 0;
+    status.last_rssi = 0;
+    status.last_ed = 0;
+    status.last_calibration = 0; // sclockGetLocalTicks();
+    status.last_progress = 0; // sclockGetLocalTicks();
+    
+    conf.address.address = RADIO_DEFAULT_SRC_ADDR;
+    conf.address.pan_id = RADIO_DEFAULT_SRC_PAN;
+    conf.address.channel = RADIO_DEFAULT_CHANNEL;
+    conf.soft_retries = RADIO_DEFAULT_SOFT_RETRIES;
+    conf.hard_retries = RADIO_DEFAULT_HARD_RETRIES;
+    conf.watchdog_running = RADIO_DEFAULT_WATCHDOG_STATE;
+    conf.watchdog_timeout = RADIO_DEFAULT_WATCHDOG_TIME;
+    radioConfigure(&conf);
+    
     is_ready = 1;
 
-    trxSetStateRx();
-
+    radioSetStateRx();        
+    
 }
 
-void radioSetSrcAddr(unsigned int src_addr) {
-    local_addr = src_addr;
-    trxSetAddress(src_addr);
+void radioConfigure(RadioConfiguration *conf) {
+    
+    if(conf == NULL) { return; }    
+    memcpy(&configuration, conf, sizeof(RadioConfiguration));
+    
+    radioSetAddress(&conf->address);
+    radioSetSoftRetries(conf->soft_retries);
+    radioSetHardRetries(conf->hard_retries);
+    if(conf->watchdog_running) { radioEnableWatchdog(); } 
+    else { radioDisableWatchdog(); }
+    radioSetWatchdogTime(conf->watchdog_timeout);
+    
 }
 
-unsigned int radioGetSrcAddr(void) {
-    return local_addr;
+void radioGetConfiguration(RadioConfiguration *conf) {
+    if(conf == NULL) { return; }
+    memcpy(conf, &configuration, sizeof(RadioConfiguration));
 }
 
-void radioSetSrcPanID(unsigned int src_pan_id) {
-    local_pan = src_pan_id;
+void radioGetStatus(RadioStatus *stat) {
+    if(stat == NULL) { return; }
+    memcpy(stat, &status, sizeof(RadioStatus));
+}
+
+void radioSetAddress(RadioAddress *address) {
+    
+    if(address == NULL) { return; }
+    
+    radioSetSrcAddr(address->address);
+    radioSetSrcPanID(address->pan_id);
+    radioSetChannel(address->channel);
+    
+}
+
+void radioSetSrcAddr(unsigned int src_addr) {    
+    configuration.address.address = src_addr;
+    trxSetAddress(src_addr);   
+}
+
+void radioSetSrcPanID(unsigned int src_pan_id) {    
+    configuration.address.pan_id = src_pan_id;
     trxSetPan(src_pan_id);
 }
 
-unsigned int radioGetSrcPanID(void) {
-    return local_pan;
-}
-
 void radioSetChannel(unsigned char channel) {
-    local_channel = channel;
+    configuration.address.channel = channel;    
     trxSetChannel(channel);
 }
 
-unsigned char radioGetChannel(void) {
-    return local_channel;
+void radioSetSoftRetries(unsigned char retries) {
+    configuration.soft_retries = retries;
 }
 
-void radioSetRetries(unsigned char retries) {
-    max_packet_retries = retries;
-}
-
-unsigned char radioGetRetries(void) {
-    return max_packet_retries;
+void radioSetHardRetries(unsigned char retries) {
+    trxSetRetries(retries);
 }
 
 void radioSetWatchdogState(unsigned char state) {
@@ -174,24 +196,26 @@ void radioSetWatchdogState(unsigned char state) {
 }
 
 void radioEnableWatchdog(void) {
-    watchdog_running = 1;
+    configuration.watchdog_running = 1;
     watchdogProgress();
 }
 
 void radioDisableWatchdog(void) {
-    watchdog_running = 0;
+    configuration.watchdog_running = 0;
 }
 
 void radioSetWatchdogTime(unsigned int time) {
-    watchdog_timeout = time;
+    configuration.watchdog_timeout = time;
     watchdogProgress();
 }
 
 MacPacket radioDequeueRxPacket(void) {
+    if(!is_ready) { return NULL; }
     return (MacPacket)carrayPopTail(rx_queue);
 }
 
 unsigned int radioEnqueueTxPacket(MacPacket packet) {
+    if(!is_ready) { return 0; }
     return carrayAddTail(tx_queue, packet);
 }
 
@@ -235,8 +259,8 @@ MacPacket radioRequestPacket(unsigned int data_size) {
     packet = ppoolRequestFullPacket(data_size);
     if(packet == NULL) { return NULL; }
 
-    macSetSrc(packet, local_pan, local_addr);
-    macSetDestPan(packet, local_pan);
+    macSetSrc(packet, configuration.address.pan_id, configuration.address.address);
+    macSetDestPan(packet, configuration.address.pan_id);
 
     return packet;
 
@@ -261,8 +285,8 @@ void radioProcess(void) {
     
     currentTime = sclockGetLocalMillis();
 
-    if(watchdog_running) {
-        if(currentTime - progress_timestamp > DEFAULT_WATCHDOG_TIME) {
+    if(configuration.watchdog_running) {
+        if(currentTime - status.last_progress > configuration.watchdog_timeout) {
             radioReset();
             return;
         }
@@ -282,10 +306,10 @@ void radioProcess(void) {
 #if defined(RADIO_AUTOCALIBRATE) // Auto calibration routine
     // Check if calibration is necessary
     currentTime = sclockGetLocalMillis();
-    if(currentTime - last_calib_timestamp > RADIO_CALIB_PERIOD) {
+    if(currentTime - status.last_calibration > RADIO_CALIB_PERIOD) {
         if(!radioSetStateOff()) { return; }
         trxCalibrate();
-        last_calib_timestamp = currentTime;
+        status.last_calibration = currentTime;
     }
 #endif
 
@@ -313,7 +337,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
 static void radioReset(void) {
     
     trxReset();
-    radio_state = STATE_OFF;
+    status.state = STATE_OFF;
     radioSetStateIdle();
     watchdogProgress();
     LED_ORANGE = 0;
@@ -330,34 +354,36 @@ static void radioReset(void) {
  */
 void trxCallback(unsigned int irq_cause) {
 
-    if(radio_state == STATE_SLEEP) {
+    if(status.state == STATE_SLEEP) {
         // Shouldn't be here since sleep isn't implemented yet!
     }
-    else if(radio_state == STATE_IDLE) {
+    else if(status.state == STATE_IDLE) {
         // Shouldn't be getting interrupts when idle
     }
-    else if(radio_state == STATE_RX_IDLE) {
+    else if(status.state == STATE_RX_IDLE) {
 
         // Beginning reception process
         if(irq_cause == RADIO_RX_START) {
             LED_ORANGE = 1;
-            radio_state = STATE_RX_BUSY;
+            status.state = STATE_RX_BUSY;
         }
 
-    } else if(radio_state == STATE_RX_BUSY) {
+    } else if(status.state == STATE_RX_BUSY) {
 
         // Reception complete
         if(irq_cause == RADIO_RX_SUCCESS) {
             radioProcessRx();   // Process newly received data
+            status.last_rssi = trxReadRSSI();
+            status.last_ed = trxReadED();
             LED_ORANGE = 0;
-            radio_state = STATE_RX_IDLE;    // Transition after data processed
+            status.state = STATE_RX_IDLE;    // Transition after data processed
         }
 
-    } else if(radio_state == STATE_TX_IDLE) {
+    } else if(status.state == STATE_TX_IDLE) {
         // Shouldn't be getting interrupts when waiting to transmit
-    } else if(radio_state == STATE_TX_BUSY) {
+    } else if(status.state == STATE_TX_BUSY) {
 
-        radio_state = STATE_TX_IDLE;
+        status.state = STATE_TX_IDLE;
         LED_ORANGE = 0;
         // Transmit successful
         if(irq_cause == RADIO_TX_SUCCESS) {
@@ -365,9 +391,9 @@ void trxCallback(unsigned int irq_cause) {
             radioSetStateRx();
         } else if(irq_cause == RADIO_TX_FAILURE) {
             // If no more retries, reset retry counter
-            retries++;
-            if(retries > max_packet_retries) {
-                retries = 0;
+            status.retry_number++;
+            if(status.retry_number > configuration.soft_retries) {
+                status.retry_number = 0;
                 radioReturnPacket((MacPacket)carrayPopHead(tx_queue));
                 radioSetStateRx();
             }
@@ -390,14 +416,14 @@ static unsigned int radioSetStateTx(void) {
     unsigned int lockAcquired;
 
     // If already in Tx mode
-    if(radio_state == STATE_TX_IDLE) { return 1; }
+    if(status.state == STATE_TX_IDLE) { return 1; }
 
     // Attempt to begin transition
     lockAcquired = radioBeginTransition();
     if(!lockAcquired) { return 0; }
 
     trxSetStateTx();
-    radio_state = STATE_TX_IDLE;
+    status.state = STATE_TX_IDLE;
     return 1;
 
 }
@@ -410,14 +436,14 @@ static unsigned int radioSetStateRx(void) {
     unsigned int lockAcquired;
 
     // If already in Rx mode
-    if(radio_state == STATE_RX_IDLE) { return 1; }
+    if(status.state == STATE_RX_IDLE) { return 1; }
 
     // Attempt to begin transitionin
     lockAcquired = radioBeginTransition();
     if(!lockAcquired) { return 0; }
 
     trxSetStateRx();
-    radio_state = STATE_RX_IDLE;
+    status.state = STATE_RX_IDLE;
     return 1;
 
 }
@@ -430,14 +456,14 @@ static unsigned int radioSetStateIdle(void) {
     unsigned int lockAcquired;
 
     // If already in idle mode
-    if(radio_state == STATE_IDLE) { return 1; }
+    if(status.state == STATE_IDLE) { return 1; }
 
     // Attempt to begin transitionin
     lockAcquired = radioBeginTransition();
     if(!lockAcquired) { return 0; }
 
     trxSetStateIdle();
-    radio_state = STATE_IDLE;
+    status.state = STATE_IDLE;
     return 1;
 
 }
@@ -450,14 +476,14 @@ static unsigned int radioSetStateOff(void) {
    unsigned int lockAcquired;
 
    // If already in idle mode
-   if(radio_state == STATE_OFF) { return 1; }
+   if(status.state == STATE_OFF) { return 1; }
 
    // Attempt to begin transitionin
    lockAcquired = radioBeginTransition();
    if(!lockAcquired) { return 0; }
 
    trxSetStateOff();
-   radio_state = STATE_OFF;
+   status.state = STATE_OFF;
    return 1;
 
 }
@@ -475,12 +501,12 @@ static unsigned int radioBeginTransition(void) {
 
     CRITICAL_SECTION_START
 
-    busy =  (radio_state == STATE_RX_BUSY)
-    || (radio_state == STATE_TX_BUSY)
-    || (radio_state == STATE_TRANSITIONING);
+    busy =  (status.state == STATE_RX_BUSY)
+    || (status.state == STATE_TX_BUSY)
+    || (status.state == STATE_TRANSITIONING);
 
     if(!busy) {
-        radio_state = STATE_TRANSITIONING;
+        status.state = STATE_TRANSITIONING;
     }
 
     CRITICAL_SECTION_END
@@ -500,10 +526,10 @@ static void radioProcessTx(void) {
     if(packet == NULL) { return; }
 
     // State should be STATE_TX_IDLE upon entering function
-    radio_state = STATE_TX_BUSY;    // Update state
+    status.state = STATE_TX_BUSY;    // Update state
     LED_ORANGE = 1;                    // Indicate RX activity
 
-    macSetSeqNum(packet, packet_sqn++); // Set packet sequence number
+    macSetSeqNum(packet, status.sequence_number++); // Set packet sequence number
 
     trxWriteFrameBuffer(packet); // Write packet to transmitter and send
     trxBeginTransmission();
@@ -536,6 +562,6 @@ static void radioProcessRx(void) {
 
 static inline void watchdogProgress(void) {
 
-    progress_timestamp = sclockGetLocalMillis();
+    status.last_progress = sclockGetLocalMillis();
 
 }

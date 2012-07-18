@@ -62,21 +62,46 @@ typedef enum {
     STATE_TX_BUSY,          // Radio in TX mode, transmitting or preparing
 } RadioState;
 
+typedef struct {
+    unsigned int address;   // (2)
+    unsigned int pan_id;    // (2)
+    unsigned char channel;  // (1)
+} RadioAddress;             // Total: (5)
+
+typedef struct {
+    RadioAddress address;           // (5)
+    unsigned char soft_retries;     // (1)
+    unsigned char hard_retries;     // (1)
+    unsigned char watchdog_running; // (1)
+    unsigned int watchdog_timeout;  // (2)
+} RadioConfiguration;               // Total: (10)
+
+typedef struct {
+    RadioState state;               // (2)
+    unsigned int packets_sent;      // (2)
+    unsigned int packets_received;  // (2)
+    unsigned char sequence_number;  // (1)
+    unsigned char retry_number;     // (1)
+    unsigned char last_rssi;        // (1)
+    unsigned char last_ed;          // (1)
+    unsigned long last_calibration; // (4)
+    unsigned long last_progress;    // (4)
+} RadioStatus;                      // Total: (18)
+
 // Setup and initialization
 void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length);
 
 // Configuration methods
+void radioConfigure(RadioConfiguration *conf);
+void radioSetAddress(RadioAddress *address);
 void radioSetSrcAddr(unsigned int src_addr);
-unsigned int radioGetSrcAddr(void);
 void radioSetSrcPanID(unsigned int src_pan_id);
-unsigned int radioGetPanID(void);
 void radioSetChannel(unsigned char channel);
-unsigned char radioGetChannel(void);
-void radioSetRetries(unsigned char retries);
-unsigned char radioGetRetries(void);
+void radioSetSoftRetries(unsigned char retries);
+void radioSetHardRetries(unsigned char retries);
 
-// Radio no longer uses fixed destination addresses
-// See mac packet address set and packet creation methods
+void radioGetConfiguration(RadioConfiguration *conf);
+void radioGetStatus(RadioStatus *status);
 
 void radioSetWatchdogState(unsigned char state);
 void radioEnableWatchdog(void);

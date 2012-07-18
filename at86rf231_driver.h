@@ -122,6 +122,18 @@ void trxSetRetries(unsigned int retries);
 void trxReadId(unsigned char *id);
 
 /**
+ * Return the last buffered RSSI value
+ * @return 0 to 28 with resolution of 3 decibels. Subtract 91 to scale.
+ */
+unsigned char trxReadRSSI(void);
+
+/**
+ * Read the last ED value
+ * @return 0x00 to 0x54 in decibels. Subtract 91 to scale.
+ */
+unsigned char trxReadED(void);
+
+/**
  * Write the contents of a packet to the transceiver.
  *
  * Serializes and writes a MacPacket object to the transceiver via its SPI port. 
