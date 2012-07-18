@@ -39,7 +39,6 @@
  *  Humphrey Hu         2012-02-16      Updated interface to use objects
  */
 
-#include "stopwatch.h"
 #include "attitude.h"
 #include "quat.h"
 #include "xl.h"
@@ -190,9 +189,7 @@ void attEstimatePose(void) {
     if(!is_ready) { return; }
     if(!is_running) { return; }
 
-    gyroGetRadXYZ(rate);    // Get last read gyro values
-    rate[1] = -rate[1];     // Reorient axes
-    rate[2] = -rate[2];
+    gyroGetRadXYZ(rate);    // Get last read gyro values    
 
     //timestamp = swatchToc(); // Record timestamp
 
@@ -224,8 +221,8 @@ void attEstimatePose(void) {
         
     }
 
-    // Apply displacement to pose
-    quatMult(&displacement_quat, &pose_quat, &pose_quat);
+    // Apply displacement to pose    
+    quatMult(&pose_quat, &displacement_quat, &pose_quat);
 
     // Normalize pose quaternion to account for unnormalized displacement quaternion
     quatNormalize(&pose_quat);    
