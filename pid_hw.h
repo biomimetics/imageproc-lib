@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2010, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,49 +27,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Control block module
+ * Hardware PID module
  *
- * by Stanley S. Baek
+ * by Kevin Peterson
  *
- * v.beta
+ * v.0.1
  */
 
-#ifndef __CONTROLLER_H
-#define __CONTROLLER_H
+#ifndef __PID_HW_H
+#define __PID_HW_H
 
+#include <dsp.h>
+#include <libq.h>
 
-#include "dfilter.h"
+void pidHWCreate(tPID* controller, fractional* abcCoefficients,
+                                   fractional* controlHistory);
+void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
+void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki,
+                                                         fractional Kd);
+void pidHWSetReference(tPID* controller, fractional reference);
+fractional pidHWRun(tPID* controller, fractional feedback);
 
-typedef struct {
-    char running;
-    float ref;
-    float offset;
-    float ts;   // sampling interval
-    float kp;   // proportional control gain 
-    float ki;   // integral control gain in discrete time (= cont. time gain * ts)
-    float kd;   // derivative control gain in discrete time (= cont. time gain / ts)
-    float beta; // reference weight for proportional control
-    float gamma; // reference weight for derivative control
-    float umax;
-    float umin;
-    float iold;
-    float derrold;
-} CtrlPidParamStruct;
-
-typedef CtrlPidParamStruct* CtrlPidParam;
-
-float ctrlGetRef(CtrlPidParam pid);
-void ctrlSetRef(CtrlPidParam pid, float ref);
-float ctrlRunPid(CtrlPidParam pid, float y, DigitalFilter lpf); 
-CtrlPidParam ctrlCreatePidParams(float ts);
-void ctrlSetPidParams(CtrlPidParam pid, float ref, float kp, float ki, float kd);
-void ctrlSetPidOffset(CtrlPidParam pid, float offset);
-float ctrlGetPidOffset(CtrlPidParam pid);
-void ctrlSetRefWeigts(CtrlPidParam pid, float beta, float gamma);
-void ctrlSetSaturation(CtrlPidParam pid, float max, float min);
-unsigned char ctrlIsRunning(CtrlPidParam pid);
-void ctrlStart(CtrlPidParam pid);
-void ctrlStop(CtrlPidParam pid);
-
-
-#endif  // __CONTROLLER_H
+#endif //__PID_HW_H

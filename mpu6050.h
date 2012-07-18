@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2010, Regents of the University of California
+ * Copyright (c) 2010, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,49 +27,70 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Control block module
+ * InvenSense MPU-6050 6-axis MEMS Driver
  *
- * by Stanley S. Baek
+ * by Humphrey Hu
+ * based on ITG-3200 Driver by Stanley S. Baek
  *
- * v.beta
+ * Notes:
+ *  - Uses an I2C port for communicating with the mpuscope chip
+ *
+ * Usage:
+ *  #include  "mpu.h"
+ *
+ *  float mpuData[3];
+ *  unsigned char * mpuStrData;
+ *
+ *  // initialize mpu module
+ *  mpuSetup();
+ * 
+ *  // run calibration with 1000 samples
+ *  mpuRunCalib(1000)
+ *
+ *  // read out data from mpuscope and save in an internal buffer
+ *  mpuReadXYZ();
+ *
+ *  // convert data into floating point values in deg/s
+ *  mpuGetDegXYZ(mpuData);
+ *  // mpuGetRadXYZ(mpuData);  // in radian/s  
+ *
+ *  // read the data in raw string format
+ *  // mpuStrData[0] = lower byte of x-axis data
+ *  // mpuStrData[1] = higher byte of x-axis data
+ *  // mpuStrData[2] = lower byte of y-axis data
+ *  // ...
+ *  // mpuStrData[5] = higher byte of z-axis data
+ *
+ *  mpuStrData = mpuGetsXYZ();
  */
 
-#ifndef __CONTROLLER_H
-#define __CONTROLLER_H
+#ifndef __MPU_H
+#define __MPU_H
+
+// Setup device
+void mpuSetup(void);
+
+// Run calibration routine
+void mpuRunCalib(unsigned int count);
+
+// Set sleep mode
+void mpuSetSleep(unsigned char mode);
+
+// 3 ints
+void mpuGetGyro(int* buff);
+// 3 ints
+void mpuGetXl(int* buff);
+// 1 int
+void mpuGetTemp(int* buff);
+
+float mpuGetGyroScale(void);
+float mpuGetXlScale(void);
+float mpuGetTempScale(void);
+
+// Read data from MPU
+void mpuUpdate(void);
+
+#endif
 
 
-#include "dfilter.h"
 
-typedef struct {
-    char running;
-    float ref;
-    float offset;
-    float ts;   // sampling interval
-    float kp;   // proportional control gain 
-    float ki;   // integral control gain in discrete time (= cont. time gain * ts)
-    float kd;   // derivative control gain in discrete time (= cont. time gain / ts)
-    float beta; // reference weight for proportional control
-    float gamma; // reference weight for derivative control
-    float umax;
-    float umin;
-    float iold;
-    float derrold;
-} CtrlPidParamStruct;
-
-typedef CtrlPidParamStruct* CtrlPidParam;
-
-float ctrlGetRef(CtrlPidParam pid);
-void ctrlSetRef(CtrlPidParam pid, float ref);
-float ctrlRunPid(CtrlPidParam pid, float y, DigitalFilter lpf); 
-CtrlPidParam ctrlCreatePidParams(float ts);
-void ctrlSetPidParams(CtrlPidParam pid, float ref, float kp, float ki, float kd);
-void ctrlSetPidOffset(CtrlPidParam pid, float offset);
-float ctrlGetPidOffset(CtrlPidParam pid);
-void ctrlSetRefWeigts(CtrlPidParam pid, float beta, float gamma);
-void ctrlSetSaturation(CtrlPidParam pid, float max, float min);
-unsigned char ctrlIsRunning(CtrlPidParam pid);
-void ctrlStart(CtrlPidParam pid);
-void ctrlStop(CtrlPidParam pid);
-
-
-#endif  // __CONTROLLER_H

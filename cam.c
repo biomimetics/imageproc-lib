@@ -48,9 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cam.h"
-//#include "sys_clock.h" // Pick either sys_clock or stopwatch for timestamps
-//#include "stopwatch.h"
-#include "led.h"
+#include "stopwatch.h"
 
 // TODO: Read native image size from device driver, then calculate image size
 // after subsampling
@@ -73,7 +71,7 @@
 #define WINDOW_END_ROW                  (120)
 
 // Downsampling parameters
-#define DS_COL_PERIOD           (4) // Capturing 1/2 pixels
+#define DS_COL_PERIOD           (4) // Capturing 1/4 pixels
 #define DS_ROW_PERIOD           (4) // Capturing 1/4 rows
 #define DS_FRAME_PERIOD         (1) // Capturing 1/1 frames
 
@@ -90,7 +88,7 @@
 // Amount of time before an event to trigger timer
 #define ROW_ROW_OFFSET                  (6) // 384 cycles
 #define VSYNC_ROW_OFFSET                (6) // 384 cycles
-#define ROW_VSYNC_OFFSET                (8) // 512 cycles
+#define ROW_VSYNC_OFFSET                (10) // 640 cycles
 #define VSYNC_VSYNC_OFFSET              (8) // 512 cycles
 
 #define CAM_POOL_SIZE                   (4) // 4 frames shared with system
@@ -262,6 +260,12 @@ void camStart(void) {
 
 }
 
+void camStop(void) {
+
+    DisableIntT7;
+
+}
+
 // Measures camera timing parameters
 void camRunCalib(void) {
 
@@ -328,6 +332,7 @@ unsigned char camHasNewFrame(void) {
 
 CamRow camGetRow(void) {
 
+    has_new_row = 0;
     return latest_row;
 
 }
@@ -369,8 +374,7 @@ void camCaptureRow(void) {
 
     // Fill and timestamp row buffer
     row_getter(row_buff->pixels, NATIVE_IMAGE_COLS);
-    //row_buff->timestamp = sclockGetTicks();
-    //row_buff->timestamp = swatchToc();
+    row_buff->timestamp = swatchToc();
     row_buff->row_num = cntrRead(row_counter);
 
     CRITICAL_SECTION_END;

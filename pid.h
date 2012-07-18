@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2010, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,49 +27,53 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Control block module
+ * Generalized integer PID module
  *
- * by Stanley S. Baek
+ * by Andrew Pullin
  *
- * v.beta
+ * v.0.1
  */
 
-#ifndef __CONTROLLER_H
-#define __CONTROLLER_H
+#ifndef __PID_H
+#define __PID_H
 
+//Select DSP core PID
+//#define PID_HARDWARE
 
-#include "dfilter.h"
+//DSP dependent include
+#ifdef PID_HARDWARE
+#include <dsp.h>
+#endif
+
+#define PID_ON  1
+#define PID_OFF 0
+
+//Structures and enums
+//PID Continer structure
 
 typedef struct {
-    char running;
-    float ref;
-    float offset;
-    float ts;   // sampling interval
-    float kp;   // proportional control gain 
-    float ki;   // integral control gain in discrete time (= cont. time gain * ts)
-    float kd;   // derivative control gain in discrete time (= cont. time gain / ts)
-    float beta; // reference weight for proportional control
-    float gamma; // reference weight for derivative control
-    float umax;
-    float umin;
-    float iold;
-    float derrold;
-} CtrlPidParamStruct;
+    int input;
+    long dState, iState, preSat, p, i, d;
+    int Kp, Ki, Kd, Kaw, y_old, output;
+    unsigned char N;
+    char onoff; //boolean
+    long error;
+    unsigned long run_time;
+    unsigned long start_time;
+    int inputOffset;
+    int Kff;
+    int maxVal, minVal;
+    int satValPos, satValNeg;
+#ifdef PID_HARDWARE
+    tPID dspPID;
+#endif
+} pidObj;
 
-typedef CtrlPidParamStruct* CtrlPidParam;
+//Functions
+void pidUpdate(pidObj *pid, int y);
+void pidInitPIDObj(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
+void pidSetInput(pidObj *pid, int feedback);
+void pidSetGains(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
+void pidOnOff(pidObj *pid, unsigned char state);
 
-float ctrlGetRef(CtrlPidParam pid);
-void ctrlSetRef(CtrlPidParam pid, float ref);
-float ctrlRunPid(CtrlPidParam pid, float y, DigitalFilter lpf); 
-CtrlPidParam ctrlCreatePidParams(float ts);
-void ctrlSetPidParams(CtrlPidParam pid, float ref, float kp, float ki, float kd);
-void ctrlSetPidOffset(CtrlPidParam pid, float offset);
-float ctrlGetPidOffset(CtrlPidParam pid);
-void ctrlSetRefWeigts(CtrlPidParam pid, float beta, float gamma);
-void ctrlSetSaturation(CtrlPidParam pid, float max, float min);
-unsigned char ctrlIsRunning(CtrlPidParam pid);
-void ctrlStart(CtrlPidParam pid);
-void ctrlStop(CtrlPidParam pid);
-
-
-#endif  // __CONTROLLER_H
+#endif // __PID_H
