@@ -118,7 +118,7 @@ void trxSetup(void) {
     trxWriteSubReg(SR_MAX_FRAME_RETRIES, DEFAULT_FRAME_RETRIES); // Set resend attempts
     trxWriteSubReg(SR_RX_SAFE_MODE, 0); // Disable frame buffer protection
     trxWriteSubReg(SR_AACK_FVN_MODE, FRAME_VERSION_IGNORED); // Ignore frame version
-    trxWriteSubReg(SR_SPI_CMD_MODE, 2); // First byte of SPI is RSSI register
+    trxWriteSubReg(SR_SPI_CMD_MODE, SPI_CMD_MODE_MONITOR_PHY_RSSI); // First byte of SPI is RSSI register
     trxSetStateIdle();
     ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_4); // Radio IC interrupt
 
@@ -192,9 +192,10 @@ void trxReadId(unsigned char *id) {
 
 }
 
+// TODO: Have to check if this is valid in extended operating mode or not
 unsigned char trxReadRSSI(void) {
 
-    return last_rssi;
+    return 0x1F & last_rssi;
 
 }
 
