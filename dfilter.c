@@ -38,30 +38,34 @@
  *  Fernando L. Garcia Bermudez 2012-04-24  Changed module name to dfilter, to
  *                                          prevent collisions with Microchip's
  *                                          dsp module.
+ *  Humphrey Hu                 2012-07-13  Switched to static allocation
  */
 
 #include <stdlib.h>
 #include "dfilter.h"
 
+//#define NaN(f) ( ((((char *)&f)[3] & 0x7f) == 0x7f ) && (((char *)&f)[2] & 0x80) )
 
 /*-----------------------------------------------------------------------------
  *          Public functions
 -----------------------------------------------------------------------------*/
-
 float dfilterApply(DigitalFilter f, float x)
 {
-    int i;
-    //unsigned char idx = f->index;
-    float y = f->xcoef[0] * x;
-
-    for (i = 1; i <= f->order; ++i) {
-        y += f->xcoef[i]*f->xold[f->index] - f->ycoef[i]*f->yold[f->index];
-        f->index = (f->index == f->order-1)? 0 : f->index + 1;
+    float y;
+    unsigned int i;
+        
+    f->xold[0] = x;
+    f->yold[0] = 0.0;
+    y = 0;
+        
+    for (i = 0; i <= f->order; i++) {
+        y += f->xcoef[i]*f->xold[i] + f->ycoef[i]*f->yold[i];
     }
-
-    f->index = (f->index == 0)? f->order - 1 : f->index - 1;
-    f->xold[f->index] = x;
-    f->yold[f->index] = y;
+    
+    memmove(&f->xold[1], &f->xold[0], sizeof(float)*(f->order));
+    memmove(&f->yold[1], &f->yold[0], sizeof(float)*(f->order));
+    
+    f->yold[1] = y;
 
     return y;
 }
@@ -70,30 +74,20 @@ float dfilterApply(DigitalFilter f, float x)
 DigitalFilter dfilterCreate(unsigned char order, FilterType type,
                 float* xcoeffs, float* ycoeffs)
 {
-    int i;
+    return NULL;
+}
 
-    if (order == 0) return NULL;
+void dfilterInit(DigitalFilter f, unsigned char order, FilterType type,
+                    float* xcoeffs, float* ycoeffs) {
 
-    DigitalFilter f = (DigitalFilter)malloc(sizeof(DigitalFilterStruct));
+    memset(f, 0x00, sizeof(DigitalFilterStruct));
+    
+    if(order > MAX_FILTER_ORDER) { return; }
     f->order = order;
     f->type = type;
-    f->xcoef = (float*)malloc((order+1)*sizeof(float));
-    f->ycoef = (float*)malloc((order+1)*sizeof(float));
-    f->xold = (float*)malloc(order*sizeof(float));
-    f->yold = (float*)malloc(order*sizeof(float));
-    f->index = 0;
-
-    for(i = 0; i < order; ++i) {
-        f->xold[i] = 0;
-        f->yold[i] = 0;
-        f->xcoef[i] = xcoeffs[i];
-        f->ycoef[i] = ycoeffs[i];
-    }
-
-    f->xcoef[order] = xcoeffs[order];
-    f->ycoef[order] = ycoeffs[order];
-
-    return f;
+    memcpy(&f->xcoef, xcoeffs, sizeof(float)*(order + 1));
+    memcpy(&f->ycoef, ycoeffs, sizeof(float)*(order + 1));
+    
 }
 
 
@@ -109,24 +103,22 @@ float* dfilterGetInputValues(DigitalFilter f)
 
 float dfilterGetLatestOutputValue(DigitalFilter f)
 {
-    return (f == NULL)? 0.0 : f->yold[f->index];
+    return (f == NULL) ? 0.0 : f->yold[1];
 }
 
 float dfilterGetLatestInputValue(DigitalFilter f)
 {
-    return (f == NULL)? 0.0 : f->xold[f->index];
+    return (f == NULL) ? 0.0 : f->xold[1];
 }
 
+// TODO: Deprecate
 unsigned char dfilterGetIndex(DigitalFilter f)
 {
-    return f->index;
+    //return f->index;
+    return 0;
 }
 
 void dfilterDelete(DigitalFilter f)
 {
-    free(f->xcoef);
-    free(f->ycoef);
-    free(f->xold);
-    free(f->yold);
-    free(f);
+    return;
 }
