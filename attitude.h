@@ -30,7 +30,7 @@
  * Orientation Estimation Module (Quaternion and Binary Angle Representation)
  *
  *  by Humphrey Hu 
- *	v.beta
+ *	v.0.4
  *
  */
 
@@ -38,6 +38,7 @@
 #define __ATTITUDE_H
 
 #include "bams.h"
+#include "quat.h"
 
 typedef struct {
     float yaw;
@@ -65,47 +66,6 @@ void attReset(void);
  */
 void attZero(void);
 
-/**
- * Fetch the pitch angle in radians.
- * @return Pitch angle in radians
- */
-float attGetPitch(void);
-
-/**
- * Fetch the roll angle in radians.
- * @return Roll angle in radians
- */
-float attGetRoll(void);
-
-/**
- * Fetch the yaw angle in radians.
- * @return Yaw angle in radians
- */
-float attGetYaw(void);
-
-/**
- * Fetch the pitch angle in binary angle units.
- * @return Pitch angle in BAMS
- */
-bams16_t attGetPitchBAMS(void);
-
-/**
- * Fetch the roll angle in binary angle units.
- * @return Roll angle in BAMS
- */
-bams16_t attGetRollBAMS(void);
-
-/**
- * Fetch the yaw angle in binary angle units.
- * @return Yaw angle in BAMS
- */
-bams16_t attGetYawBAMS(void);
-
-/**
- * Fetch the latest pose estimate into a data structure.
- * @param pose - Structure to write into.
- */
-void attGetPose(PoseEstimate pose);
 
 /**
  * See if module is running or not.
@@ -118,9 +78,38 @@ unsigned char attIsRunning(void);
  * @param flag - State to set to
  */
 void attSetRunning(unsigned char flag);
+void attStart(void);
+void attStop(void);
 
 /**
- * Compute latest pose estimate. This method should be called at a fixed
+ * Fetch the pitch/roll/yaw angle in radians.
+ * @return Pitch/roll/yaw angle in radians
+ */
+float attGetPitch(void);
+float attGetRoll(void);
+float attGetYaw(void);
+
+/**
+ * Fetch the pitch/roll/yaw angle in binary angle units.
+ * @return Pitch/roll/yaw angle in BAMS
+ */
+bams16_t attGetPitchBAMS(void);
+bams16_t attGetRollBAMS(void);
+bams16_t attGetYawBAMS(void);
+
+/**
+ * Get internal pose quaternion
+ */
+void attGetQuat(Quaternion *quat);
+
+/**
+ * Fetch pitch, roll, and yaw in radians.
+ * @param pose - Estimate struct to write into
+ */
+void attGetPose(PoseEstimate pose);
+
+/**
+ * Compute pose estimate. This method should be called at a fixed
  * frequency as specified in module initialization.
  */
 void attEstimatePose(void);
