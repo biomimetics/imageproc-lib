@@ -1,6 +1,8 @@
-// NEVER edit this file. It is just a placeholder to import that auto-generated
-// output from version.py. This is done so that this version.c can be added
-// to the IDE project, but the output from the build-time version.py will not
-// be subject to revision control.
+#include "version.h"
 
-#include "version-generated.c"
+#include "version-string.h" //This will define the version string, and VERSION_STRING macro
+#ifndef VERSION_STRING
+#error "No version string is defined. This is strictly required to build. Check pre-build python step, version.py ."
+#endif
+
+char* versionGetString(void) { return version; }
