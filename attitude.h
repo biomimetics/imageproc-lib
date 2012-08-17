@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2010-2012, Regents of the University of California
  * All rights reserved.
  *

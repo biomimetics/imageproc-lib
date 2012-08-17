@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2010-2012, Regents of the University of California
  * All rights reserved.
  *
@@ -87,9 +87,9 @@ static void calculateEulerAngles(void);
 void attSetup(float ts) {    
 
     sample_period = ts;        
-    xlReadXYZ();
-    attZero();
+    xlReadXYZ();    
     attReset();
+    attZero();
     
     is_running = 0;
     is_ready = 1;
@@ -156,24 +156,30 @@ void attStop(void) {
 // TODO: Fix!
 void attZero(void) {
 
-    float gxy, sina_2, xl[3], temp;
-    bams16_t a_2;
+    float sina_2, xl[3], temp, ang;
+    float dot_product, g_magnitude, scale;
+    bams16_t angle;
 
     xlGetFloatXYZ(xl);
-
-    // Convert frames so that z axis is oriented upwards, x is forward, y is side
-    xl[2] = -xl[2];
+    xl[2] = xl[2];     // Convert frame
     temp = xl[0];
     xl[0] = -xl[1];
     xl[1] = temp;
 
-    gxy = sqrtf(xl[0]*xl[0] + xl[1]*xl[1]);
-    a_2 = (BAMS16_PI_2 + bams16Atan2(xl[2], gxy))/2;
-    sina_2 = bams16SinFine(a_2);
+    g_magnitude = sqrtf(xl[0]*xl[0] + xl[1]*xl[1] + xl[2]*xl[2]);
+    scale = 1.0/g_magnitude; // Normalize the vector
+    xl[0] = xl[0]*scale;
+    xl[1] = xl[1]*scale;
+    xl[2] = xl[2]*scale;
+    
+    dot_product = -xl[2]; // Let g = [0,0,-1];
+    angle = bams16Acos(dot_product); // Magnitudes are both 1
+    ang = bams16ToFloatRad(angle);
+    sina_2 = bams16SinFine(angle/2);
 
-    pose_quat.w = bams16CosFine(a_2)*gxy;
-    pose_quat.x = sina_2*(-xl[1]);
-    pose_quat.y = sina_2*(xl[0]);
+    pose_quat.w = bams16CosFine(angle/2);
+    pose_quat.x = sina_2*(xl[1]);
+    pose_quat.y = sina_2*(-xl[0]);
     pose_quat.z = 0.0;
     quatNormalize(&pose_quat);
 
@@ -194,7 +200,7 @@ void attEstimatePose(void) {
     //timestamp = swatchToc(); // Record timestamp
 
     // Calculate magnitude and disiplacement
-    square_sum = rate[0]*rate[0] + rate[1]*rate[1] + rate[2]*rate[2];
+    square_sum = rate[0]*rate[0] + rate[1]*rate[1] + rate[2]*rate[2];    
 
     // Special case when no movement
     if(square_sum == 0.0) {
