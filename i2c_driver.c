@@ -102,3 +102,52 @@ unsigned int i2cReadString(unsigned char channel, unsigned length,
 //    //Configuration is actually done by each module independently.
 //    //This may change in the future.
 //}
+
+unsigned int i2cError(unsigned char channel) {
+
+    unsigned int err = 0;
+
+    if (channel == 1) {
+        if (I2C1STATbits.BCL) {
+            //Bus collision
+            err = 1;
+        }
+        if (I2C1STATbits.ACKSTAT) {
+            //Bus collisionNACK reception
+            err = 2;
+        }
+        if (I2C1STATbits.IWCOL) {
+            //Write collision
+            err = 3;
+        }
+        if (I2C1STATbits.I2COV) {
+            //Recieve overflow
+            err = 4;
+        }
+    } else {
+        if (I2C2STATbits.BCL) {
+            //Bus collision
+            err = 11;
+        }
+        if (I2C2STATbits.ACKSTAT) {
+            //Bus collisionNACK reception
+            err = 12;
+        }
+        if (I2C2STATbits.IWCOL) {
+            //Write collision
+            err = 13;
+        }
+        if (I2C2STATbits.I2COV) {
+            //Recieve overflow
+            err = 14;
+        }
+    }
+
+    if(err){
+        Nop(); //Put breakpoint here, to catch debugger
+        Nop();
+    }
+    
+    return err;
+}
+

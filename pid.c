@@ -91,6 +91,11 @@ void pidUpdate(pidObj *pid, int feedback) {
     pid->preSat = pidHWRun(&(pid->dspPID), feedback); //Do PID calculate via DSP lib
 #endif
 
+	int abctemp[3];
+	abctemp[0] = pid->dspPID.abcCoefficients[0];
+	abctemp[1] = pid->dspPID.abcCoefficients[1];
+	abctemp[2] = pid->dspPID.abcCoefficients[2];
+
     //Feedforward term
     long fftemp = (long)(pid->Kff)*(long)(pid->input);
     fftemp = fftemp / (long)FF_SCALER;
