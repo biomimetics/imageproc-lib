@@ -150,4 +150,3 @@ unsigned int i2cError(unsigned char channel) {
     
     return err;
 }
-
