@@ -1,3 +1,9 @@
+This is the board support integration branch for imageproc-lib on the
+ImageProc 2.5. Please send pull requests with ImageProc 2.5-related changes
+to this branch.
+
+=============================================================================
+
 All code licensed under the 3-clause modified-BSD license, unless
 otherwise noted.
 
