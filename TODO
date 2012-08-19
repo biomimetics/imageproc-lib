@@ -9,12 +9,12 @@ IMU (MPU-6000)		[Unverified]	RJ
 AMS hall effect		[Unverified]	Duncan		Requires PCB revision
 FeelerProc		[Not started]	Jaakko		Requires PCB revision
 OMAP Backpack		[Not started]	Ryan		Requires PCB revision
-Low battery IRQ		[Not started]	Unassigned	
-Battery level sensing	[Not started]	Unassigned	
+Low battery IRQ		[Not started]	Unclaimed	
+Battery level sensing	[Not started]	Unclaimed	
 OVCam			[Not started]	Fernando	
-Radio TX/RX LEDs	[Not started]	Unassigned
+Radio TX/RX LEDs	[Not started]	Unclaimed
 Radio init PLL IRQ	[Not started]	Pullin
-IMU IRQ			[Not started]	Unassigned
+IMU IRQ			[Not started]	Unclaimed
 
 [Mainline]	Modifications are integrated and have been merged into the 
 		imageproc-lib mainline.
