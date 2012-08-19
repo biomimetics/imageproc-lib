@@ -13,6 +13,7 @@ Low battery IRQ		[Not started]	Unassigned
 Battery level sensing	[Not started]	Unassigned	
 OVCam			[Not started]	Fernando	
 Radio TX/RX LEDs	[Not started]	Unassigned
+Radio init PLL IRQ	[Not started]	Pullin
 IMU IRQ			[Not started]	Unassigned
 
 [Mainline]	Modifications are integrated and have been merged into the 
