@@ -18,7 +18,7 @@ always pull the most recent changes from the central integration branch.
 
 In Git Bash:
 ```bash
-git remote add -t imageproc2.5-integration imageproc2.5-integration git@github.com:ryanjulian/imageproc-lib.git
+git remote add -t imageproc2.5-integration imageproc2.5-integration git://github.com/ryanjulian/imageproc-lib.git
 git fetch imageproc2.5-integration
 git checkout -b imageproc2.5-integration -t imageproc2.5-integration/imageproc2.5-integration
 git push origin imageproc2.5-integration
@@ -29,10 +29,10 @@ In SmartGit:
 ```text
 Remote-->Manage Remotes...-->Add
     Name: imageproc2.5-integration
-    URL or Path: git@github.com:ryanjulian/imageproc-lib.git
+    URL or Path: git://github.com/ryanjulian/imageproc-lib.git
     (Close)
 Remote-->Pull...
-    Remote Repository: imageproc2.5-integration (git@github.com:ryanjulian/imageproc-lib.git)
+    Remote Repository: imageproc2.5-integration (git://github.com/ryanjulian/imageproc-lib.git)
     (Pull)
 Branch-->Check Out...
     Branches-->Other Branches...
