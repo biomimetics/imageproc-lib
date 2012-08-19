@@ -2,6 +2,17 @@ This is the board support integration branch for imageproc-lib on the
 ImageProc 2.5. Please send pull requests with ImageProc 2.5-related changes
 to this branch.
 
+Use the following commands to setup the integration branch in your local git 
+repository. These commands assume you have forked imageproc-lib from 
+biomimetics into your github account, and then cloned your github account into
+your local repository.
+
+In Git Bash:
+git remote add -t imageproc2.5-integration imageproc2.5-integration git@github.com:ryanjulian/imageproc-lib.git
+git fetch imageproc2.5-integration
+git checkout -b imageproc2.5-integration -t imageproc2.5-integration/imageproc2.5-integration
+git push origin imageproc2.5-integration
+git remote set-url --push imageproc2.5-integration `git config remote.origin.url`
 =============================================================================
 
 All code licensed under the 3-clause modified-BSD license, unless
