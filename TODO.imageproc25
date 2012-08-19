@@ -1,0 +1,31 @@
+Module			Status		Lead		Notes
+dsPIC			[Mainline]	Doug		Requires work-arounds for programming connector and 3.3V regulator circuits
+LEDs			[Not started]	Doug
+Radio			[Verified]	Doug		Requires bug fixes in at86rf.c, commits pending
+DataFlash		[Unverified]	Doug
+Motor control		[Unverified]	Pullin	
+BEMF sensing		[Unverified]	Pullin	
+IMU (MPU-6000)		[Unverified]	RJ	
+AMS hall effect		[Unverified]	Duncan		Requires PCB revision
+FeelerProc		[Not started]	Jaakko		Requires PCB revision
+OMAP Backpack		[Not started]	Ryan		Requires PCB revision
+Low battery IRQ		[Not started]	Unassigned	
+Battery level sensing	[Not started]	Unassigned	
+OVCam			[Not started]	Fernando	
+Radio TX/RX LEDs	[Not started]	Unassigned
+IMU IRQ			[Not started]	Unassigned
+
+[Mainline]	Modifications are integrated and have been merged into the 
+		imageproc-lib mainline.
+
+[Integrated]	Modifications done and integrated in this branch. Mainline 
+		pending.
+
+[Complete]	Code modifications are complete and pending integration.
+
+[Verified]	Hardware functionality has been verified, but code
+		modifications and testing are still in progress.
+
+[Unverified]	Hardware functionality not yet verified
+
+[Not started]	Nobody is working on this, yet.
