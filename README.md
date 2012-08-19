@@ -1,4 +1,5 @@
-Note: Please remember to also set up an integration branch in the [octoroach](https://github.com/ryanjulian/octoroach/tree/imageproc2.5-integration)
+Note: Please remember to also set up an integration branch in the [octoroach]
+(https://github.com/ryanjulian/octoroach/tree/imageproc2.5-integration)
 repository. Unit tests will be pulled into octoroach while library updates
 will be pulled into here.
 
@@ -6,8 +7,8 @@ This is the board support integration branch for imageproc-lib on the
 ImageProc 2.5. Please send pull requests with ImageProc 2.5-related changes
 to this branch.
 
-Use the following commands to setup the integration branch in your local git 
-repository. These commands assume you have forked imageproc-lib from 
+Use the following commands to setup the integration branch in your local git
+repository. These commands assume you have forked imageproc-lib from
 biomimetics into your Github account, and then cloned your Github fork into
 your local repository.
 
@@ -92,7 +93,7 @@ these conference papers:
   In IROS 2011. San Francisco, CA, USA.
 
 This material is based upon work supported by the National Science
-Foundation under Grant No. IIS-0705429 and IIS-0931463. Any opinions, 
+Foundation under Grant No. IIS-0705429 and IIS-0931463. Any opinions,
 findings, and conclusions or recommendations expressed in this material
 are those of the author(s) and do not necessarily reflect the views of
 the National Science Foundation.
