@@ -8,11 +8,11 @@ biomimetics into your github account, and then cloned your github account into
 your local repository.
 
 In Git Bash:
-git remote add -t imageproc2.5-integration imageproc2.5-integration git@github.com:ryanjulian/imageproc-lib.git
-git fetch imageproc2.5-integration
-git checkout -b imageproc2.5-integration -t imageproc2.5-integration/imageproc2.5-integration
-git push origin imageproc2.5-integration
-git remote set-url --push imageproc2.5-integration `git config remote.origin.url`
+| git remote add -t imageproc2.5-integration imageproc2.5-integration git@github.com:ryanjulian/imageproc-lib.git
+| git fetch imageproc2.5-integration
+| git checkout -b imageproc2.5-integration -t imageproc2.5-integration/imageproc2.5-integration
+| git push origin imageproc2.5-integration
+| git remote set-url --push imageproc2.5-integration `git config remote.origin.url`
 =============================================================================
 
 All code licensed under the 3-clause modified-BSD license, unless
