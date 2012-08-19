@@ -1,3 +1,7 @@
+Note: Please remember to also set up an integration branch in the octoroach
+repository. Unit tests will be pulled into octoroach while library updates
+will be pulled into here.
+
 This is the board support integration branch for imageproc-lib on the
 ImageProc 2.5. Please send pull requests with ImageProc 2.5-related changes
 to this branch.
@@ -43,7 +47,8 @@ Remote-->Push Advanced...
     (OK)
 Browse to your repository folder
 Right-Click-->Git Bash
-    git remote set-url --push imageproc2.5-integration `git config remote.origin.url` (enter)
+    # Be careful! Those are `s, not 's
+    git remote set-url --push imageproc2.5-integration `git config remote.origin.url` (Enter)
     (Close)
 ```
 
