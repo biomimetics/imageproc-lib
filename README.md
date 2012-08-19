@@ -4,7 +4,7 @@ to this branch.
 
 Use the following commands to setup the integration branch in your local git 
 repository. These commands assume you have forked imageproc-lib from 
-biomimetics into your github account, and then cloned your github account into
+biomimetics into your Github account, and then cloned your Github fork into
 your local repository.
 
 In Git Bash:
