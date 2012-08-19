@@ -21,6 +21,7 @@ git remote set-url --push imageproc2.5-integration `git config remote.origin.url
 ```
 
 In SmartGit:
+```text
 Remote-->Manage Remotes...-->Add
     Name: imageproc2.5-integration
     URL or Path: git@github.com:ryanjulian/imageproc-lib.git
@@ -44,6 +45,7 @@ Browse to your repository folder
 Right-Click-->Git Bash
     git remote set-url --push imageproc2.5-integration `git config remote.origin.url` (enter)
     (Close)
+```
 
 =============================================================================
 
