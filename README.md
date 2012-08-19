@@ -1,4 +1,4 @@
-Note: Please remember to also set up an integration branch in the octoroach
+Note: Please remember to also set up an integration branch in the [octoroach](https://github.com/ryanjulian/octoroach)
 repository. Unit tests will be pulled into octoroach while library updates
 will be pulled into here.
 
