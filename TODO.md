@@ -1,3 +1,4 @@
+```text
 Module                  Status          Lead        Notes
 ------                  ------          ----        -----
 dsPIC                   [Mainline]      Doug        Requires PCB work-arounds for programming connector and 3.3V regulator circuits
@@ -26,3 +27,4 @@ IMU IRQ                 [Not started]   Unclaimed
                 modifications and testing are still in progress.
 [Unverified]    Hardware functionality not yet verified
 [Not started]   Nobody is working on this, yet.
+```
