@@ -3,7 +3,7 @@ Module                  Status          Lead        Notes
 ------                  ------          ----        -----
 dsPIC                   [Mainline]      Doug        Requires PCB work-arounds for programming connector and 3.3V regulator circuits
 LEDs                    [Not started]   Doug
-Radio                   [Complete]      Doug        Requires bug fixes in at86rf.c, commits pending
+Radio                   [Integrated]    Doug        Requires bug fixes in at86rf.c, commits pending
 DataFlash               [Unverified]    Doug, fgb
 Motor control           [Verified]      Pullin      Requires PCB work-around for battery voltage to one DRV8833
 BEMF sensing            [Unverified]    Pullin
