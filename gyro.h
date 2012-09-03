@@ -96,6 +96,14 @@ void gyroSetSampleRate(unsigned char rate);
 ******************************************************************************/
 void gyroSetIntEn(unsigned char flag);
 
+/******************************************************************************
+* Function Name : gyroSetDeadZone
+* Description   : Sets all axes dead zone
+* Parameters    : Integer cutoff value such that raw values < cutoff set to 0
+* Return Value  : None
+******************************************************************************/
+void gyroSetDeadZone(int cutoff);
+
 /*****************************************************************************
 * Function Name : gyroSleep
 * Description   : Put gyroscope into sleep mode
