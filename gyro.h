@@ -106,6 +106,9 @@ void gyroSetIntEn(unsigned char flag);
 *****************************************************************************/
 void gyroSleep(void);
 
+
+void gyroReset(void);
+
 /*****************************************************************************
 * Function Name : gyroWake
 * Description   : Put gyroscope into normal operating mode

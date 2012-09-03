@@ -102,13 +102,15 @@ void gyroSetup(void) {
     ConfigINT1(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3);
 
     delay_ms(25);   // power up delay, may not need...
+    gyroReset();
+    delay_ms(10);
     //gyroWrite(0x16, 0x1A);  // 2000 deg/sec, 1 kHz Sampling rate, 98Hz LPF
     gyroWrite(0x16, 0x19);  // 2000 deg/sec, 1 kHz Sampling rate, 196Hz LPF
     gyroWrite(0x17, 0x00);  // interrupt disabled
     gyroWrite(0x3e, 0x03);
     delay_ms(1);   // PLL Settling time
 
-    gyroRunCalib(300);  // quick calibration. better to run this with > 1000.
+    gyroRunCalib(600);  // quick calibration. better to run this with > 1000.
 }
 
 void gyroSetSampleRate(unsigned char rate) {
@@ -121,6 +123,10 @@ void gyroSetIntEn(unsigned char flag) {
 
 void gyroSleep(void) {
     gyroWrite(0x3e, 0x78);
+}
+
+void gyroReset(void){
+    gyroWrite(0x3e, 0x80); //Write H_RESET bit
 }
 
 void gyroWake(void) {
@@ -161,13 +167,14 @@ void gyroRunCalib(unsigned int count){
         delay_us(200);
     }
 
-    offsets[0] = x/count;
-    offsets[1] = y/count;
-    offsets[2] = z/count;
+    offsets[0] = x/count - 1; //the -1 accounts for integer division
+    offsets[1] = y/count - 1;
+    offsets[2] = z/count - 1;
 
     GyroOffset.fdata[0] = 1.0*x/count;
     GyroOffset.fdata[1] = 1.0*y/count;
     GyroOffset.fdata[2] = 1.0*z/count;
+
 }
 
 float gyroGetFloatTemp(void) {
