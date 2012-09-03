@@ -159,6 +159,8 @@ void gyroRunCalib(unsigned int count){
         delay_us(100);
     }
 
+    CRITICAL_SECTION_START
+
     for (i = 0; i < count; i++) {
         gyroReadXYZ();
         x += GyroData.int_data[1];
@@ -166,6 +168,8 @@ void gyroRunCalib(unsigned int count){
         z += GyroData.int_data[3];
         delay_us(200);
     }
+
+    CRITICAL_SECTION_END
 
     offsets[0] = x/count - 1; //the -1 accounts for integer division
     offsets[1] = y/count - 1;
