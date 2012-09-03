@@ -71,7 +71,7 @@
 #define LSB2RAD             (0.00121414209)
 
 // Other parameters
-#define DEFAULT_DEAD_ZONE   (0)             // Initial dead zone (0 disabled)
+#define DEFAULT_DEAD_ZONE   (3)             // Initial dead zone (0 disabled)
 #define INITIAL_CALIB_NUM   (300)           // Initial calibration samples
 #define I2C_TIMEOUT_BYTES   (200)           // Number of bytes for I2C timeout
 
@@ -126,6 +126,8 @@ void gyroSetup(void) {
     dead_zone = DEFAULT_DEAD_ZONE;
     
     delay_ms(25);   // power up delay, may not need...
+    gyroReset();
+    delay_ms(10);
     //gyroWrite(REG_DLPF_FS, 0x1A);  // 2000 deg/sec, 1 kHz Sampling rate, 98Hz LPF
     gyroWrite(REG_DLPF_FS, 0x19);  // 2000 deg/sec, 1 kHz Sampling rate, 196Hz LPF
     gyroWrite(REG_INT_CFG, 0x00);  // interrupt disabled

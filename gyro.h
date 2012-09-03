@@ -263,4 +263,11 @@ unsigned char* gyroReadXYZ(void);
 *****************************************************************************/
 void gyroGetXYZ(unsigned char *data);
 
+int gyroGetIntX(void);
+int gyroGetIntY(void);
+int gyroGetIntZ(void);
+float gyroGetDegX(void);
+float gyroGetDegY(void);
+float gyroGetDegZ(void);
+
 #endif // __GYRO_H
