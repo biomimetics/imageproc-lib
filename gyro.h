@@ -269,5 +269,6 @@ int gyroGetIntZ(void);
 float gyroGetDegX(void);
 float gyroGetDegY(void);
 float gyroGetDegZ(void);
+void gyroGetIntXYZ(int* data);
 
 #endif // __GYRO_H
