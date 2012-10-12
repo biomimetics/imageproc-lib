@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2010, Regents of the University of California
+* Copyright (c) 2012, Regents of the University of California
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -27,60 +27,43 @@
 * POSSIBILITY OF SUCH DAMAGE.
 *
 *
-* Quaternion Library
+* InvenSense MPU-6000 6-axis MEMS Driver
+*   
+* by Richard J. Sheperd
+* based on MPU-6050 Driver by Humphrey Hu
 *
-* by Humphrey Hu
+* v alpha
 *
-* v. beta 
+* Revisions:
+* 
+*                      
+* Notes:
+*  - This module uses an SPI port for communicating with the chip
 */
+#ifndef __MPU_SPI_H
+#define __MPU_SPI_H
 
-#ifndef __QUATERNION_H
-#define __QUATERNION_H
+// Setup device
+void mpuSetup(void);
 
-// Quaternion object
-typedef struct {
-    float w;
-    float x;
-    float y;
-    float z;
-} Quaternion;
+// Run calibration routine
+void mpuRunCalib(unsigned int count);
 
-/**
- * Copy a quaternion
- * @param dst - Pointer to destination
- * @param src - Pointer to source
- */
-void quatCopy(Quaternion *dst, Quaternion *src);
+// Set sleep mode
+void mpuSetSleep(unsigned char mode);
 
-/**
- * Multiply two quaternions (q1*q2)
- * @param q1 - Pointer to operand 1
- * @param q2 - Pointer to operand 2
- * @param result - Pointer to result storage
- * @note 1700 cycles
- */
-void quatMult(Quaternion *q1, Quaternion *q2, Quaternion *result);
+// 3 ints
+void mpuGetGyro(int* buff);
+// 3 ints
+void mpuGetXl(int* buff);
+// 1 int
+void mpuGetTemp(int* buff);
 
-/**
- * Normalize a quaternion
- * @param q - Pointer to quaternion to normalize
- * @note 1200 cycles
- */
-void quatNormalize(Quaternion *q);
+float mpuGetGyroScale(void);
+float mpuGetXlScale(void);
+float mpuGetTempScale(void);
 
-/**
- * Conjugate a quaternion
- * @param q - Pointer to operand
- * @param result - Pointer to result storage
- */
-void quatConj(Quaternion *q, Quaternion *result);
-
-/**
- * Rotate a vector by a quaternion
- * @param q1 - Pointer to rotation quaternion
- * @param v - Pointer to vector to rotate (w component should be 0)
- * @param result - Pointer to result storage
- */
-void quatRotate(Quaternion *q1, Quaternion *v, Quaternion *result);
+// Read data from MPU
+void mpuUpdate(void);
 
 #endif

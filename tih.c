@@ -23,8 +23,8 @@ void tiHSetup(void) {
 
     //This setup is unique to PWM_OP_SCALE4
     //If the clock scaler is changed, this MUST be changed too!
-    pwm_period = (int)((float)FCY/((float)PWM_FREQ * (float)4))- 1;
-
+    //pwm_period = (int)((float)FCY/((float)PWM_FREQ * (float)4))- 1;
+    pwm_period = 32494;  //magic number found by doug that tends to make things work
     tiHSetupPeripheral();
     int i;
     for(i=0; i< NUM_PWM;i++){
@@ -39,8 +39,10 @@ void tiHSetup(void) {
     tiHSetDC(2,0);
     tiHSetDC(3,0);
     tiHSetDC(4,0);
+    
 
 }
+
 
 static void tiHSetupPeripheral(void) {
 
@@ -189,4 +191,67 @@ void tiHConfigure(unsigned int channel) {
     
     LATE = LATEval; //Mode
     PWMCON1 = PWMCON1val; //Direction
+}
+
+
+void tiHTest(void)
+{
+    //this is a test to see if the H-Bridge chips work.  It will do a hacky setup
+    //on the H-bridge, then run all of them alternatively forward and backwards,
+    //1 second each, forever.
+
+    //This setup is unique to PWM_OP_SCALE4
+    //If the clock scaler is changed, this MUST be changed too!
+    pwm_period = 32494;  //magic number found by doug that tends to make things work
+    tiHSetupPeripheral();
+    int i;
+    for(i=0; i< NUM_PWM;i++)
+        {
+        outputs[i].throt_f = 0.0;
+        outputs[i].throt_i = 0;
+        outputs[i].mode = TIH_MODE_COAST;
+        outputs[i].dir = TIH_FWD;
+        }
+
+    while(1)
+    {
+
+         PTPER = 0x7EEE;  //initalizes time components of the PWM
+         PTCON = 0x8000;
+         PWMCON1 = 0x00FF; //should have the lows do the inverses
+
+         PDC1 = 0xA6B0; //sets duty cycle for #1.
+         PDC2 = 0xA6B0; //sets duty cycle for #2.
+         PDC3 = 0xA6B0; //sets duty cycle for #3.
+         PDC4 = 0xA6B0; //sets duty cycle for #4.
+        _PEN1L = 0;
+        _PEN2L = 0;
+        _PEN3L = 0;
+        _PEN4L = 0;
+
+    //all 4 motors should be running now.
+
+        delay_ms(1000);
+
+         PTPER = 0x7EEE;  //initalizes time components of the PWM
+         PTCON = 0x8000;
+         PWMCON1 = 0x00FF; //should have the lows do the inverses
+
+         PDC1 = 0xA6B0; //sets duty cycle for #1.
+         PDC2 = 0xA6B0; //sets duty cycle for #2.
+         PDC3 = 0xA6B0; //sets duty cycle for #3.
+         PDC4 = 0xA6B0; //sets duty cycle for #4.
+        _PEN1H = 0;
+        _PEN2H = 0;
+        _PEN3H = 0;
+        _PEN4H = 0;
+        delay_ms(1000);
+    }
+
+
+    //Start all channels at 0 throttle in Forward / Coast mode
+    tiHSetDC(1,0);
+    tiHSetDC(2,0);
+    tiHSetDC(3,0);
+    tiHSetDC(4,0);
 }

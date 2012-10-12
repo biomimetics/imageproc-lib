@@ -29,6 +29,7 @@ void tiHSetOutputPercent(unsigned int channel, float percent);
 void tiHChangeDirection(unsigned int channel, tiHDriveDir dir);
 void tiHChangeMode(unsigned int channel, tiHDriveMode mode);
 void tiHSetDC(unsigned int channel, int dutycycle);
+void tiHTest(void);
 
 typedef struct {
     float throt_f; // [-100.0 , 100.0]
