@@ -591,7 +591,7 @@ void phyHandleISR(void) {
     byte irq_cause, trx_status;
 
     irq_cause = phyReadReg(RG_IRQ_STATUS);
-    if (irq_cause == TRX_IRQ_TRX_END) {
+    if (irq_cause & TRX_IRQ_TRX_END) {
         if (g_current_state == STATE_RX_AACK_ON) { // new packet arrived
             radioEnqueueRxPacket(macReceivePacket());            // receive the packet   
         } 
