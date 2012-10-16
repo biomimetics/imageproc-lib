@@ -8,10 +8,12 @@
 #include "tih.h"
 #include "pwm.h"
 #include "ports.h"
-#include "led.h"
+//#include "led.h"
 #include "init_default.h"
 
 #define NUM_PWM 4
+
+#define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
 
 static tiHDriver outputs[4];
 static int pwm_period;
@@ -64,15 +66,18 @@ static void tiHSetupPeripheral(void) {
 void tiHSetFloat(unsigned int channel, float percent){
     unsigned int idx = channel - 1;
 
-    unsigned int pdc_value;
-    pdc_value = (unsigned int) (2 * percent / 100 * (10000));
+    int pdc_value;
+    pdc_value = (int) (2 * percent / 100 * (PTPER));
 
     outputs[idx].throt_f = percent;
-    outputs[idx].throt_i = pdc_value;
+    outputs[idx].throt_i = ABS(pdc_value);
 
     if (pdc_value < 0){
         outputs[idx].dir = TIH_REV;
-        pdc_value = -pdc_value;
+        pdc_value = ABS(pdc_value);
+    }
+    else{
+        outputs[idx].dir = TIH_FWD;
     }
 
     //Select correct PWM output and GPIO level for dir and mode
@@ -125,67 +130,44 @@ void tiHConfigure(unsigned int channel) {
         lbit = OUTPUT_PWM;
     }
 
-    /*
-    LATEBITS LATEval = *((LATEBITS*)&LATE);
-    PWMCON1BITS PWMCON1val = *((PWMCON1BITS*)&PWMCON1);
-
-    //Setup which pin recieves GPIO / PWM
-    if (channel == 1) {
-        //Set up PWM1L/H
-        LATEval.LATE0 = outputs[idx].mode;
-        LATEval.LATE1 = outputs[idx].mode;
-        PWMCON1val.PEN1H = hbit;
-        PWMCON1val.PEN1L = lbit;
-    } else if (channel == 2) {
-        //Set up PWM1L/H
-        LATEval.LATE2 = outputs[idx].mode;
-        LATEval.LATE3 = outputs[idx].mode;
-        PWMCON1val.PEN2H = hbit;
-        PWMCON1val.PEN2L = lbit;
-    } else if (channel == 3) {
-        //Set up PWM1L/H
-        LATEval.LATE4 = outputs[idx].mode;
-        LATEval.LATE5 = outputs[idx].mode;
-        PWMCON1val.PEN3H = hbit;
-        PWMCON1val.PEN3L = lbit;
-    } else if (channel == 4) {
-        //Set up PWM1L/H
-        LATEval.LATE6 = outputs[idx].mode;
-        LATEval.LATE7 = outputs[idx].mode;
-        PWMCON1val.PEN4H = hbit;
-        PWMCON1val.PEN4L = lbit;
-    }
-    LATE = (unsigned int)LATEval;
-    PWMCON1 = (unsigned int)PWMCON1val;
-     
-*/
     
-    //Alternate methods?
-    /*
-    PWMCON1 = PWM_MOD4_IND & PWM_MOD3_IND & PWM_MOD2_IND & PWM_MOD1_IND &
-            (outputs[0].dir << 1) | (outputs[0].dir << 0) |
-            (outputs[0].dir << 3) | (outputs[0].dir << 2) |
-            (outputs[0].dir << 5) | (outputs[0].dir << 3) |
-            (outputs[0].dir << 7) | (outputs[0].dir << 6);
+    if(outputs[idx].dir == TIH_FWD){
+        if(outputs[idx].mode == TIH_MODE_BRAKE){
+            hbit = OUTPUT_GPIO;
+            lbit = OUTPUT_PWM;
+        }
+        else if(outputs[idx].mode == TIH_MODE_COAST){
+            hbit = OUTPUT_PWM;
+            lbit = OUTPUT_GPIO;
+        }
+    }
+    else if(outputs[idx].dir == TIH_REV){
+        if(outputs[idx].mode == TIH_MODE_BRAKE){
+            hbit = OUTPUT_PWM;
+            lbit = OUTPUT_GPIO;
+        }
+        else if(outputs[idx].mode == TIH_MODE_COAST){
+            hbit = OUTPUT_GPIO;
+            lbit = OUTPUT_PWM;
+        }
+    }
 
-    LATE &= (outputs[0].mode << 0) | (outputs[0].mode << 1) |
-            (outputs[1].mode << 2) | (outputs[1].mode << 3) |
-            (outputs[2].mode << 4) | (outputs[2].mode << 5) |
-            (outputs[3].mode << 6) | (outputs[3].mode << 7);
-            */
+    unsigned int gpio_val = outputs[idx].mode;
+    
 
     //Clear and set ONLY pertinent bits
     unsigned int PWMCON1val = PWMCON1;
     unsigned int LATEval = LATE;
 
-    unsigned char bidx = 2*idx; //0,2,4,or 6
+    unsigned int bidx = 2*idx; //0,2,4, or 6
 
     //Direction
-    PWMCON1val &= ~( 0b11 << bidx ); //clear
-    PWMCON1val |=  ( (hbit << 1) | lbit ) << bidx; //set hbit/lbit
+    PWMCON1val &= ~( 0b10001 << idx ); //clear PWMxH/L
+    PWMCON1val |=  ( lbit << idx);     //set lbit
+    PWMCON1val |=  ( hbit << (idx+4)); //set hbit
     //Mode
     LATEval &= ~( 0b11 << bidx ); //clear
-    LATEval |= ((outputs[idx].mode << 1) | outputs[idx].mode) << bidx; //set
+    LATEval |= ((gpio_val << 1) | gpio_val) << bidx; //set
     
     LATE = LATEval; //Mode
     PWMCON1 = PWMCON1val; //Direction
