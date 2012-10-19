@@ -58,9 +58,13 @@
 
 #define ENC_I2C_CHAN        1 //Encoder is on I2C channel 1
 
+#define ABS(v) v * ((v>0) - (v<0))
+
 typedef struct {
     unsigned short RPOS; //Leg position struct
+	long rticks;
     unsigned short LPOS;
+	long lticks;
 } ENCPOS;
 
 ENCPOS encPos;
@@ -101,6 +105,24 @@ void encGetRPos(void) {
 
     encPos.RPOS = ((enc_data[1] << 6)+(enc_data[0] & 0x3F)); //concatenate registers
 }
+
+void encSumRPos(void) {
+
+	int prev = encPos.RPOS;
+	int update;
+	encGetRPos();
+	update = encPos.RPOS;
+	
+	if( (update-prev) > 8192 ){		    	//Subtract one Rev count if diff > 180
+		encPos.rticks--;
+	}
+	
+		if( (prev-update) > 8192 ){			//Add one Rev count if -diff > 180
+		encPos.rticks++;
+	}
+		
+}
+	
 
 /*****************************************************************************
  * Function Name : encGetLPos

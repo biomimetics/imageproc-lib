@@ -65,7 +65,9 @@
 * Parameters    : None
 * Return Value  : None
 *****************************************************************************/
-void encGetRPos();
+void encGetRPos(void);
+
+void encSumRPos(void);
 
 /*****************************************************************************
 * Function Name : encGetLPos
