@@ -27,53 +27,53 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Generalized integer PID module
+ * ams PID Module
  *
- * by Andrew Pullin
+ * by Duncan Haldane 10/18/2012
  *
  * v.0.1
  */
 
-#ifndef __PID_H
-#define __PID_H
 
-//Select DSP core PID
-#define PID_HARDWARE
+#include "ams-enc.h"
+#include "pid.h"
+#include "amsCtrl.h"
 
-//DSP dependent include
-#ifdef PID_HARDWARE
-#include <dsp.h>
-#endif
+#define nPIDS = 2
 
-#define PID_ON  1
-#define PID_OFF 0
+//Create PID object
+longpidObj amsPID[nPIDS];
 
-//Structures and enums
-//PID Continer structure
+//Hardware PID 
+fractional ams_abcCoeffs[nPIDS][3] __attribute__((section(".xbss, bss, xmemory")));
+fractional ams_controlHists[nPIDS][3] __attribute__((section(".ybss, bss, ymemory")));
 
-typedef struct {
-    int input;
-    long dState, iState, preSat, p, i, d;
-    int Kp, Ki, Kd, Kaw, y_old, output;
-    unsigned char N;
-    char onoff; //boolean
-    long error;
-    unsigned long run_time;
-    unsigned long start_time;
-    int inputOffset;
-    int Kff;
-    int maxVal, minVal;
-    int satValPos, satValNeg;
-#ifdef PID_HARDWARE
-    tPID dspPID;
-#endif
-} pidObj;
+void amsPIDSetup(void){
+	unsigned char i;
+	
+	for(i=0; i < nPIDS; i++){
+	#ifdef PID_HARDWARE
+		amsPID[i].dspPID.abcCoefficients = ams_abcCoeffs;
+		amsPID[i].dspPID.controlHistory = ams_controlHists;
+	#endif
+		pidInitPIDObj(&amsPID[i], AMS_DEFAULT_KP, AMS_DEFAULT_KI,
+				AMS_DEFAULT_KD, AMS_DEFAULT_KAW, AMS_DEFAULT_KFF);
+		amsPID[i].satValPos = 65536;		//Saturation values
+		amsPID[i].satValNeg = -65536;
+		amsPID[i].maxVal = 65536;
+		amsPID[i].minVal = -65536;
 
-//Functions
-void pidUpdate(pidObj *pid, int y);
-void pidInitPIDObj(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
-void pidSetInput(pidObj *pid, int feedback);
-void pidSetGains(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
-void pidOnOff(pidObj *pid, unsigned char state);
+		amsPID[i].onoff = PID_ON;
+	}
+}
 
-#endif // __PID_H
+void amsCtrlSetInput(unsigned char num, long state){
+	pidSetInput(&amsPID[num], state);
+}
+
+void amsCtrlSetGains(unsigned char num, int Kp, int Ki, int Kd, int Kaw, int ff) {
+    pidSetGains(&amsPID[num], Kp, Ki, Kd, Kaw, ff);
+}
+
+
+	

@@ -58,7 +58,6 @@
 
 #define ENC_I2C_CHAN        1 //Encoder is on I2C channel 1
 
-#define ABS(v) v * ((v>0) - (v<0))
 
 typedef struct {
     unsigned short RPOS; //Leg position struct
