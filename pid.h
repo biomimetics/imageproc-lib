@@ -40,6 +40,9 @@
 //Select DSP core PID
 #define PID_HARDWARE
 
+//Select input size
+#define PID_LONG
+
 //DSP dependent include
 #ifdef PID_HARDWARE
 #include <dsp.h>
@@ -52,7 +55,12 @@
 //PID Continer structure
 
 typedef struct {
+#ifdef PID_LONG
+    long input;
+#else
     int input;
+#endif
+
     long dState, iState, preSat, p, i, d;
     int Kp, Ki, Kd, Kaw, y_old, output;
     unsigned char N;
@@ -70,7 +78,11 @@ typedef struct {
 } pidObj;
 
 //Functions
-void pidUpdate(pidObj *pid, int y);
+#ifdef PID_LONG
+void pidUpdate(pidObj *pid, long feedback);
+#else
+void pidUpdate(pidObj *pid, int feedback);
+#endif
 void pidInitPIDObj(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
 void pidSetInput(pidObj *pid, int feedback);
 void pidSetGains(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);

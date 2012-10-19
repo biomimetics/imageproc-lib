@@ -38,41 +38,47 @@
 #include "ams-enc.h"
 #include "pid.h"
 #include "amsCtrl.h"
+#include <stdlib.h>
 
-#define nPIDS = 2
+
 
 //Create PID object
-longpidObj amsPID[nPIDS];
+pidObj amsPID[nPIDS];
 
 //Hardware PID 
 fractional ams_abcCoeffs[nPIDS][3] __attribute__((section(".xbss, bss, xmemory")));
 fractional ams_controlHists[nPIDS][3] __attribute__((section(".ybss, bss, ymemory")));
+fractional ams_controlHists[nPIDS][3]   __attribute__ ( (space(ymemory),far));
 
 void amsPIDSetup(void){
 	unsigned char i;
 	
 	for(i=0; i < nPIDS; i++){
 	#ifdef PID_HARDWARE
-		amsPID[i].dspPID.abcCoefficients = ams_abcCoeffs;
-		amsPID[i].dspPID.controlHistory = ams_controlHists;
+		amsPID[i].dspPID.abcCoefficients = ams_abcCoeffs[i];
+		amsPID[i].dspPID.controlHistory = ams_controlHists[i];
 	#endif
 		pidInitPIDObj(&amsPID[i], AMS_DEFAULT_KP, AMS_DEFAULT_KI,
 				AMS_DEFAULT_KD, AMS_DEFAULT_KAW, AMS_DEFAULT_KFF);
-		amsPID[i].satValPos = 65536;		//Saturation values
-		amsPID[i].satValNeg = -65536;
-		amsPID[i].maxVal = 65536;
-		amsPID[i].minVal = -65536;
+		amsPID[i].satValPos = 32767;		//Saturation values
+		amsPID[i].satValNeg = -32766;
+		amsPID[i].maxVal = 32767;
+		amsPID[i].minVal = -32766;
 
 		amsPID[i].onoff = PID_ON;
 	}
 }
 
-void amsCtrlSetInput(unsigned char num, long state){
-	pidSetInput(&amsPID[num], state);
+void amsCtrlSetInput(unsigned char num, long setpnt) { //setpoint of controller
+	pidSetInput(&amsPID[num], setpnt);
 }
 
 void amsCtrlSetGains(unsigned char num, int Kp, int Ki, int Kd, int Kaw, int ff) {
     pidSetGains(&amsPID[num], Kp, Ki, Kd, Kaw, ff);
+}
+
+void amsCtrlPIDUpdate(unsigned char num, long state){
+	pidUpdate(&amsPID[num], state);
 }
 
 
