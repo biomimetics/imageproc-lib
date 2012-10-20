@@ -45,28 +45,20 @@
 #include "ams-enc.h"
 #include "utils.h"
 
-#define ENC_ADDR_R_RD 0b10000011		//A1 on AS5048B Pulled High, A2 Low
-#define ENC_ADDR_R_WR 0b10000010
-
-#define ENC_ADDR_L_RD 0b10000101		//A2 on AS5048B Pulled High, A1 Low
-#define ENC_ADDR_L_WR 0b10000100
-
-#define ENC_ADDR_AUX1_RD 0b10000001		//A1, A2 = low
-#define ENC_ADDR_AUX1_WR 0b10000000
-
+ #define NUM_ENC 2
+ 
 #define LSB2ENCDEG 0.0219
 
 #define ENC_I2C_CHAN        1 //Encoder is on I2C channel 1
 
-
-typedef struct {
-    unsigned short RPOS; //Leg position struct
-	long rticks;
-    unsigned short LPOS;
-	long lticks;
+ typedef struct {
+    unsigned int POS; //Leg position struct
+	long oticks;
 } ENCPOS;
 
-ENCPOS encPos;
+unsigned int encAddr[8];	
+
+ENCPOS encPos[NUM_ENC];
 
 /*-----------------------------------------------------------------------------
  *          Declaration of static functions
@@ -79,101 +71,81 @@ static inline void encoderSetupPeripheral(void);
 void encSetup(void) {
     //setup I2C port I2C1
     encoderSetupPeripheral();
+	
+	encAddr[0] = 0b10000001;		//Encoder 1 rd;wr A1, A2 = low
+	encAddr[1] = 0b10000000;
+
+	encAddr[2] = 0b10000011;		//Encoder 2 rd;wr A1 = high, A2 = low
+	encAddr[3] = 0b10000010;
+	
+	encAddr[4] = 0b10000101;		//Encoder 3 rd;wr A1 = low, A2 = high
+	encAddr[5] = 0b10000100;
+
+	encAddr[6] = 0b10000111;		//Encoder 4 rd;wr A1, A2 = high
+	encAddr[7] = 0b10000110;
 
 }
 
 /*****************************************************************************
- * Function Name : encGetRPos
- * Description   : Read the angular position of the right encoder, write to struct encPos
+ * Function Name : encGetPos
+ * Description   : Read the angular position of the encoder[num], write to struct encPos
  * Parameters    : None
  * Return Value  : None
  *****************************************************************************/
-void encGetRPos(void) {
+void encGetPos(unsigned char num) {
 
     unsigned char enc_data[2];
 
     i2cStartTx(ENC_I2C_CHAN); //Setup to burst read both registers, 0xFE and 0xFF
-    i2cSendByte(ENC_I2C_CHAN, ENC_ADDR_R_WR);
+    i2cSendByte(ENC_I2C_CHAN, encAddr[2*num+1]);	//Write address
     i2cSendByte(ENC_I2C_CHAN, 0xFE);
     i2cEndTx(ENC_I2C_CHAN);
 
     i2cStartTx(ENC_I2C_CHAN);
-    i2cSendByte(ENC_I2C_CHAN, ENC_ADDR_R_RD);
-    i2cReadString(1,2,enc_data,10000);
+    i2cSendByte(ENC_I2C_CHAN, encAddr[2*num]);		//Read address
+    i2cReadString(1,2,enc_data,1000);
     i2cEndTx(ENC_I2C_CHAN);
 
-    encPos.RPOS = ((enc_data[1] << 6)+(enc_data[0] & 0x3F)); //concatenate registers
+    encPos[num].POS = ((enc_data[1] << 6)+(enc_data[0] & 0x3F)); //concatenate registers
 }
 
-void encSumRPos(void) {
+/*****************************************************************************
+ * Function Name : encSumPos
+ * Description   : Sum the angular position of the encoder[num], write to struct encPos
+ * Parameters    : None
+ * Return Value  : None
+ *****************************************************************************/
+void encSumPos(unsigned char num) {
 
-	int prev = encPos.RPOS;
+	int prev = encPos[num].POS;
 	int update;
-	encGetRPos();
-	update = encPos.RPOS;
+	encGetPos(num);
+	update = encPos[num].POS;
 	
 	if( (update-prev) > 8192 ){		    	//Subtract one Rev count if diff > 180
-		encPos.rticks--;
+		encPos[num].oticks--;
 	}
 	
 		if( (prev-update) > 8192 ){			//Add one Rev count if -diff > 180
-		encPos.rticks++;
+		encPos[num].oticks++;
 	}
 		
 }
+
+/*****************************************************************************
+ * Function Name : encGetFloatPos
+ * Description   : Read the angular position of encoder[num] return as float
+ * Parameters    : None
+ * Return Value  : None
+ *****************************************************************************/
+float encGetFloatPos(unsigned char num) {
+
+    float pos;
+    encGetPos(num);
 	
+    pos = encPos[num].POS* LSB2ENCDEG; //calculate Float
 
-/*****************************************************************************
- * Function Name : encGetLPos
- * Description   : Read the angular position of the left encoder, write to struct encPos
- * Parameters    : None
- * Return Value  : None
- *****************************************************************************/
-void encGetLPos(void) {
-
-    unsigned char enc_data[2];
-
-    i2cStartTx(ENC_I2C_CHAN); //Setup to burst read both registers, 0xFE and 0xFF
-    i2cSendByte(ENC_I2C_CHAN, ENC_ADDR_L_WR);
-    i2cSendByte(ENC_I2C_CHAN, 0xFE);
-    i2cEndTx(ENC_I2C_CHAN);
-    
-    i2cStartTx(ENC_I2C_CHAN);
-    i2cSendByte(ENC_I2C_CHAN, ENC_ADDR_L_RD);
-    i2cReadString(1,2,enc_data,10000);
-    i2cEndTx(ENC_I2C_CHAN);
-
-    encPos.LPOS = ((enc_data[1] << 6)+(enc_data[0] & 0x3F)); //concatenate registers
-
-    return;
-}
-
-/*****************************************************************************
- * Function Name : encGetAux1Pos
- * Description   : Read the angular position of the 1st auxiliary encoder
- * Parameters    : None
- * Return Value  : None
- *****************************************************************************/
-float encGetAux1Pos(void) {
-
-    //unsigned char apos;
-    float apos;
-
-     unsigned char enc_data[2];
-
-    i2cStartTx(ENC_I2C_CHAN); //Setup to burst read both registers, 0xFE and 0xFF
-    i2cSendByte(ENC_I2C_CHAN, ENC_ADDR_AUX1_WR);
-    i2cSendByte(ENC_I2C_CHAN, 0xFE);
-    i2cEndTx(ENC_I2C_CHAN);
-
-    i2cStartTx(ENC_I2C_CHAN);
-    i2cSendByte(ENC_I2C_CHAN, ENC_ADDR_AUX1_RD);
-    i2cReadString(1,2,enc_data,10000);
-    i2cEndTx(ENC_I2C_CHAN);
-
-    apos = ((enc_data[1] << 6)+(enc_data[0] & 0x3F)) * LSB2ENCDEG; //concatenate registers
-
-    return apos;
+    return pos;
 }
 
 /*-----------------------------------------------------------------------------

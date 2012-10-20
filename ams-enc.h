@@ -49,7 +49,8 @@
  *
  *
  *
- */
+ */	
+
  
  /*****************************************************************************
 * Function Name : encSetup
@@ -60,27 +61,25 @@
  void encSetup(void);
  
  /*****************************************************************************
-* Function Name : encGetRPos
+* Function Name : encGetPos
 * Description   : Read the angular position of the right encoder, write to struct encPos
 * Parameters    : None
 * Return Value  : None
 *****************************************************************************/
-void encGetRPos(void);
-
-void encSumRPos(void);
+void encGetPos(unsigned char num);
 
 /*****************************************************************************
-* Function Name : encGetLPos
-* Description   : Read the angular position of the left encoder, write to struct encPos
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-void encGetLPos();
+ * Function Name : encSumPos
+ * Description   : Sum the angular position of the encoder[num], write to struct encPos
+ * Parameters    : None
+ * Return Value  : None
+ *****************************************************************************/
+void encSumPos(unsigned char num);
 
 /*****************************************************************************
-* Function Name : encGetAux1Pos
-* Description   : Read the angular position of the 1st auxiliary encoder
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-float encGetAux1Pos(void);
+ * Function Name : encGetFloatPos
+ * Description   : Read the angular position of encoder[num] return as float
+ * Parameters    : None
+ * Return Value  : None
+ *****************************************************************************/
+float encGetFloatPos(unsigned char num);

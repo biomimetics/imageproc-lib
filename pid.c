@@ -65,11 +65,8 @@
 #define FF_SCALER 1024;
 
 //////////////////////////
-#ifdef PID_LONG
-void pidUpdate(pidObj *pid, long feedback) {
-#else
+
 void pidUpdate(pidObj *pid, int feedback) {
-#endif
     pid->error = pid->input - feedback;
 #ifdef PID_SOFTWARE
     pid->p = (long) pid->Kp * pid->error;

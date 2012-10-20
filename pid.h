@@ -55,12 +55,8 @@
 //PID Continer structure
 
 typedef struct {
-#ifdef PID_LONG
-    long input;
-#else
-    int input;
-#endif
 
+    int input;
     long dState, iState, preSat, p, i, d;
     int Kp, Ki, Kd, Kaw, y_old, output;
     unsigned char N;
@@ -78,11 +74,7 @@ typedef struct {
 } pidObj;
 
 //Functions
-#ifdef PID_LONG
-void pidUpdate(pidObj *pid, long feedback);
-#else
 void pidUpdate(pidObj *pid, int feedback);
-#endif
 void pidInitPIDObj(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
 void pidSetInput(pidObj *pid, int feedback);
 void pidSetGains(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);

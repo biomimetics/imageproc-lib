@@ -69,7 +69,7 @@ void amsPIDSetup(void){
 	}
 }
 
-void amsCtrlSetInput(unsigned char num, long setpnt) { //setpoint of controller
+void amsCtrlSetInput(unsigned char num, int setpnt) { //setpoint of controller
 	pidSetInput(&amsPID[num], setpnt);
 }
 
@@ -77,7 +77,7 @@ void amsCtrlSetGains(unsigned char num, int Kp, int Ki, int Kd, int Kaw, int ff)
     pidSetGains(&amsPID[num], Kp, Ki, Kd, Kaw, ff);
 }
 
-void amsCtrlPIDUpdate(unsigned char num, long state){
+void amsCtrlPIDUpdate(unsigned char num, int state){
 	pidUpdate(&amsPID[num], state);
 }
 
