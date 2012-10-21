@@ -196,8 +196,6 @@ void gyroRunCalib(unsigned int count){
         delay_us(100);
     }
 
-    CRITICAL_SECTION_START
-
     for (i = 0; i < count; i++) {
         gyroReadXYZ();
         x_acc += GyroData.int_data[1];
