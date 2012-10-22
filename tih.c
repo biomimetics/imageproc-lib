@@ -92,6 +92,8 @@ void tiHSetDC(unsigned int channel, int dutycycle){
     if (dutycycle < 0){
         outputs[idx].dir = TIH_REV;
         dutycycle = -dutycycle;
+    } else {
+       outputs[idx].dir = TIH_FWD;
     }
 
     //Select correct PWM output and GPIO level for dir and mode
