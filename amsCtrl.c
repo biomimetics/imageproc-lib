@@ -44,6 +44,7 @@
 
 //Create PID object
 pidObj amsPID[nPIDS];
+extern ENCPOS encPos[NUM_ENC];
 
 //Hardware PID 
 fractional ams_abcCoeffs[nPIDS][3] __attribute__((section(".xbss, bss, xmemory")));
@@ -52,6 +53,8 @@ fractional ams_controlHists[nPIDS][3]   __attribute__ ( (space(ymemory),far));
 
 void amsPIDSetup(void){
 	unsigned char i;
+	
+	encPos[1].offset = 11390; 	//Setup calibration for zero position
 	
 	for(i=0; i < nPIDS; i++){
 	#ifdef PID_HARDWARE
@@ -69,7 +72,24 @@ void amsPIDSetup(void){
 	}
 }
 
+void amsGetPos(unsigned char num){
+
+	encSumPos(num);
+	
+	if ( (encPos[num].POS >= encPos[num].offset)
+		&& (encPos[num].POS < 16384)){
+			encPos[num].calibPOS = encPos[num].POS - encPos[num].offset;
+			} else{
+				encPos[num].calibPOS = encPos[num].POS - encPos[num].offset + 16384;
+			}
+
+}
+		
+	
+
+
 void amsCtrlSetInput(unsigned char num, int setpnt) { //setpoint of controller
+	setpnt = (setpnt << 1);		//max 14bit to q15
 	pidSetInput(&amsPID[num], setpnt);
 }
 
@@ -78,6 +98,7 @@ void amsCtrlSetGains(unsigned char num, int Kp, int Ki, int Kd, int Kaw, int ff)
 }
 
 void amsCtrlPIDUpdate(unsigned char num, int state){
+	state = (state << 1);		//max 14bit to q15
 	pidUpdate(&amsPID[num], state);
 }
 

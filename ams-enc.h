@@ -50,8 +50,18 @@
  *
  *
  */	
-
  
+#define NUM_ENC 2
+
+typedef struct {
+    int POS; //Leg position struct
+	long oticks;
+	int calibPOS;
+	int offset;
+} ENCPOS;
+
+
+
  /*****************************************************************************
 * Function Name : encSetup
 * Description   : Initialize encoder

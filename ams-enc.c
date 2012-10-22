@@ -44,18 +44,11 @@
 #include "i2c.h"
 #include "ams-enc.h"
 #include "utils.h"
-
- #define NUM_ENC 2
  
 #define LSB2ENCDEG 0.0219
 
 #define ENC_I2C_CHAN        1 //Encoder is on I2C channel 1
-
- typedef struct {
-    unsigned int POS; //Leg position struct
-	long oticks;
-} ENCPOS;
-
+ 
 unsigned int encAddr[8];	
 
 ENCPOS encPos[NUM_ENC];
@@ -103,7 +96,7 @@ void encGetPos(unsigned char num) {
 
     i2cStartTx(ENC_I2C_CHAN);
     i2cSendByte(ENC_I2C_CHAN, encAddr[2*num]);		//Read address
-    i2cReadString(1,2,enc_data,1000);
+    i2cReadString(1,2,enc_data,10000);
     i2cEndTx(ENC_I2C_CHAN);
 
     encPos[num].POS = ((enc_data[1] << 6)+(enc_data[0] & 0x3F)); //concatenate registers
