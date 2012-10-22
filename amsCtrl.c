@@ -98,7 +98,7 @@ void amsCtrlSetGains(unsigned char num, int Kp, int Ki, int Kd, int Kaw, int ff)
 }
 
 void amsCtrlPIDUpdate(unsigned char num, int state){
-	state = (state << 1);		//max 14bit to q15
+	state = (state);		//max 14bit to q15
 	pidUpdate(&amsPID[num], state);
 }
 
