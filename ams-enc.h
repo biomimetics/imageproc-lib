@@ -70,7 +70,7 @@ void encGetPos(unsigned char num);
 
 /*****************************************************************************
  * Function Name : encSumPos
- * Description   : Sum the angular position of the encoder[num], write to struct encPos
+ * Description   : Count encoder[num] rollovers, write to struct encPos
  * Parameters    : None
  * Return Value  : None
  *****************************************************************************/

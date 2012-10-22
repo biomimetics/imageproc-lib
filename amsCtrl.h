@@ -6,17 +6,15 @@
 #define AMS_DEFAULT_KFF  0
 #define SOFT_GAIN_SCALER 512
 #elif defined PID_HARDWARE
-#define AMS_DEFAULT_KP  500
-#define AMS_DEFAULT_KI  2
-#define AMS_DEFAULT_KD  1
+#define AMS_DEFAULT_KP  15000
+#define AMS_DEFAULT_KI  100
+#define AMS_DEFAULT_KD  150
 #define AMS_DEFAULT_KAW 0
 #define AMS_DEFAULT_KFF  0
-#define AMS_PID_SCALER 8
+#define AMS_PID_SCALER 32
 #endif
 
 #define nPIDS  2
-
-
 
 
 //Setup PID for ams encoders
