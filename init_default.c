@@ -200,8 +200,8 @@ void SetupPorts(void)
     // LCD: RB0-RB7 are outputs
     // DEBUG RB8 - RB15 are outputs
     LATB  = 0x0000;
-    //TRISB = 0b0000111111111011; //rb8-rb11 are inputs for ADC
-    TRISB = 0x0000;
+    TRISB = (1 << 0) | (1<<8) | (1 << 9) | (1<<10) | (1<<11);; //rb0, rb8-rb11 are inputs for ADC
+    //TRISB = 0x0000;
 
     // RD0-RD7 are used for camera input data
     // RD8-RD11 are used for external interrupt
