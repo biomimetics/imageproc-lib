@@ -38,8 +38,9 @@
 #define __PID_H
 
 //Select DSP core PID
-//#define PID_HARDWARE
-
+#ifndef PID_HARDWARE
+#define PID_HARDWARE
+#endif
 //DSP dependent include
 #ifdef PID_HARDWARE
 #include <dsp.h>
@@ -52,6 +53,7 @@
 //PID Continer structure
 
 typedef struct {
+
     int input;
     long dState, iState, preSat, p, i, d;
     int Kp, Ki, Kd, Kaw, y_old, output;
@@ -70,7 +72,7 @@ typedef struct {
 } pidObj;
 
 //Functions
-void pidUpdate(pidObj *pid, int y);
+void pidUpdate(pidObj *pid, int feedback);
 void pidInitPIDObj(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
 void pidSetInput(pidObj *pid, int feedback);
 void pidSetGains(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);

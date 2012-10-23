@@ -12,8 +12,8 @@
 #include "init_default.h"
 
 #define NUM_PWM 4
-
-#define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
+#define OUTPUT_PWM  1
+#define OUTPUT_GPIO 0
 
 static tiHDriver outputs[4];
 static int pwm_period;
@@ -41,7 +41,6 @@ void tiHSetup(void) {
     tiHSetDC(2,0);
     tiHSetDC(3,0);
     tiHSetDC(4,0);
-
 }
 
 static void tiHSetupPeripheral(void) {
@@ -114,9 +113,6 @@ void tiHChangeMode(unsigned int channel, tiHDriveMode mode){
     outputs[channel].mode = mode;
     tiHConfigure(channel);
 }
-
-#define OUTPUT_PWM  1
-#define OUTPUT_GPIO 0
 
 void tiHConfigure(unsigned int channel) {
     unsigned int idx = channel - 1;

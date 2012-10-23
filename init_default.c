@@ -59,8 +59,8 @@
         // Primary OSC (XT, HS, EC) w/PLL & 2-Speed Startup Enabled (for fast EC)
         _FOSCSEL(FNOSC_PRIPLL & IESO_ON);
 
-        // EC oscillator & CLK Switch./Mon. Dis & OSC2 as CLK Out
-        _FOSC(POSCMD_EC & FCKSM_CSDCMD & OSCIOFNC_OFF);
+        // EC oscillator & CLK Switch./Mon. Dis & OSC2 as GPIO
+        _FOSC(POSCMD_EC & FCKSM_CSDCMD & OSCIOFNC_ON);
 
         // Watchdog Timer Disabled
         _FWDT(FWDTEN_OFF);
@@ -159,9 +159,9 @@ void SetupPorts(void)
     LATB  = 0x0000;
     TRISB = 0b0000111111111011;
 
-    // Camera PWDN: RC14 is an output
+    // Camera PWDN: RC14 is an output; SPI2 RC15 is also output.
     LATC  = 0x0000;
-    TRISC = 0b1011111111111111;
+    TRISC = 0b0011111111111111;
 
     // OVCAM: RD0-7(PIXEL), RC13(VSYNC), RF0(HREF), and RF1(PCLK) are inputs
     // RD8-RD11 are used for external interrupt
