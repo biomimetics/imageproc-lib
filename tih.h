@@ -10,8 +10,8 @@
 
 #include "pwm.h"
 
-#define PWM_FREQ            20000 //20 Khz
-#define ADC_TRIG_POINT      0.99  //Trigger at 99% of complete PWM period
+#define PWM_FREQ            10000 //10 Khz
+#define ADC_TRIG_POINT      0.95  //Trigger at 99% of complete PWM period
 
 typedef enum {
     TIH_MODE_COAST = 0,

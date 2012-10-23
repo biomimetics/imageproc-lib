@@ -23,9 +23,9 @@ static void tiHConfigure(unsigned int channel);
 
 void tiHSetup(void) {
 
-    //This setup is unique to PWM_OP_SCALE4
+    //This setup is unique to PWM_IPCLK_SCALE1
     //If the clock scaler is changed, this MUST be changed too!
-    pwm_period = (int)((float)FCY/((float)PWM_FREQ * (float)4))- 1;
+    pwm_period = (int)((float)FCY/((float)PWM_FREQ * (float)1))- 1;
 
     tiHSetupPeripheral();
     int i;
@@ -51,7 +51,7 @@ static void tiHSetupPeripheral(void) {
     //SEVTCMPvalue = 1988;
     //PWM Special Event Trigger is set to
     SEVTCMPvalue = (int)(ADC_TRIG_POINT * (float)pwm_period);
-    PTCONvalue = PWM_EN & PWM_IDLE_CON & PWM_OP_SCALE4 &
+    PTCONvalue = PWM_EN & PWM_IDLE_CON & PWM_OP_SCALE1 &
                  PWM_IPCLK_SCALE1 & PWM_MOD_FREE;
     PWMCON1value = PWM_MOD1_IND & PWM_PEN1L & PWM_MOD2_IND & PWM_PEN2L &
                  PWM_MOD3_IND & PWM_PEN3L & PWM_MOD4_IND & PWM_PEN4L;
