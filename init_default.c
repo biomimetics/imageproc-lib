@@ -42,7 +42,6 @@
 #include "p33Fxxxx.h"
 #include "adc.h"
 
-
 /* Configuration Bits (macros defined in processor header) */
 #if !defined(__BOOTLOAD)
 
@@ -65,8 +64,19 @@
 
         // Watchdog Timer Disabled
         _FWDT(FWDTEN_OFF);
-    #endif
 
+
+    #endif
+    
+    #if defined(__MIKRO)
+        _FICD(ICS_PGD3 & // Comm Channel Select (Communicate on PGC1/EMUC1 and PGD1/EMUD1)
+              JTAGEN_OFF           // JTAG Port Enable (JTAG is Disabled)
+                );
+    #else
+        _FICD(ICS_PGD1 & // Comm Channel Select (Communicate on PGC1/EMUC1 and PGD1/EMUD1)
+              JTAGEN_OFF           // JTAG Port Enable (JTAG is Disabled)
+                );
+    #endif
 #endif // !defined(__BOOTLOAD)
 
 
@@ -190,7 +200,8 @@ void SetupPorts(void)
     // LCD: RB0-RB7 are outputs
     // DEBUG RB8 - RB15 are outputs
     LATB  = 0x0000;
-    TRISB = 0x0000;
+    TRISB = (1 << 0) | (1<<8) | (1 << 9) | (1<<10) | (1<<11);; //rb0, rb8-rb11 are inputs for ADC
+    //TRISB = 0x0000;
 
     // RD0-RD7 are used for camera input data
     // RD8-RD11 are used for external interrupt

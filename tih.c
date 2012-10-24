@@ -8,7 +8,7 @@
 #include "tih.h"
 #include "pwm.h"
 #include "ports.h"
-#include "led.h"
+//#include "led.h"
 #include "init_default.h"
 
 #define NUM_PWM 4
@@ -23,10 +23,10 @@ static void tiHConfigure(unsigned int channel);
 
 void tiHSetup(void) {
 
-    //This setup is unique to PWM_OP_SCALE4
+    //This setup is unique to PWM_IPCLK_SCALE1
     //If the clock scaler is changed, this MUST be changed too!
-    //pwm_period = (int)((float)FCY/((float)PWM_FREQ * (float)4))- 1;
-    pwm_period = 32494;  //magic number found by doug that tends to make things work
+    pwm_period = (int)((float)FCY/((float)PWM_FREQ * (float)1))- 1;
+
     tiHSetupPeripheral();
     int i;
     for(i=0; i< NUM_PWM;i++){
@@ -50,7 +50,7 @@ static void tiHSetupPeripheral(void) {
     //SEVTCMPvalue = 1988;
     //PWM Special Event Trigger is set to
     SEVTCMPvalue = (int)(ADC_TRIG_POINT * (float)pwm_period);
-    PTCONvalue = PWM_EN & PWM_IDLE_CON & PWM_OP_SCALE4 &
+    PTCONvalue = PWM_EN & PWM_IDLE_CON & PWM_OP_SCALE1 &
                  PWM_IPCLK_SCALE1 & PWM_MOD_FREE;
     PWMCON1value = PWM_MOD1_IND & PWM_PEN1L & PWM_MOD2_IND & PWM_PEN2L &
                  PWM_MOD3_IND & PWM_PEN3L & PWM_MOD4_IND & PWM_PEN4L;
@@ -65,15 +65,18 @@ static void tiHSetupPeripheral(void) {
 void tiHSetFloat(unsigned int channel, float percent){
     unsigned int idx = channel - 1;
 
-    unsigned int pdc_value;
-    pdc_value = (unsigned int) (2 * percent / 100 * (10000));
+    int pdc_value;
+    pdc_value = (int) (2 * percent / 100 * (PTPER));
 
     outputs[idx].throt_f = percent;
-    outputs[idx].throt_i = pdc_value;
+    outputs[idx].throt_i = ABS(pdc_value);
 
     if (pdc_value < 0){
         outputs[idx].dir = TIH_REV;
-        pdc_value = -pdc_value;
+        pdc_value = ABS(pdc_value);
+    }
+    else{
+        outputs[idx].dir = TIH_FWD;
     }
 
     //Select correct PWM output and GPIO level for dir and mode
@@ -92,8 +95,6 @@ void tiHSetDC(unsigned int channel, int dutycycle){
     if (dutycycle < 0){
         outputs[idx].dir = TIH_REV;
         dutycycle = -dutycycle;
-    } else {
-       outputs[idx].dir = TIH_FWD;
     }
 
     //Select correct PWM output and GPIO level for dir and mode
@@ -115,47 +116,55 @@ void tiHChangeMode(unsigned int channel, tiHDriveMode mode){
 
 void tiHConfigure(unsigned int channel) {
     unsigned int idx = channel - 1;
-    unsigned char bidx = 2*idx; //0,2,4,or 6
     unsigned char lbit, hbit;
-    unsigned int LATEval = LATE;
-    unsigned int PWMCON1val = PWMCON1;
 
-    //Setup H bridge mode selection, see pg 7 of 2011 DRV8833 manual
-
-    if ((outputs[idx].dir == TIH_FWD && outputs[idx].mode == TIH_MODE_COAST) 
-		|| (outputs[idx].dir == TIH_REV && outputs[idx].mode == TIH_MODE_BRAKE)){
-			hbit = OUTPUT_PWM;
-			lbit = OUTPUT_GPIO;
+    if (outputs[idx].dir == TIH_FWD) {
+        hbit = OUTPUT_PWM;
+        lbit = OUTPUT_GPIO;
     } else { //reverse
         hbit = OUTPUT_GPIO;
         lbit = OUTPUT_PWM;
     }
-	
-    //PWM enable/disable
-    PWMCON1val &= ~( 0b10001 << idx ); //clear
-    PWMCON1val |=  ( (hbit << 4) | lbit ) << idx; //set hbit/lbit
-	
-    //Set Mode GPIO
-    LATEval &= ~( 0b11 << bidx ); //clear
-	
-    if(outputs[idx].mode == TIH_MODE_BRAKE){
-	LATEval |= ( ((lbit << 1) | hbit) << bidx);			//set PWM brake mode
+
+    
+    if(outputs[idx].dir == TIH_FWD){
+        if(outputs[idx].mode == TIH_MODE_BRAKE){
+            hbit = OUTPUT_GPIO;
+            lbit = OUTPUT_PWM;
+        }
+        else if(outputs[idx].mode == TIH_MODE_COAST){
+            hbit = OUTPUT_PWM;
+            lbit = OUTPUT_GPIO;
+        }
     }
+    else if(outputs[idx].dir == TIH_REV){
+        if(outputs[idx].mode == TIH_MODE_BRAKE){
+            hbit = OUTPUT_PWM;
+            lbit = OUTPUT_GPIO;
+        }
+        else if(outputs[idx].mode == TIH_MODE_COAST){
+            hbit = OUTPUT_GPIO;
+            lbit = OUTPUT_PWM;
+        }
+    }
+
+    unsigned int gpio_val = outputs[idx].mode;
+    
+
+    //Clear and set ONLY pertinent bits
+    unsigned int PWMCON1val = PWMCON1;
+    unsigned int LATEval = LATE;
+
+    unsigned int bidx = 2*idx; //0,2,4, or 6
+
+    //Direction
+    PWMCON1val &= ~( 0b10001 << idx ); //clear PWMxH/L
+    PWMCON1val |=  ( lbit << idx);     //set lbit
+    PWMCON1val |=  ( hbit << (idx+4)); //set hbit
+    //Mode
+    LATEval &= ~( 0b11 << bidx ); //clear
+    LATEval |= ((gpio_val << 1) | gpio_val) << bidx; //set
     
     LATE = LATEval; //Mode
     PWMCON1 = PWMCON1val; //Direction
-}
-
-
-void tiHTest(void)
-{
-    //this is a test to see if the H-Bridge chips work.  It will do a hacky setup
-    //on the H-bridge, then run all of them alternatively forward and backwards,
-    //1 second each, forever.
-
-    tiHSetupPeripheral();
-    while(1){
-        tiHConfigure(1);
-        delay_ms(200);
-    }
 }

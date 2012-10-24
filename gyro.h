@@ -96,6 +96,14 @@ void gyroSetSampleRate(unsigned char rate);
 ******************************************************************************/
 void gyroSetIntEn(unsigned char flag);
 
+/******************************************************************************
+* Function Name : gyroSetDeadZone
+* Description   : Sets all axes dead zone
+* Parameters    : Integer cutoff value such that raw values < cutoff set to 0
+* Return Value  : None
+******************************************************************************/
+void gyroSetDeadZone(int cutoff);
+
 /*****************************************************************************
 * Function Name : gyroSleep
 * Description   : Put gyroscope into sleep mode
@@ -105,6 +113,9 @@ void gyroSetIntEn(unsigned char flag);
 * Return Value  : None
 *****************************************************************************/
 void gyroSleep(void);
+
+
+void gyroReset(void);
 
 /*****************************************************************************
 * Function Name : gyroWake
@@ -251,5 +262,13 @@ unsigned char* gyroReadXYZ(void);
 * Return Value  : None
 *****************************************************************************/
 void gyroGetXYZ(unsigned char *data);
+
+int gyroGetIntX(void);
+int gyroGetIntY(void);
+int gyroGetIntZ(void);
+float gyroGetDegX(void);
+float gyroGetDegY(void);
+float gyroGetDegZ(void);
+void gyroGetIntXYZ(int* data);
 
 #endif // __GYRO_H
