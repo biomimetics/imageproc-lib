@@ -160,7 +160,7 @@ void SetupPorts(void)
     TRISB = 0b0000111111111011;
 
     // Camera PWDN: RC14 is an output; SPI2 RC15 is also output.
-    LATC  = 0x0000;
+    LATC  = 0b1000000000000000;
     TRISC = 0b0011111111111111;
 
     // OVCAM: RD0-7(PIXEL), RC13(VSYNC), RF0(HREF), and RF1(PCLK) are inputs
@@ -170,7 +170,7 @@ void SetupPorts(void)
     TRISD = 0xffff;
 
     // DFMEM: SPI2 Slave Select is an output (RG9)
-    LATG  = 0b0000000000;
+    LATG  = 0b1000000000;
     TRISG = 0b0111111111;
 
     // PWMs: RE0, RE2, RE4, and RE6 are outputs managed thru the peripheral
