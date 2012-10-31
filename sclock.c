@@ -46,7 +46,7 @@
 
 #define TMR_MSW         (TMR9HLD)
 #define TMR_LSW         (TMR8)
-#define MILLIS_FACTOR   (625)
+#define MILLIS_FACTOR   (5000)
 
 // Time is represented by a 32-bit number
 typedef union {
@@ -139,7 +139,7 @@ unsigned int sclockGetMillisFactor(void) {
 // =========== Private Functions ==============================================
 
 /**
- * Timer ticks 625 times per millisecond with 64:1 prescale
+ * Timer ticks 5 times per microsecond with 8:1 prescale
  */
 static void sclockSetupPeripheral(void) {
 
@@ -147,7 +147,7 @@ static void sclockSetupPeripheral(void) {
     T8CONvalue =    T8_OFF &
                     T8_IDLE_CON &
                     T8_GATE_OFF &
-                    T8_PS_1_64 &
+                    T8_PS_1_8 &
                     T8_32BIT_MODE_ON &
                     T8_SOURCE_INT;
     T8PERvalue = 40;    // this value doesn't really mean anything here.
