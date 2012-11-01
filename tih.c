@@ -14,6 +14,9 @@
 #define NUM_PWM 4
 #define OUTPUT_PWM  1
 #define OUTPUT_GPIO 0
+#define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
+
+
 
 static tiHDriver outputs[4];
 static int pwm_period;
