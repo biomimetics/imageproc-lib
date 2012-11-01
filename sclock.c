@@ -129,12 +129,6 @@ void sclockSetOffsetMillis(unsigned long offset) {
 
 }
 
-unsigned int sclockGetMillisFactor(void) {
-
-    return MILLIS_FACTOR;
-
-}
-
 
 // =========== Private Functions ==============================================
 

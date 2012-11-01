@@ -102,10 +102,5 @@ void sclockSetOffsetTicks(unsigned long offset);
 // Parameters : offset milliseconds
 void sclockSetOffsetMillis(unsigned long offset);
 
-// Requests how many ticks comprise a millisecond
-//
-// Returns: millisecond-to-ticks factor
-unsigned int sclockGetMillisFactor(void);
-
 
 #endif //  __SCLOCK_H
