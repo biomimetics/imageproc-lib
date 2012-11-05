@@ -374,7 +374,7 @@ void camCaptureRow(void) {
 
     // Fill and timestamp row buffer
     row_getter(row_buff->pixels, NATIVE_IMAGE_COLS);
-    row_buff->timestamp = sclockGetLocalTicks();
+    row_buff->timestamp = sclockGetTime();
     row_buff->row_num = cntrRead(row_counter);
 
     CRITICAL_SECTION_END;
