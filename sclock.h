@@ -31,7 +31,7 @@
  *
  * by Stanley S. Baek and Humphrey Hu
  *
- * v.0.1
+ * v.0.2
  *
  * Usage:
  *   #include "sclock.h"
@@ -42,11 +42,11 @@
  *   // initialize system time module
  *   sclockSetup();
  *
- *   // delay for 2 sec
- *   delay_ms(2000);
+ *   // delay for .5 sec
+ *   delay_us(500);
  *
- *   time_elapsed = sclockGetGlobalMillis();
- *   // time_elapsed should hold a value of ~2,000.
+ *   time_elapsed = sclockGetTime();
+ *   // time_elapsed should hold a value of ~500.
  */
 
 #ifndef __SCLOCK_H
@@ -56,51 +56,17 @@
 // Handles initialization of required timers and resets time to 0.
 void sclockSetup(void);
 
-// Requests number of ticks since the clock was started, added to a
-// specified offset, if any.
-//
-// 625 ticks add up to a millisecond elapsed.
-//
-// Returns : global ticks
-unsigned long sclockGetGlobalTicks(void);
-
-// Requests number of milliseconds since the clock was started, added to a
-// specified offset, if any.
-//
-// Returns : global milliseconds
-unsigned long sclockGetGlobalMillis(void);
-
 // Requests number of ticks since the clock was started.
 //
-// 625 ticks add up to a millisecond elapsed.
+// 5 ticks add up to a microsecond elapsed.
 //
-// Returns : local ticks
-unsigned long sclockGetLocalTicks(void);
+// Returns : clock ticks
+unsigned long sclockGetTicks(void);
 
-// Requests number of milliseconds since the clock was started.
+// Requests number of microseconds since the clock was started.
 //
-// Returns : local milliseconds
-unsigned long sclockGetLocalMillis(void);
-
-// Requests the clock offset in ticks.
-//
-// Returns : offset ticks
-unsigned long sclockGetOffsetTicks(void);
-
-// Requests the clock offset in milliseconds.
-//
-// Returns : offset milliseconds
-unsigned long sclockGetOffsetMillis(void);
-
-// Sets the clock offset in ticks.
-//
-// Parameters : offset ticks
-void sclockSetOffsetTicks(unsigned long offset);
-
-// Sets the clock offset in milliseconds.
-//
-// Parameters : offset milliseconds
-void sclockSetOffsetMillis(unsigned long offset);
+// Returns : time in microseconds
+unsigned long sclockGetTime(void);
 
 
 #endif //  __SCLOCK_H
