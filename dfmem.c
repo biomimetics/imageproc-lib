@@ -504,7 +504,7 @@ void dfmemResumeFromDeepSleep()
 void dfmemSave(unsigned char* data, unsigned int length)
 {
     //If this write will fit into the buffer, then just put it there
-    if (currentBufferOffset + length >= dfmem_geo.buffer_size) {
+    if (currentBufferOffset + length > dfmem_geo.buffer_size) {
         dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
         currentBuffer = (currentBuffer) ? 0 : 1;
         currentBufferOffset = 0;

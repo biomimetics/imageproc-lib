@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2012, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,38 +27,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the battery supervisor module
+ * Averaging filter using a circular buffer
  *
- * by Fernando L. Garcia Bermudez and Stanley S. Baek
+ * by Andrew Pullin
  *
- * v.0.2
- *
- * Usage:
- *  #include "battery.h"
- *
- *  // Initialize battery supervisor
- *  batSetup();
- *
- *  // When the battery's voltage falls below the supervisor's threshold, the
- *  // interrupt will trip. If you'd like to stop all running motors when this
- *  // happens, please define __LOWBATT_STOPS_MOTORS in your project.
- *
+ * v.0.1
  */
 
-#ifndef __BATTERY_H
-#define __BATTERY_H
+#ifndef __DFILTER_AVG_H
+#define __DFILTER_AVG_H
 
-typedef void (*BatteryEventISR)(void);
 
-/**
- * Set up the battery supervisor module
- */
-void batSetup(void);
+typedef struct {
+    unsigned int windowLen;
+    unsigned int index;
+    int* data;
+    long accum;
+} filterAvgInt_t;
 
-/**
- * Specify a function to call on battery supervisor events
- * @param isr - Battery event callback function pointer
- */
-void batSetCallback(BatteryEventISR isr);
+// Creates a filter and returns a point.
+// Caller should check for NULL returns.
+void filterAvgCreate(filterAvgInt_t*, unsigned int);
 
-#endif
+// Add a value to the circular buffer, incrementing index
+void filterAvgUpdate(filterAvgInt_t*, int);
+
+// Calculate and return average value;
+int filterAvgCalc(filterAvgInt_t*);
+
+
+#endif // __DFILTER_AVG_H

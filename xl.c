@@ -35,7 +35,7 @@
  *
  * Revisions:
  *  Stanley S. Baek      2010-06-05    Initial release
- *                      
+ *
  * Notes:
  *  - Uses an I2C port for communicating with the accelerometer chip
  *  - MCU resources requied for this module:
@@ -45,15 +45,15 @@
 
 
 #include "ports.h"      // for external interrupt
-#include "i2c.h"
+#include "i2c_driver.h"
+#include "i2c.h"        // kept only for peripheral setup
 #include "xl.h"
 #include "utils.h"
 
 #define XL_ADDR_RD             0xA7
 #define XL_ADDR_WR             0xA6
 #define XL_DEFAULT_SCALE       0.03832  // = 9.81/256
-
-#define xlReadString(a,b,c) MastergetsI2C1(a,b,c)
+#define XL_I2C_CHAN            1
 
 
 /*-----------------------------------------------------------------------------
@@ -76,11 +76,6 @@ static union {
  *          Declaration of static functions
 -----------------------------------------------------------------------------*/
 static void xlWrite(unsigned char regaddr, unsigned char data);
-static inline void xlSendByte( unsigned char byte);
-static inline unsigned char xlReceiveByte(void);
-static inline void xlSendNACK(void);
-static inline void xlStartTx(void);
-static inline void xlEndTx(void);
 static inline void xlSetupPeripheral(void);
 
 
@@ -91,8 +86,8 @@ static inline void xlSetupPeripheral(void);
 void xlSetup(void) {
 
     xlSetupPeripheral();
-        
-    ConfigINT3(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3); 
+
+    ConfigINT3(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3);
 
     delay_ms(25);   // power up delay, may not need...
 
@@ -108,7 +103,7 @@ void xlSetup(void) {
     xlWrite(0x2a, 0x00); // disable single/double tap fuctions
 
     xlWrite(0x2c, 0x0d); // normal power mode & 800Hz output rate
-    xlWrite(0x2d, 0x08); // normal mode 
+    xlWrite(0x2d, 0x08); // normal mode
 
     //interrupt enable/disable
     xlWrite(0x2e, 0x80); // DATA_READY is enabled. others are disabled
@@ -120,7 +115,7 @@ void xlSetup(void) {
     // full resolution mode
     // right justified mode
     // +-8g range
-    xlWrite(0x31, 0b00001010);   
+    xlWrite(0x31, 0b00001010);
 
     xlWrite(0x38, 0x00); // FIFO control is bypassed
 
@@ -139,13 +134,13 @@ void xlSetIntEn(unsigned char flag) {
 
 void xlSetRange(unsigned char range) {
     if (range == 2) {
-        xlWrite(0x31, 0b00001000); 
+        xlWrite(0x31, 0b00001000);
     } else if (range == 4) {
-        xlWrite(0x31, 0b00001001); 
+        xlWrite(0x31, 0b00001001);
     } else if (range == 8) {
-        xlWrite(0x31, 0b00001010); 
+        xlWrite(0x31, 0b00001010);
     } else if (range == 16) {
-        xlWrite(0x31, 0b00001011); 
+        xlWrite(0x31, 0b00001011);
     }
     // else do not change anything
 }
@@ -195,17 +190,18 @@ void xlSaveCalibParam(void){
 
 unsigned char xlGetID(void) {
     unsigned char c;
-    xlStartTx();
-    xlSendByte(XL_ADDR_WR);
-    xlSendByte(0x00);
-    xlEndTx();
-    xlStartTx();
-    xlSendByte(XL_ADDR_RD);
-    c = xlReceiveByte();    
-    xlEndTx();
-    return c;
-}    
 
+    i2cStartTx(XL_I2C_CHAN);
+    i2cSendByte(XL_I2C_CHAN, XL_ADDR_WR);
+    i2cSendByte(XL_I2C_CHAN, 0x00);
+    i2cEndTx(XL_I2C_CHAN);
+    i2cStartTx(XL_I2C_CHAN);
+    i2cSendByte(XL_I2C_CHAN, XL_ADDR_RD);
+    c = i2cReceiveByte(XL_I2C_CHAN);
+    i2cEndTx(XL_I2C_CHAN);
+
+    return c;
+}
 
 void xlGetFloatXYZ(float* data){
     data[0] = XlData.int_data[0]*CalibParam.f_data[0] + CalibParam.f_data[3];
@@ -228,33 +224,29 @@ void xlDumpData(unsigned char* buffer) {
     }
 }
 
-
 unsigned char* xlReadXYZ(void)  {
-    xlStartTx();
-    xlSendByte(XL_ADDR_WR);
-    xlSendByte(0x32);
-    xlEndTx();
-    xlStartTx();
-    xlSendByte(XL_ADDR_RD);
-    xlReadString(6, XlData.chr_data, 1000);
-    xlEndTx();
-    return XlData.chr_data;
+    i2cStartTx(XL_I2C_CHAN);
+    i2cSendByte(XL_I2C_CHAN, XL_ADDR_WR);
+    i2cSendByte(XL_I2C_CHAN, 0x32);
+    i2cEndTx(XL_I2C_CHAN);
+    i2cStartTx(XL_I2C_CHAN);
+    i2cSendByte(XL_I2C_CHAN, XL_ADDR_RD);
+    i2cReadString(XL_I2C_CHAN, 6, XlData.chr_data, 1000);
+    i2cEndTx(XL_I2C_CHAN);
 
+    return XlData.chr_data;
 }
 
 void xlGetXYZ(unsigned char *data)  {
-    xlStartTx();
-    xlSendByte(XL_ADDR_WR);
-    xlSendByte(0x32);
-    xlEndTx();
-    xlStartTx();
-    xlSendByte(XL_ADDR_RD);
-    xlReadString(6, data, 1000);
-    xlEndTx();
-  
+    i2cStartTx(XL_I2C_CHAN);
+    i2cSendByte(XL_I2C_CHAN,XL_ADDR_WR);
+    i2cSendByte(XL_I2C_CHAN,0x32);
+    i2cEndTx(XL_I2C_CHAN);
+    i2cStartTx(XL_I2C_CHAN);
+    i2cSendByte(XL_I2C_CHAN, XL_ADDR_RD);
+    i2cReadString(XL_I2C_CHAN, 6, data, 1000);
+    i2cEndTx(XL_I2C_CHAN);
 }
-
-
 
 
 /*-----------------------------------------------------------------------------
@@ -264,12 +256,11 @@ void xlGetXYZ(unsigned char *data)  {
  * ----------------------------------------------------------------------------
 -----------------------------------------------------------------------------*/
 
-
 /**************************************************
  * Interrupt hander for Accelerometer
  * ************************************************/
 void __attribute__((interrupt, no_auto_psv)) _INT3Interrupt(void) {
-    
+
     _INT3IF = 0;    // Clear the interrupt flag
 }
 
@@ -281,66 +272,11 @@ void __attribute__((interrupt, no_auto_psv)) _INT3Interrupt(void) {
 * Return Value  : None
 *****************************************************************************/
 static void xlWrite(unsigned char regaddr, unsigned char data ){
-    xlStartTx();
-    xlSendByte(XL_ADDR_WR);
-    xlSendByte(regaddr);
-    xlSendByte(data);
-    xlEndTx();
-}
-
-/*****************************************************************************
-* Function Name : xlSendByte
-* Description   : Send a byte to gyroscope
-* Parameters    : byte - a byte to send
-* Return Value  : None
-*****************************************************************************/
-static inline void xlSendByte( unsigned char byte ){
-    MasterWriteI2C1(byte);
-    while(I2C1STATbits.TRSTAT);
-    while(I2C1STATbits.ACKSTAT);
-}
-
-/*****************************************************************************
-* Function Name : xlReceiveByte
-* Description   : Receive a byte from gyroscope
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-static inline unsigned char xlReceiveByte(void){
-    return MasterReadI2C1();
-}
-
-/*****************************************************************************
-* Function Name : xlSendNACK
-* Description   : Send NACK to gyroscope
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-static inline void xlSendNACK(void){
-    NotAckI2C1();
-    while(I2C1CONbits.ACKEN);
-}
-
-/*****************************************************************************
-* Function Name : xlStartTx
-* Description   : Start I2C transmission
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-static inline void xlStartTx(void){
-    StartI2C1();
-    while(I2C1CONbits.SEN);
-}
-
-/*****************************************************************************
-* Function Name : xlEndTx
-* Description   : End I2C transmission
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-static inline void xlEndTx(void){
-    StopI2C1();
-    while(I2C1CONbits.PEN);
+    i2cStartTx(XL_I2C_CHAN);
+    i2cSendByte(XL_I2C_CHAN, XL_ADDR_WR);
+    i2cSendByte(XL_I2C_CHAN, regaddr);
+    i2cSendByte(XL_I2C_CHAN, data);
+    i2cEndTx(XL_I2C_CHAN);
 }
 
 /******************************************************************************
@@ -356,14 +292,10 @@ static inline void xlSetupPeripheral(void) {
                    I2C1_SM_DIS & I2C1_GCALL_DIS & I2C1_STR_DIS &
                    I2C1_NACK & I2C1_ACK_DIS & I2C1_RCV_DIS &
                    I2C1_STOP_DIS & I2C1_RESTART_DIS & I2C1_START_DIS;
-	
+
     // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 400KHz
     //Maximum ADC data rate of 800 Hz
-    I2C1BRGvalue = 95; 
+    I2C1BRGvalue = 95;
     OpenI2C1(I2C1CONvalue, I2C1BRGvalue);
     IdleI2C1();
 }
-
-
-
-

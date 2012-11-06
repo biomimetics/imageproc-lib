@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2012, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,38 +27,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the battery supervisor module
+ * Hardware PID module
  *
- * by Fernando L. Garcia Bermudez and Stanley S. Baek
+ * by Kevin Peterson
  *
- * v.0.2
- *
- * Usage:
- *  #include "battery.h"
- *
- *  // Initialize battery supervisor
- *  batSetup();
- *
- *  // When the battery's voltage falls below the supervisor's threshold, the
- *  // interrupt will trip. If you'd like to stop all running motors when this
- *  // happens, please define __LOWBATT_STOPS_MOTORS in your project.
- *
+ * v.0.1
  */
 
-#ifndef __BATTERY_H
-#define __BATTERY_H
+#ifndef __PID_HW_H
+#define __PID_HW_H
 
-typedef void (*BatteryEventISR)(void);
+#include <dsp.h>
+#include <libq.h>
 
-/**
- * Set up the battery supervisor module
- */
-void batSetup(void);
+void pidHWCreate(tPID* controller, fractional* abcCoefficients,
+                                   fractional* controlHistory);
+void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd);
+void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki,
+                                                         fractional Kd);
+void pidHWSetReference(tPID* controller, fractional reference);
+fractional pidHWRun(tPID* controller, fractional feedback);
 
-/**
- * Specify a function to call on battery supervisor events
- * @param isr - Battery event callback function pointer
- */
-void batSetCallback(BatteryEventISR isr);
-
-#endif
+#endif //__PID_HW_H

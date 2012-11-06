@@ -34,34 +34,57 @@
  * v.1.0
  *
  * Revisions:
- *  Stanley S. Baek      2010-05-30    Initial release
- *                      
+ *  Stanley S. Baek     2010-05-30      Initial release
+ *  Humphrey Hu         2012-06-27      Refactored, added dead zone
+ *
  * Notes:
  *  - This module uses an I2C port for communicating with the gyroscope chip
  */
-
 
 #include "ports.h"      // for external interrupt
 #include "i2c.h"
 #include "gyro.h"
 #include "utils.h"
+#include "string.h"
 
-#define GYRO_ADDR_RD        0b11010001    
-#define GYRO_ADDR_WR        0b11010000    
+// Register parameters
+#define GYRO_ADDR_RD        (0b11010001)
+#define GYRO_ADDR_WR        (0b11010000)
 
-#define LSB2DEG             0.0695652174        // 14.375 LSB/(deg/s)
-#define LSB2RAD             0.00121414209          
+// Register addresses
+#define REG_WHO_AM_I            (0x00)
+#define REG_SMPLRT_DIV          (0x15)
+#define REG_DLPF_FS             (0x16)
+#define REG_INT_CFG             (0x17)
+#define REG_INT_STATUS          (0x1A)
+#define REG_TEMP_OUT_H          (0x1B)
+#define REG_TEMP_OUT_L          (0x1C)
+#define REG_GYRO_XOUT_H         (0x1D)
+#define REG_GYRO_XOUT_L         (0x1E)
+#define REG_GYRO_YOUT_H         (0x1F)
+#define REG_GYRO_YOUT_L         (0x20)
+#define REG_GYRO_ZOUT_H         (0x21)
+#define REG_GYRO_ZOUT_L         (0x22)
+#define REG_PWR_MGM             (0x3E)
 
+#define LSB2DEG             (0.0695652174)  // 14.375 LSB/(deg/s)
+#define LSB2RAD             (0.00121414209)
+
+// Other parameters
+#define DEFAULT_DEAD_ZONE   (2)             // Initial dead zone (0 disabled)
+#define INITIAL_CALIB_NUM   (200)           // Initial calibration samples
+#define I2C_TIMEOUT_BYTES   (200)           // Number of bytes for I2C timeout
 
 /*-----------------------------------------------------------------------------
  *          Static Variables
 -----------------------------------------------------------------------------*/
+static unsigned char is_ready = 0;
+
 // data storage for receiving data
 static union gyrodata {
     unsigned char chr_data[8];
     int int_data[4];
 } GyroData;
-
 
 // calibration parameters for gyroscope
 static union {
@@ -69,6 +92,8 @@ static union {
     unsigned char cdata[12];
 } GyroOffset;
 
+static int offsets[3]; // Integer gyro offsets
+static int dead_zone; // Dead zone cutoff
 
 /*-----------------------------------------------------------------------------
  *          Declaration of static functions
@@ -83,62 +108,89 @@ static inline void gyroSendNACK(void);
 static inline void gyroStartTx(void);
 static inline void gyroEndTx(void);
 static inline void gyroSetupPeripheral(void);
-
+static int applyDeadZone(int val);
 
 /*-----------------------------------------------------------------------------
  *          Public functions
 -----------------------------------------------------------------------------*/
 
-
 void gyroSetup(void) {
-    
+
     // setup I2C port
     gyroSetupPeripheral();
-
-    // external interrupt configuration. 
+    
+    // external interrupt configuration.
     // it is NOT USED at this moment.
-    ConfigINT1(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3); 
+    ConfigINT1(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3);
 
+    dead_zone = DEFAULT_DEAD_ZONE;
+    
     delay_ms(25);   // power up delay, may not need...
-    //gyroWrite(0x16, 0x1A);  // 2000 deg/sec, 1 kHz Sampling rate, 98Hz LPF
-    gyroWrite(0x16, 0x19);  // 2000 deg/sec, 1 kHz Sampling rate, 196Hz LPF
-    gyroWrite(0x17, 0x00);  // interrupt disabled
-    gyroWrite(0x3e, 0x03);
+    gyroReset();
+    delay_ms(10);
+    //gyroWrite(REG_DLPF_FS, 0x1A);  // 2000 deg/sec, 1 kHz Sampling rate, 98Hz LPF
+    gyroWrite(REG_DLPF_FS, 0x19);  // 2000 deg/sec, 1 kHz Sampling rate, 196Hz LPF
+    gyroWrite(REG_INT_CFG, 0x00);  // interrupt disabled
+    gyroWrite(REG_PWR_MGM, 0x03);  // Set power management?
     delay_ms(1);   // PLL Settling time
+    
+    is_ready = 1;
+    
+    delay_ms(6); //From datasheet, standard settling time    
+    gyroRunCalib(INITIAL_CALIB_NUM);  // quick calibration
+    
+}
 
-    gyroRunCalib(100);  // quick calibration. better to run this with > 1000.
+void gyroSetDeadZone(int cutoff) {
+
+    if(cutoff < 0) { cutoff = -cutoff; }    // Correct negative inputs
+    dead_zone = cutoff;
 
 }
 
 void gyroSetSampleRate(unsigned char rate) {
-    gyroWrite(0x16, rate);  
+    gyroWrite(REG_DLPF_FS, rate);
 }
 
 void gyroSetIntEn(unsigned char flag) {
     _INT1IE = flag;
 }
 
+// TODO: Check these register values for sleep/wake
 void gyroSleep(void) {
-    gyroWrite(0x3e, 0x78);
+    gyroWrite(REG_PWR_MGM, 0x78);
+}
+
+void gyroReset(void){
+    gyroWrite(REG_PWR_MGM, 0x80); //Write H_RESET bit
 }
 
 void gyroWake(void) {
-    gyroWrite(0x3e, 0x03);
+    gyroWrite(REG_PWR_MGM, 0x03);
 }
 
 unsigned char* gyroGetCalibParam(void) {
     return GyroOffset.cdata;
 }
 
+void gyroGetOffsets(int* data){
+    data[0] = offsets[0];
+    data[1] = offsets[1];
+    data[2] = offsets[2];
+}
+
 void gyroRunCalib(unsigned int count){
 
     unsigned int i;
-    long x, y, z;
-    x = 0;
-    y = 0;
-    z = 0;
+    long x_acc, y_acc, z_acc;
+    
+    x_acc = 0;
+    y_acc = 0;
+    z_acc = 0;
 
-    // throw away first 200 data. sometimes they are bad at the beginning.
+    CRITICAL_SECTION_START
+            
+    // throw away first 200 data. Sometimes they are bad at the beginning.
     for (i = 0; i < 200; ++i) {
         gyroReadXYZ();
         delay_us(100);
@@ -146,128 +198,174 @@ void gyroRunCalib(unsigned int count){
 
     for (i = 0; i < count; i++) {
         gyroReadXYZ();
-        x += GyroData.int_data[1];
-        y += GyroData.int_data[2];
-        z += GyroData.int_data[3];
-        delay_us(100);
+        x_acc += GyroData.int_data[1];
+        y_acc += GyroData.int_data[2];
+        z_acc += GyroData.int_data[3];
+        delay_ms(1); // Sample at around 1kHz
     }
 
-    GyroOffset.fdata[0] = 1.0*x/count;
-    GyroOffset.fdata[1] = 1.0*y/count;
-    GyroOffset.fdata[2] = 1.0*z/count;
+    CRITICAL_SECTION_END
+
+    offsets[0] = x_acc/count;
+    offsets[1] = y_acc/count;
+    offsets[2] = z_acc/count;
+
+    GyroOffset.fdata[0] = 1.0*x_acc/count;
+    GyroOffset.fdata[1] = 1.0*y_acc/count;
+    GyroOffset.fdata[2] = 1.0*z_acc/count;
+
+}
+
+float gyroGetFloatTemp(void) {
+    
+    return (35 + (gyroGetIntTemp() + 13200) / 280.0);
     
 }
 
-float gyroGetFloatTemp(void) {    
-    int x;
-    x = gyroGetIntTemp();
-    return (35 + (x+13200)/280.0);
-}    
+int gyroGetIntTemp(void) {
 
-int gyroGetIntTemp(void) {    
     return GyroData.int_data[0];
-}    
+
+}
 
 void gyroReadTemp(void) {
+
     unsigned char temp_data[2];
 
     gyroStartTx();
     gyroSendByte(GYRO_ADDR_WR);
-    gyroSendByte(0x1b);
+    gyroSendByte(REG_TEMP_OUT_H);
     gyroEndTx();
     gyroStartTx();
     gyroSendByte(GYRO_ADDR_RD);
-    gyroReadString(2, temp_data, 1000);
+    gyroReadString(2, temp_data, I2C_TIMEOUT_BYTES);
     gyroEndTx();
 
     GyroData.chr_data[0] = temp_data[1];
     GyroData.chr_data[1] = temp_data[0];
+    
 }
 
+void gyroGetIntXYZ(int* data) {
+
+    data[0] = gyroGetIntX();
+    data[1] = gyroGetIntY();
+    data[2] = gyroGetIntZ();
+    
+}
+
+int gyroGetIntX(void) {
+
+    return applyDeadZone(GyroData.int_data[1] - offsets[0]);
+
+}
+
+int gyroGetIntY(void) {
+
+    return applyDeadZone(GyroData.int_data[2] - offsets[1]);
+
+        }
+
+int gyroGetIntZ(void) {
+
+    return applyDeadZone(GyroData.int_data[3] - offsets[2]);
+
+    }
 
 void gyroGetRadXYZ(float* data) {
-    unsigned char i;
-    for (i = 0; i < 3; ++i) {
-        data[i] = (GyroData.int_data[i+1] - GyroOffset.fdata[i])*LSB2RAD;
-    }
+
+    data[0] = gyroGetRadX();
+    data[1] = gyroGetRadY();
+    data[2] = gyroGetRadZ();
 }
 
-
 float gyroGetRadX(void) {
-    return (GyroData.int_data[1] - GyroOffset.fdata[0])*LSB2RAD;
+
+    return LSB2RAD*gyroGetIntX();
+    
 }
 
 float gyroGetRadY(void) {
-    return (GyroData.int_data[2] - GyroOffset.fdata[1])*LSB2RAD;
+
+    return LSB2RAD*gyroGetIntY();
+    
 }
 
 float gyroGetRadZ(void) {
-    return (GyroData.int_data[3] - GyroOffset.fdata[2])*LSB2RAD;
+
+    return LSB2RAD*gyroGetIntZ();
+    
 }
 
-
 void gyroGetDegXYZ(float* data) {
-    unsigned char i;
-    for (i = 0; i < 3; ++i) {
-        data[i] = (GyroData.int_data[i+1] - GyroOffset.fdata[i])*LSB2DEG;
+
+    data[0] = gyroGetDegX();
+    data[1] = gyroGetDegY();
+    data[2] = gyroGetDegZ();
+    
+}
+
+float gyroGetDegX(void) {
+
+    return LSB2DEG*gyroGetIntX();
+
+        }
+
+float gyroGetDegY(void) {
+
+    return LSB2DEG*gyroGetIntY();
+
     }
+
+float gyroGetDegZ(void) {
+
+    return LSB2DEG*gyroGetIntZ();
+
 }
 
 unsigned char* gyroToString(void) {
+
     return GyroData.chr_data + 2;
+
 }
 
 void gyroDumpData(unsigned char* buffer) {
 
-    int i;
-    for (i = 0; i < 6; i++) {
-        buffer[i] = GyroData.chr_data[2+i];
-    }
+    memcpy(buffer, GyroData.chr_data + 2, 6);    
+    
 }
 
 
 unsigned char* gyroReadXYZ(void) {
+    
     unsigned char gyro_data[6];
+    
     gyroStartTx();
     gyroSendByte(GYRO_ADDR_WR);
     gyroSendByte(0x1d);
     gyroEndTx();
     gyroStartTx();
     gyroSendByte(GYRO_ADDR_RD);
-    gyroReadString(6, gyro_data, 1000);
+    gyroReadString(6, gyro_data, I2C_TIMEOUT_BYTES);
     gyroEndTx();
 
     GyroData.chr_data[2] = gyro_data[1];
-    GyroData.chr_data[3] = gyro_data[0];    
+    GyroData.chr_data[3] = gyro_data[0];
     GyroData.chr_data[4] = gyro_data[3];
-    GyroData.chr_data[5] = gyro_data[2];    
-    GyroData.chr_data[6] = gyro_data[5];    
+    GyroData.chr_data[5] = gyro_data[2];
+    GyroData.chr_data[6] = gyro_data[5];
     GyroData.chr_data[7] = gyro_data[4];
 
     return GyroData.chr_data + 2;
+    
 }
 
 void gyroGetXYZ(unsigned char *data) {
 
-    unsigned char gyro_data[6];
-    gyroStartTx();
-    gyroSendByte(GYRO_ADDR_WR);
-    gyroSendByte(0x1d);
-    gyroEndTx();
-    gyroStartTx();
-    gyroSendByte(GYRO_ADDR_RD);
-    gyroReadString(6, gyro_data, 1000);
-    gyroEndTx();
-
-    data[0] = gyro_data[1];
-    data[1] = gyro_data[0];    
-    data[2] = gyro_data[3];
-    data[3] = gyro_data[2];    
-    data[4] = gyro_data[5];    
-    data[5] = gyro_data[4];
+    gyroReadXYZ();
+    gyroDumpData(data);    
 
 }
-
 
 
 /*-----------------------------------------------------------------------------
@@ -394,12 +492,16 @@ static inline void gyroSetupPeripheral(void) {
                    I2C2_NACK & I2C2_ACK_DIS & I2C2_RCV_DIS &
                    I2C2_STOP_DIS & I2C2_RESTART_DIS & I2C2_START_DIS;
 
-    // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 400KHz 	
-    I2C2BRGvalue = 95; 
+    // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 400KHz
+    I2C2BRGvalue = 95;
     OpenI2C2(I2C2CONvalue, I2C2BRGvalue);
     IdleI2C2();
 }
 
+// Dead zone a value
+static int applyDeadZone(int val) {
 
-
-
+    if(val < dead_zone && val > -dead_zone) { val = 0; }
+    return val;
+    
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2012, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,38 +27,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the battery supervisor module
+ * Averaging filter using a circular buffer
  *
- * by Fernando L. Garcia Bermudez and Stanley S. Baek
+ * by Andrew Pullin
  *
- * v.0.2
+ * v.0.1
  *
- * Usage:
- *  #include "battery.h"
- *
- *  // Initialize battery supervisor
- *  batSetup();
- *
- *  // When the battery's voltage falls below the supervisor's threshold, the
- *  // interrupt will trip. If you'd like to stop all running motors when this
- *  // happens, please define __LOWBATT_STOPS_MOTORS in your project.
- *
+ * Revisions:
+ *  Andrew Pullin   2012-5-28   Initial release.
  */
 
-#ifndef __BATTERY_H
-#define __BATTERY_H
+#include "dfilter_avg.h"
+#include <stdlib.h>
 
-typedef void (*BatteryEventISR)(void);
 
-/**
- * Set up the battery supervisor module
- */
-void batSetup(void);
+///////////////   Public functions  //////////////////
 
-/**
- * Specify a function to call on battery supervisor events
- * @param isr - Battery event callback function pointer
- */
-void batSetCallback(BatteryEventISR isr);
+void filterAvgCreate(filterAvgInt_t* filt, unsigned int length){
+    filt->data = calloc(length, sizeof(int)); //Initialize data to 0
+    filt->windowLen = length;
+    filt->index = 0;
+    filt->accum = 0;
+}
 
-#endif
+void filterAvgUpdate(filterAvgInt_t* filt, int newval){
+    // Add new value to accumulation, subtract existing value that is
+    // going to be overwritten.
+    filt->accum += newval - filt->data[filt->index];
+    // Set new value
+    filt->data[filt->index] = newval;
+    // Circularly increment index
+    filt->index = (filt->index + 1) % filt->windowLen;
+}
+
+// TODO (apullin) : more efficient calculation? DSP? delta?
+int filterAvgCalc(filterAvgInt_t* filt){
+    return (int)(filt->accum / (filt->windowLen));
+}
