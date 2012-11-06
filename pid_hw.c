@@ -27,33 +27,67 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Averaging filter using a circular buffer
+ * Hardware PID module
  *
- * by Andrew Pullin
+ * by Kevin Peterson
  *
  * v.0.1
+ *
+ * Revisions:
+ *  Kevin Peterson      2012-04-05    Initial release
+ *
+ * Notes:
+ *  - !!!!!!! PID gains must be between -1 and 1 !!!!!!!
+ *  - This file is a wrapper for the built in dsp PID controller on the dsPIC
+ *  - The memory model in the build options must be set to Large Data Model for
+ *    this code to properly compile. Also, under "Project Properties/XC16
+ *    (Global Options)/xc16-ld", add -ldsp-elf in the "Additional options" field
  */
 
-#ifndef __DFILTER_AVG_H
-#define __DFILTER_AVG_H
+#include "pid_hw.h"
+#include <dsp.h>
+#include <libq.h>
 
 
-typedef struct {
-    unsigned int windowLen;
-    unsigned int index;
-    int* data;
-    long accum;
-} filterAvgInt_t;
+void pidHWCreate(tPID* controller, fractional* coeffs, fractional* hist) {
+    // Set up pointers to the derived coefficents and controller histories
+    controller->abcCoefficients = coeffs;
+    controller->controlHistory = hist;
 
-// Creates a filter and returns a point.
-// Caller should check for NULL returns.
-void filterAvgCreate(filterAvgInt_t*, unsigned int);
+    // Initialize the PID controller
+    PIDInit(controller);
+}
 
-// Add a value to the circular buffer, incrementing index
-void filterAvgUpdate(filterAvgInt_t*, int);
+void pidHWSetFloatCoeffs(tPID* controller, float Kp, float Ki, float Kd) {
 
-// Calculate and return average value;
-int filterAvgCalc(filterAvgInt_t*);
+    fractional kCoeffs[3];
 
+    kCoeffs[0] = Q15(Kp);
+    kCoeffs[1] = Q15(Ki);
+    kCoeffs[2] = Q15(Kd);
 
-#endif // __DFILTER_AVG_H
+    PIDCoeffCalc(&kCoeffs[0], controller);
+}
+
+void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki,
+                                                         fractional Kd) {
+    fractional kCoeffs[3];
+
+    kCoeffs[0] = Kp;
+    kCoeffs[1] = Ki;
+    kCoeffs[2] = Kd;
+
+    PIDCoeffCalc(kCoeffs, controller);
+}
+
+void pidHWSetReference(tPID* controller, fractional reference) {
+    controller->controlReference = reference;
+}
+
+fractional pidHWRun(tPID* controller, fractional feedback) {
+
+    controller->measuredOutput = feedback;
+    PID(controller);
+
+    return controller->controlOutput;
+}

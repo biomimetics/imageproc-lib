@@ -38,7 +38,7 @@
  */
 
 #include "dfilter_avg.h"
-#include<stdlib.h>
+#include <stdlib.h>
 
 
 ///////////////   Public functions  //////////////////
@@ -47,19 +47,20 @@ void filterAvgCreate(filterAvgInt_t* filt, unsigned int length){
     filt->data = calloc(length, sizeof(int)); //Initialize data to 0
     filt->windowLen = length;
     filt->index = 0;
+    filt->accum = 0;
 }
 
 void filterAvgUpdate(filterAvgInt_t* filt, int newval){
+    // Add new value to accumulation, subtract existing value that is
+    // going to be overwritten.
+    filt->accum += newval - filt->data[filt->index];
+    // Set new value
     filt->data[filt->index] = newval;
+    // Circularly increment index
     filt->index = (filt->index + 1) % filt->windowLen;
 }
 
 // TODO (apullin) : more efficient calculation? DSP? delta?
 int filterAvgCalc(filterAvgInt_t* filt){
-    int i;
-    long acc = 0;
-    for(i = 0; i < filt->windowLen; i++){
-        acc += filt->data[i];
-    }
-    return acc/(filt->windowLen); //Integer division
+    return (int)(filt->accum / (filt->windowLen));
 }

@@ -27,33 +27,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Averaging filter using a circular buffer
+ * Generalized integer PID module
  *
  * by Andrew Pullin
  *
  * v.0.1
  */
 
-#ifndef __DFILTER_AVG_H
-#define __DFILTER_AVG_H
+#ifndef __PID_H
+#define __PID_H
 
+//DSP dependent include
+#ifdef PID_HARDWARE
+#include <dsp.h>
+#endif
+
+#define PID_ON  1
+#define PID_OFF 0
+
+//Structures and enums
+//PID Continer structure
 
 typedef struct {
-    unsigned int windowLen;
-    unsigned int index;
-    int* data;
-    long accum;
-} filterAvgInt_t;
+    int input;
+    long dState, iState, preSat, p, i, d;
+    int Kp, Ki, Kd, Kaw, y_old, output;
+    unsigned char N;
+    char onoff; //boolean
+    long error;
+    unsigned long run_time;
+    unsigned long start_time;
+    int inputOffset;
+    int Kff;
+    int maxVal, minVal;
+    int satValPos, satValNeg;
+#ifdef PID_HARDWARE
+    tPID dspPID;
+#endif
+} pidObj;
 
-// Creates a filter and returns a point.
-// Caller should check for NULL returns.
-void filterAvgCreate(filterAvgInt_t*, unsigned int);
+//Functions
+void pidUpdate(pidObj *pid, int y);
+void pidInitPIDObj(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
+void pidSetInput(pidObj *pid, int feedback);
+void pidSetGains(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
+void pidOnOff(pidObj *pid, unsigned char state);
 
-// Add a value to the circular buffer, incrementing index
-void filterAvgUpdate(filterAvgInt_t*, int);
-
-// Calculate and return average value;
-int filterAvgCalc(filterAvgInt_t*);
-
-
-#endif // __DFILTER_AVG_H
+#endif // __PID_H

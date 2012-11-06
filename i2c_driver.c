@@ -60,34 +60,31 @@
 //}
 
 void i2cStartTx(unsigned char channel){
-    if      (channel == 1) { StartI2C1(); while(I2C1CONbits.SEN); }
-    else if (channel == 2) { StartI2C2(); while(I2C2CONbits.SEN); }
+    if (channel == 1) { StartI2C1(); while(I2C1CONbits.SEN); }
+    else              { StartI2C2(); while(I2C2CONbits.SEN); }
 }
 
 void i2cEndTx(unsigned char channel){
-    if      (channel == 1) { StopI2C1(); while(I2C1CONbits.PEN); }
-    else if (channel == 2) { StopI2C2(); while(I2C2CONbits.PEN); }
+    if (channel == 1) { StopI2C1(); while(I2C1CONbits.PEN); }
+    else              { StopI2C2(); while(I2C2CONbits.PEN); }
 }
 
 void i2cSendNACK(unsigned char channel){
-    if      (channel == 1) { NotAckI2C1(); while(I2C1CONbits.ACKEN); }
-    else if (channel == 2) { NotAckI2C2(); while(I2C2CONbits.ACKEN); }
+    if (channel == 1) { NotAckI2C1(); while(I2C1CONbits.ACKEN); }
+    else              { NotAckI2C2(); while(I2C2CONbits.ACKEN); }
 }
 
 unsigned char i2cReceiveByte(unsigned char channel) {
-    unsigned char temp;
-    if      (channel == 1) { temp = MasterReadI2C1(); }
-    else if (channel == 2) { temp = MasterReadI2C2(); }
-    return temp;
+    if (channel == 1) { return MasterReadI2C1(); }
+    else              { return MasterReadI2C2(); }
 }
 
 void i2cSendByte(unsigned char channel, unsigned char byte) {
-    if      (channel == 1) {
+    if (channel == 1) {
         MasterWriteI2C1(byte);
         while(I2C1STATbits.TRSTAT);
         while(I2C1STATbits.ACKSTAT);
-    }
-    else if (channel == 2) {
+    } else {
         MasterWriteI2C2(byte);
         while(I2C2STATbits.TRSTAT);
         while(I2C2STATbits.ACKSTAT);
@@ -96,10 +93,8 @@ void i2cSendByte(unsigned char channel, unsigned char byte) {
 
 unsigned int i2cReadString(unsigned char channel, unsigned length,
                            unsigned char * data, unsigned int data_wait) {
-    unsigned int res;
-    if      (channel == 1) { res = MastergetsI2C1(length, data, data_wait); }
-    else if (channel == 2) { res = MastergetsI2C2(length, data, data_wait); }
-    return res;
+    if (channel == 1) { return MastergetsI2C1(length, data, data_wait); }
+    else              { return MastergetsI2C2(length, data, data_wait); }
 }
 
 ///////////////   Private functions  //////////////////
@@ -107,3 +102,51 @@ unsigned int i2cReadString(unsigned char channel, unsigned length,
 //    //Configuration is actually done by each module independently.
 //    //This may change in the future.
 //}
+
+unsigned int i2cError(unsigned char channel) {
+
+    unsigned int err = 0;
+
+    if (channel == 1) {
+        if (I2C1STATbits.BCL) {
+            //Bus collision
+            err = 1;
+        }
+        if (I2C1STATbits.ACKSTAT) {
+            //Bus collisionNACK reception
+            err = 2;
+        }
+        if (I2C1STATbits.IWCOL) {
+            //Write collision
+            err = 3;
+        }
+        if (I2C1STATbits.I2COV) {
+            //Recieve overflow
+            err = 4;
+        }
+    } else {
+        if (I2C2STATbits.BCL) {
+            //Bus collision
+            err = 11;
+        }
+        if (I2C2STATbits.ACKSTAT) {
+            //Bus collisionNACK reception
+            err = 12;
+        }
+        if (I2C2STATbits.IWCOL) {
+            //Write collision
+            err = 13;
+        }
+        if (I2C2STATbits.I2COV) {
+            //Recieve overflow
+            err = 14;
+        }
+    }
+
+    if(err){
+        Nop(); //Put breakpoint here, to catch debugger
+        Nop();
+    }
+    
+    return err;
+}

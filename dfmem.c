@@ -494,7 +494,7 @@ void dfmemResumeFromDeepSleep()
 void dfmemSave(unsigned char* data, unsigned int length)
 {
     //If this write will fit into the buffer, then just put it there
-    if (currentBufferOffset + length >= dfmem_buffersize) {
+    if (currentBufferOffset + length > dfmem_buffersize) {
         dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
         currentBuffer = (currentBuffer) ? 0 : 1;
         currentBufferOffset = 0;

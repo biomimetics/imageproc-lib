@@ -32,6 +32,10 @@
  * by Andrew Pullin
  *
  * v.0.1
+ *
+ * Note: For functions in which the I2C channel is specified, if the value
+ * passed for the channel number is anything other than 1, then channel 2
+ * will be used by default.
  */
 
 #ifndef __I2C_DRIVER_H
@@ -99,5 +103,8 @@ void i2cSendByte(unsigned char channel, unsigned char byte);
 unsigned int i2cReadString(unsigned char channel, unsigned length,
                            unsigned char * data, unsigned int data_wait);
 
+
+//Checks for I2C bus errors, returns error code 1,2,3,4 or 11,12,13,14
+unsigned int i2cError(unsigned char channel);
 
 #endif // __I2C_DRIVER_H
