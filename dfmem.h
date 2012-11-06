@@ -175,10 +175,7 @@ void dfmemEraseSector(unsigned int page);
 // Erase the contents of the whole memory chip.
 //
 // It's an implementation of the dfmem's "Chip Erase" command.
-//
-//  NOTE (fgb) : Errata mentions it could be faulty and recommends
-//               using Page or Block Erase commands instead.
-//void dfmemEraseChip(void);
+void dfmemEraseChip(void);
 
 // Requests dfmem status register and returns its ready(RDY) bit.
 //

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2010-2012, Regents of the University of California
  * All rights reserved.
  *
@@ -29,31 +29,31 @@
  *
  * Orientation Estimation Module (Quaternion and Binary Angle Representation)
  *
- *  by Humphrey Hu 
- *	v.beta
+ *  by Humphrey Hu
+ *  v.0.4
  *
  *
  * Revision History:
- *  Humphrey Hu		    2011-10-08		Initial release
- *  Humphrey Hu		    2011-12-06		Code refactor
+ *  Humphrey Hu         2011-10-08      Initial release
+ *  Humphrey Hu         2011-12-06      Code refactor
  *  Humphrey Hu         2012-02-16      Updated interface to use objects
  */
 
-#include "sys_clock.h"
-#include "telemetry.h"
 #include "attitude.h"
 #include "quat.h"
 #include "xl.h"
 #include "gyro.h"
-#include <math.h>
 #include "bams.h"
-#include <stdlib.h>
 #include "utils.h"
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #define QUAT_POLE_LIMIT         (0.499)
-#define PI          		(3.14159265)
-#define PI_2	        	(1.57079633)
-#define GRAVITY		        (9.80665)	// Gravitational acceleration
+#define PI                      (3.14159265)
+#define PI_2                    (1.57079633)
+#define GRAVITY                 (9.80665)   // Gravitational acceleration
 #define GRAVITY_SQUARED         (96.1703842)
 
 #define SCALE_CALIB_SAMPLES     (100)
@@ -84,19 +84,15 @@ static void calculateEulerAngles(void);
 
 // =========== Public Functions ===============================================
 
-void attSetup(float ts) {
+void attSetup(float ts) {    
 
-    is_ready = 0;
-    is_running = 0;
-
-    sample_period = ts;   
-    //measureXLScale(SCALE_CALIB_SAMPLES);
-    xlReadXYZ();
-    attZero();
+    sample_period = ts;        
+    xlReadXYZ();    
     attReset();
-
-    is_ready = 1; 
-
+    attZero();
+    
+    is_running = 0;
+    is_ready = 1;
 }
 
 void attReset(void) {
@@ -107,7 +103,7 @@ void attReset(void) {
     pose_quat.x = 0.0;
     pose_quat.y = 0.0;
     pose_quat.z = 0.0;
-    
+
     phi = 0.0;
     theta = 0.0;
     psi = 0.0;
@@ -126,7 +122,12 @@ bams16_t attGetYawBAMS(void) {
     return psi;
 }
 
-// TODO: Implement flip-buffer to avoid timestamp mismatch
+void attGetQuat(Quaternion *quat) {
+
+    memcpy(quat, &pose_quat, sizeof(Quaternion));    
+
+}
+
 void attGetPose(PoseEstimate pose) {
     pose->yaw = bams16ToFloatRad(psi);
     pose->pitch = bams16ToFloatRad(theta);
@@ -139,79 +140,98 @@ unsigned char attIsRunning(void) {
 }
 
 void attSetRunning(unsigned char flag) {
-    is_running = flag;
+    if(flag == 0) { attStop(); }
+    else if(flag == 1) { attStart(); }
 }
 
+void attStart(void) {
+    is_running = 1;
+}
+
+void attStop(void) {
+    is_running = 0;
+}
+
+
+// TODO: Fix!
 void attZero(void) {
 
-    float gxy, sina_2, xl[3], temp;
-    bams16_t a_2;
-    
-    xlGetFloatXYZ(xl);
+    float sina_2, xl[3], temp, ang;
+    float dot_product, g_magnitude, scale;
+    bams16_t angle;
 
-    // Convert frames so that z axis is oriented upwards, x is forward, y is side
-    xl[2] = -xl[2];
+    xlGetFloatXYZ(xl);
+    xl[2] = xl[2];     // Convert frame
     temp = xl[0];
     xl[0] = -xl[1];
     xl[1] = temp;
 
-    gxy = sqrtf(xl[0]*xl[0] + xl[1]*xl[1]);
-    a_2 = (BAMS16_PI_2 + bams16Atan2(xl[2], gxy))/2;
-    sina_2 = bams16SinFine(a_2);
+    g_magnitude = sqrtf(xl[0]*xl[0] + xl[1]*xl[1] + xl[2]*xl[2]);
+    scale = 1.0/g_magnitude; // Normalize the vector
+    xl[0] = xl[0]*scale;
+    xl[1] = xl[1]*scale;
+    xl[2] = xl[2]*scale;
+    
+    dot_product = -xl[2]; // Let g = [0,0,-1];
+    angle = bams16Acos(dot_product); // Magnitudes are both 1
+    ang = bams16ToFloatRad(angle);
+    sina_2 = bams16SinFine(angle/2);
 
-    pose_quat.w = bams16CosFine(a_2)*gxy;
-    pose_quat.x = sina_2*(-xl[1]);
-    pose_quat.y = sina_2*(xl[0]);
+    pose_quat.w = bams16CosFine(angle/2);
+    pose_quat.x = sina_2*(xl[1]);
+    pose_quat.y = sina_2*(-xl[0]);
     pose_quat.z = 0.0;
     quatNormalize(&pose_quat);
 
 }
 
-// 12000 cycles?
+// 3750 cycles
 void attEstimatePose(void) {
 
     Quaternion displacement_quat;
-    float rate[3], norm, sina_2;
+    float rate[3], norm, sina_2, square_sum;
     bams32_t a_2;
 
     if(!is_ready) { return; }
     if(!is_running) { return; }
 
-    gyroGetRadXYZ(rate); // Get last read gyro values
-    timestamp = sclockGetGlobalTicks(); // Record timestamp
-    
+    gyroGetRadXYZ(rate);    // Get last read gyro values    
+
+    //timestamp = swatchToc(); // Record timestamp
+
     // Calculate magnitude and disiplacement
-    norm = sqrtf(rate[0]*rate[0] + rate[1]*rate[1] + rate[2]*rate[2]);    
-    
-    // Special case when no movement occurs due to simplification below
-    if(norm == 0.0) {
-    
+    square_sum = rate[0]*rate[0] + rate[1]*rate[1] + rate[2]*rate[2];    
+
+    // Special case when no movement
+    if(square_sum == 0.0) {
+
         displacement_quat.w = 1.0;
         displacement_quat.x = 0.0;
         displacement_quat.y = 0.0;
         displacement_quat.z = 0.0;
-        
+
     } else {
-        
+
+        norm = sqrtf(square_sum);
         // Generate displacement rotation quaternion
         // Normally this is w = cos(a/2), but we can delay normalizing
         // by multiplying all terms by norm
-        a_2 = floatToBams32Rad(norm*sample_period)/2;        
-        sina_2 = bams32SinFine(a_2);        
-        
+        a_2 = floatToBams32Rad(norm*sample_period)/2;
+        sina_2 = bams32SinFine(a_2);
+
         displacement_quat.w = bams32CosFine(a_2)*norm;
         displacement_quat.x = sina_2*rate[0];
         displacement_quat.y = sina_2*rate[1];
         displacement_quat.z = sina_2*rate[2];
         quatNormalize(&displacement_quat);
+        
     }
 
-    // Apply displacement to pose
+    // Apply displacement to pose    
     quatMult(&pose_quat, &displacement_quat, &pose_quat);
 
-    // Normalize pose quaternion to account for unnormalized displacement quaternion    
-    quatNormalize(&pose_quat);
-    calculateEulerAngles();
+    // Normalize pose quaternion to account for unnormalized displacement quaternion
+    quatNormalize(&pose_quat);    
 
 }
 
@@ -219,7 +239,7 @@ static void calculateEulerAngles(void) {
 
     float temp1, temp2;
 
-    // Convert back to Euler angles    
+    // Convert back to Euler angles
     temp1 = pose_quat.w*pose_quat.y - pose_quat.z*pose_quat.x;
     if(temp1 > QUAT_POLE_LIMIT) {
         psi = 2*bams16Atan2(pose_quat.w, pose_quat.x);
@@ -236,7 +256,7 @@ static void calculateEulerAngles(void) {
         temp2 = 1.0 - 2.0*(pose_quat.y*pose_quat.y + pose_quat.z*pose_quat.z);
         psi = bams16Atan2(temp1, temp2);
     }
-    
+
 }
 
 // Quick accelerometer hack to help with estimation drift
@@ -308,10 +328,3 @@ static void calculateEulerAngles(void) {
 //
 //}
 
-void attUpdateTelemetryB(TelemetryB telemetry) {
-
-    telemetry->pose[0] = (unsigned int) attGetPitchBAMS();
-    telemetry->pose[1] = (unsigned int) attGetRollBAMS();
-    telemetry->pose[2] = (unsigned int) attGetYawBAMS();
-    
-}

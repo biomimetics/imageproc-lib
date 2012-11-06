@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2012, Regents of the University of California
+ * Copyright (c) 2010, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,38 +27,70 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the battery supervisor module
+ * InvenSense MPU-6050 6-axis MEMS Driver
  *
- * by Fernando L. Garcia Bermudez and Stanley S. Baek
+ * by Humphrey Hu
+ * based on ITG-3200 Driver by Stanley S. Baek
  *
- * v.0.2
+ * Notes:
+ *  - Uses an I2C port for communicating with the mpuscope chip
  *
  * Usage:
- *  #include "battery.h"
+ *  #include  "mpu.h"
  *
- *  // Initialize battery supervisor
- *  batSetup();
+ *  float mpuData[3];
+ *  unsigned char * mpuStrData;
  *
- *  // When the battery's voltage falls below the supervisor's threshold, the
- *  // interrupt will trip. If you'd like to stop all running motors when this
- *  // happens, please define __LOWBATT_STOPS_MOTORS in your project.
+ *  // initialize mpu module
+ *  mpuSetup();
+ * 
+ *  // run calibration with 1000 samples
+ *  mpuRunCalib(1000)
  *
+ *  // read out data from mpuscope and save in an internal buffer
+ *  mpuReadXYZ();
+ *
+ *  // convert data into floating point values in deg/s
+ *  mpuGetDegXYZ(mpuData);
+ *  // mpuGetRadXYZ(mpuData);  // in radian/s  
+ *
+ *  // read the data in raw string format
+ *  // mpuStrData[0] = lower byte of x-axis data
+ *  // mpuStrData[1] = higher byte of x-axis data
+ *  // mpuStrData[2] = lower byte of y-axis data
+ *  // ...
+ *  // mpuStrData[5] = higher byte of z-axis data
+ *
+ *  mpuStrData = mpuGetsXYZ();
  */
 
-#ifndef __BATTERY_H
-#define __BATTERY_H
+#ifndef __MPU_H
+#define __MPU_H
 
-typedef void (*BatteryEventISR)(void);
+// Setup device
+void mpuSetup(void);
 
-/**
- * Set up the battery supervisor module
- */
-void batSetup(void);
+// Run calibration routine
+void mpuRunCalib(unsigned int count);
 
-/**
- * Specify a function to call on battery supervisor events
- * @param isr - Battery event callback function pointer
- */
-void batSetCallback(BatteryEventISR isr);
+// Set sleep mode
+void mpuSetSleep(unsigned char mode);
+
+// 3 ints
+void mpuGetGyro(int* buff);
+// 3 ints
+void mpuGetXl(int* buff);
+// 1 int
+void mpuGetTemp(int* buff);
+
+float mpuGetGyroScale(void);
+float mpuGetXlScale(void);
+float mpuGetTempScale(void);
+
+// Read data from MPU
+void mpuUpdate(void);
 
 #endif
+
+
+

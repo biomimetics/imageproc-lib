@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2012, Regents of the University of California
+ * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,38 +27,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the battery supervisor module
+ * Generalized integer PID module
  *
- * by Fernando L. Garcia Bermudez and Stanley S. Baek
+ * by Andrew Pullin
  *
- * v.0.2
- *
- * Usage:
- *  #include "battery.h"
- *
- *  // Initialize battery supervisor
- *  batSetup();
- *
- *  // When the battery's voltage falls below the supervisor's threshold, the
- *  // interrupt will trip. If you'd like to stop all running motors when this
- *  // happens, please define __LOWBATT_STOPS_MOTORS in your project.
- *
+ * v.0.1
  */
 
-#ifndef __BATTERY_H
-#define __BATTERY_H
+#ifndef __PID_H
+#define __PID_H
 
-typedef void (*BatteryEventISR)(void);
-
-/**
- * Set up the battery supervisor module
- */
-void batSetup(void);
-
-/**
- * Specify a function to call on battery supervisor events
- * @param isr - Battery event callback function pointer
- */
-void batSetCallback(BatteryEventISR isr);
-
+//DSP dependent include
+#ifdef PID_HARDWARE
+#include <dsp.h>
 #endif
+
+#define PID_ON  1
+#define PID_OFF 0
+
+//Structures and enums
+//PID Continer structure
+
+typedef struct {
+    int input;
+    long dState, iState, preSat, p, i, d;
+    int Kp, Ki, Kd, Kaw, y_old, output;
+    unsigned char N;
+    char onoff; //boolean
+    long error;
+    unsigned long run_time;
+    unsigned long start_time;
+    int inputOffset;
+    int Kff;
+    int maxVal, minVal;
+    int satValPos, satValNeg;
+#ifdef PID_HARDWARE
+    tPID dspPID;
+#endif
+} pidObj;
+
+//Functions
+void pidUpdate(pidObj *pid, int y);
+void pidInitPIDObj(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
+void pidSetInput(pidObj *pid, int feedback);
+void pidSetGains(pidObj *pid, int Kp, int Ki, int Kd, int Kaw, int ff);
+void pidOnOff(pidObj *pid, unsigned char state);
+
+#endif // __PID_H
