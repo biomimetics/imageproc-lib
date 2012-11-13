@@ -99,10 +99,6 @@ typedef enum {
 static void setupDMASet1(void);
 static void setupDMASet2(void);
 
-static void setupTimer6(void);
-static inline void startTimer(unsigned int timeout);
-static inline void stopTimer(void);
-
 // =========== Static Variables ===============================================
 
 /** Interrupt handlers */
@@ -121,14 +117,18 @@ static unsigned char spic2_tx_buff[SPIC2_TX_BUFF_LEN] __attribute__((space(dma))
 
 // =========== Public Methods =================================================
 
-void spicSetup(void) {
+void spicSetupChannel1(void) {
     
-    setupDMASet1();     // Set up DMA channels
+    setupDMASet1();     // Set up DMA channels       
+    port_status[0] = STAT_SPI_CLOSED;   // Initialize status    
+    
+}
+
+void spicSetupChannel2(void) {
+
     setupDMASet2();
-    setupTimer6();      // Set up timeout timer
-    port_status[0] = STAT_SPI_CLOSED;   // Initialize status
     port_status[1] = STAT_SPI_CLOSED;
-    
+
 }
 
 void spic1SetCallback(SpicIrqHandler handler) {
@@ -180,8 +180,7 @@ void spic1Reset(void) {
     SPIC1_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC1_DMAW_CONbits.CHEN = 0;
     SPI1STATbits.SPIROV = 0;        // Clear overwrite bit
-    port_status[0] = STAT_SPI_OPEN;    // Release lock on channel
-    stopTimer();                    // Stop watchdog timer
+    port_status[0] = STAT_SPI_OPEN;    // Release lock on channel    
     
 }
 
@@ -189,8 +188,8 @@ void spic2Reset(void) {
 
     SPI2_CS = SPI_CS_IDLE;          // Disable chip select
     SPIC2_DMAR_CONbits.CHEN = 0;    // Disable DMA module
-    SPI2STATbits.SPIROV = 0;        // Clear overwrite bit
-    stopTimer();                    // Stop watchdog timer
+    SPIC2_DMAW_CONbits.CHEN = 0;
+    SPI2STATbits.SPIROV = 0;
     port_status[1] = STAT_SPI_OPEN;    // Release lock on channel
 
 }
@@ -265,8 +264,7 @@ unsigned int spic1MassTransmit(unsigned int len, unsigned char *buff, unsigned i
     }
     
     SPIC1_DMAR_CNT = len;   // Set number of bytes to send
-    SPIC1_DMAW_CNT = len;
-    startTimer(timeout);    // Start timeout timer
+    SPIC1_DMAW_CNT = len;    
     SPIC1_DMAR_CONbits.CHEN = 1;    // Begin transmission
     SPIC1_DMAW_CONbits.CHEN = 1;
     SPIC1_DMAW_REQbits.FORCE = 1;
@@ -292,8 +290,7 @@ unsigned int spic2MassTransmit(unsigned int len, unsigned char *buff, unsigned i
     }
     
     SPIC2_DMAR_CNT = len;   // Set number of bytes to send
-    SPIC2_DMAW_CNT = len;
-    startTimer(timeout);        // Start timeout timer
+    SPIC2_DMAW_CNT = len;  
     SPIC2_DMAR_CONbits.CHEN = 1;    // Begin transmission
     SPIC2_DMAW_CONbits.CHEN = 1;
     SPIC2_DMAW_REQbits.FORCE = 1;
@@ -328,10 +325,8 @@ unsigned int spic2ReadBuffer(unsigned int len, unsigned char *buff) {
 // TODO: Check for DMA error codes and return appropriate interrupt cause
 // ISR for DMA2 interrupt, currently DMAR for channel 1
 void __attribute__((interrupt, no_auto_psv)) _DMA2Interrupt(void) {
-        
-    stopTimer();    // Disable timeout timer
+            
     int_handler[0](SPIC_TRANS_SUCCESS);        // Call registered callback function
-
     _DMA2IF = 0;  
     
 }
@@ -345,10 +340,8 @@ void __attribute__((interrupt, no_auto_psv)) _DMA3Interrupt(void) {
 
 // ISR for DMA4 interrupt, currently DMAR for channel 2
 void __attribute__((interrupt, no_auto_psv)) _DMA4Interrupt(void) {
-    
-    stopTimer();    // Disable timeout timer
-    int_handler[1](SPIC_TRANS_SUCCESS);        // Call registered callback function
-    
+        
+    int_handler[1](SPIC_TRANS_SUCCESS);        // Call registered callback function    
     _DMA4IF = 0;
     
 }    
@@ -360,27 +353,6 @@ void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void) {
     _DMA5IF = 0;
     
 }    
-
-// ISR for timeout timer
-void __attribute__((interrupt, no_auto_psv)) _T6Interrupt(void) {
-    
-    // Only one channel busy at a time
-    if(port_status[0] == STAT_SPI_BUSY) {
-    
-        spic1Reset();
-        int_handler[0](SPIC_TRANS_TIMEOUT);
-        
-    } else if (port_status[1] == STAT_SPI_BUSY) {
-    
-        spic2Reset();
-        int_handler[1](SPIC_TRANS_TIMEOUT);
-        
-    }
-        
-    _T6IF = 0;
-
-}
-
 
 static void setupDMASet1(void) {
 
@@ -449,7 +421,7 @@ static void setupDMASet2(void) {
     EnableIntDMA4;
     _DMA4IF  = 0;        // Clear DMA interrupt flag
     
-    DMA5CON =     DMA5_REGISTER_POST_INCREMENT &     // Increment address after each byte
+    DMA5CON =   DMA5_REGISTER_POST_INCREMENT &     // Increment address after each byte
                 DMA5_ONE_SHOT &                 // Stop module after transfer complete
                 DMA5_TO_PERIPHERAL &            // Send data to peripheral from memory
                 DMA5_SIZE_BYTE &                 // Byte-size transaction
@@ -468,47 +440,4 @@ static void setupDMASet2(void) {
     DisableIntDMA5; // Only need one of the DMA interrupts
     _DMA5IF  = 0;        // Clear DMA interrupt
     
-}
-
-
-static void setupTimer6(void) {
-
-    unsigned int con_reg;
-
-    con_reg =     T6_ON &                // Enable module
-                T6_IDLE_STOP &         // Stop when idle
-                T6_GATE_OFF &         // Gate accumulator off
-                T6_PS_1_64 &         // 64:1 prescale
-                T6_SOURCE_INT &        // Internal source
-                T6_32BIT_MODE_OFF;    // Run 16-bit mode
-
-    _T6IF = 0;
-    
-    WriteTimer6(0);
-    OpenTimer6(con_reg, 0);
-    ConfigIntTimer6(T6_INT_PRIOR_5 & T6_INT_OFF);
-
-}
-
-/**
- * Starts the timeout timer
- *
- * @param timeout Number of microseconds to wait
- */
-static inline void startTimer(unsigned int timeout) {
-
-    WriteTimer6(0);
-    PR6 = US_TO_TICKS(timeout);
-    _T6IF = 0;
-    EnableIntT6;
-
-}
-
-/**
- * Stops the timeout timer
- */
-static inline void stopTimer(void) {
-
-    DisableIntT6;
-    WriteTimer6(0);
 }
