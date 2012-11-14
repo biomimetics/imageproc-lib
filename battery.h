@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2010, Regents of the University of California
+ * Copyright (c) 2007-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
  *
  * by Fernando L. Garcia Bermudez and Stanley S. Baek
  *
- * v.0.1
+ * v.0.2
  *
  * Usage:
  *  #include "battery.h"
@@ -48,6 +48,17 @@
 #ifndef __BATTERY_H
 #define __BATTERY_H
 
+typedef void (*BatteryEventISR)(void);
+
+/**
+ * Set up the battery supervisor module
+ */
 void batSetup(void);
+
+/**
+ * Specify a function to call on battery supervisor events
+ * @param isr - Battery event callback function pointer
+ */
+void batSetCallback(BatteryEventISR isr);
 
 #endif
