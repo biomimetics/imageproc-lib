@@ -272,31 +272,6 @@ void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
     dfmemDeselectChip();
 }
 
-void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset)
-{
-    /*
-    static unsigned int page = 0;
-    static unsigned int byte = 0;
-    static unsigned char buffer = 0;
-
-    if (page_reset != 0xffff) {
-        page = page_reset;
-    }
-
-    if (length > 512 || length == 0) return;
-
-    if (length + byte > 512) {
-        dfmemWriteBuffer2MemoryNoErase(page++, buffer);
-        buffer ^= 0x01; // toggle buffer
-        byte = 0;
-    }
-
-    dfmemWriteBuffer(data, length, byte, buffer);
-    byte += length;
-    */
-
-}
-
 void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
         unsigned char *data)
 {
