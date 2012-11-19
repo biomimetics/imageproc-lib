@@ -56,16 +56,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define RADIO_DEFAULT_SRC_ADDR                  (0x1101)
-#define RADIO_DEFAULT_SRC_PAN                   (0x1001)
-#define RADIO_DEFAULT_CHANNEL                   (0x15)
-#define RADIO_DEFAULT_HARD_RETRIES              (3)
-#define RADIO_DEFAULT_SOFT_RETRIES              (2)
-#define RADIO_DEFAULT_WATCHDOG_STATE                  (1) // Default on
-#define RADIO_DEFAULT_WATCHDOG_TIME                   (400) // 400 ms timeout
+#define RADIO_DEFAULT_SRC_ADDR          (0x1101)
+#define RADIO_DEFAULT_SRC_PAN           (0x1001)
+#define RADIO_DEFAULT_CHANNEL           (0x15)
+#define RADIO_DEFAULT_HARD_RETRIES      (3)
+#define RADIO_DEFAULT_SOFT_RETRIES      (2)
+#define RADIO_DEFAULT_WATCHDOG_STATE    (1) // Default on
+#define RADIO_DEFAULT_WATCHDOG_TIME     (400000) // 400 ms timeout
 
 //#define RADIO_AUTOCALIBRATE   // Define to enable auto calibration
-#define RADIO_CALIB_PERIOD                      (300000) // 5 minutes
+#define RADIO_CALIB_PERIOD              (300000000) // 5 minutes
 
 // =========== Static variables ===============================================
 // State information
@@ -115,8 +115,8 @@ void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
     status.retry_number = 0;
     status.last_rssi = 0;
     status.last_ed = 0;
-    status.last_calibration = 0; // sclockGetLocalTicks();
-    status.last_progress = 0; // sclockGetLocalTicks();
+    status.last_calibration = 0;
+    status.last_progress = 0;
     
     conf.address.address = RADIO_DEFAULT_SRC_ADDR;
     conf.address.pan_id = RADIO_DEFAULT_SRC_PAN;
@@ -283,7 +283,7 @@ void radioProcess(void) {
 
     unsigned long currentTime;
     
-    currentTime = sclockGetLocalMillis();
+    currentTime = sclockGetTime();
 
     if(configuration.watchdog_running) {
         if(currentTime - status.last_progress > configuration.watchdog_timeout) {
@@ -305,7 +305,7 @@ void radioProcess(void) {
 
 #if defined(RADIO_AUTOCALIBRATE) // Auto calibration routine
     // Check if calibration is necessary
-    currentTime = sclockGetLocalMillis();
+    currentTime = sclockGetTime();
     if(currentTime - status.last_calibration > RADIO_CALIB_PERIOD) {
         if(!radioSetStateOff()) { return; }
         trxCalibrate();
@@ -552,7 +552,7 @@ static void radioProcessRx(void) {
     if(packet == NULL) { return; }
 
     trxReadFrameBuffer(packet); // Retrieve frame from transceiver
-    packet->timestamp = sclockGetLocalTicks(); // Mark local time of reception
+    packet->timestamp = sclockGetTime(); // Mark local time of reception
 
     if(!carrayAddTail(rx_queue, packet)) {
         radioReturnPacket(packet); // Check for failure
@@ -562,6 +562,6 @@ static void radioProcessRx(void) {
 
 static inline void watchdogProgress(void) {
 
-    status.last_progress = sclockGetLocalMillis();
+    status.last_progress = sclockGetTime();
 
 }
