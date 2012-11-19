@@ -166,7 +166,6 @@ union {
  *          Declaration of private functions
  ---------------------------------------------------------------------------*/
 
-static inline unsigned char dfmemExchangeByte (unsigned char byte);
 static inline void dfmemWriteByte (unsigned char byte);
 static inline unsigned char dfmemReadByte (void);
 static inline void dfmemSelectChip(void);
@@ -610,19 +609,6 @@ void spiCallback(unsigned int irq_source) {
 
     }
 
-}
-
-// Sends a byte to the memory chip and returns the byte read from it
-//
-// Parameters   :   byte to send.
-// Returns      :   received byte.
-static inline unsigned char dfmemExchangeByte (unsigned char byte)
-{
-    SPI_BUF = byte;
-    while(SPI_STATbits.SPITBF);
-    while(!SPI_STATbits.SPIRBF);
-    SPI_STATbits.SPIROV = 0;
-    return SPI_BUF;
 }
 
 // Sends a byte to the memory chip.
