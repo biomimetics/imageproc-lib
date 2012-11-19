@@ -182,9 +182,7 @@ static void spiCallback(unsigned int irq_source);
 void dfmemSetup(void)
 {
     dfmemSetupPeripheral();
-
     spic2SetCallback(&spiCallback);
-
     while(!dfmemIsReady());
     dfmemGeometrySetup();
 }
@@ -213,9 +211,8 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     dfmemWriteByte(MemAddr.chr_addr[2]);
     dfmemWriteByte(MemAddr.chr_addr[1]);
     dfmemWriteByte(MemAddr.chr_addr[0]);
-    
-    spic2MassTransmit(length, data, 2*length);
 
+    spic2MassTransmit(length, data, 2*length);
 }
 
 void dfmemWriteBuffer (unsigned char *data, unsigned int length,
@@ -243,7 +240,6 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
     spic2MassTransmit(length, data, 2*length);
-
 }
 
 void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer)
@@ -326,11 +322,9 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
     unsigned int read_bytes;
     read_bytes = spic2MassTransmit(length, NULL, 2*length);
     dfmemSelectChip(); // Busy wait
-    
-    dfmemDeselectChip();
-    
     spic2ReadBuffer(read_bytes, data);
 
+    dfmemDeselectChip();
 }
 
 void dfmemReadPage2Buffer (unsigned int page, unsigned char buffer)
@@ -449,7 +443,7 @@ unsigned char dfmemGetStatus (void)
 
 // The manufacturer and device id command (0x9F) returns 4 bytes normally
 // (including info on id, family, density, etc.), but this functions returns
-// just the manufacturer id and discards the rest when deselecting the chip.
+// just the manufacturer id and discards the rest when de-selecting the chip.
 unsigned char dfmemGetManufacturerID (void)
 {
     unsigned char byte;
@@ -485,18 +479,14 @@ unsigned char dfmemGetChipSize (void)
 void dfmemDeepSleep()
 {
     dfmemSelectChip();
-
     dfmemWriteByte(0xB9);
-
     dfmemDeselectChip();
 }
 
 void dfmemResumeFromDeepSleep()
 {
     dfmemSelectChip();
-
     dfmemWriteByte(0xAB);
-
     dfmemDeselectChip();
 }
 
@@ -588,7 +578,7 @@ void dfmemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
 void dfmemGetGeometryParams(DfmemGeometry geo) {
 
     if(geo == NULL) { return; }
-    
+
     memcpy(geo, &dfmem_geo, sizeof(DfmemGeometryStruct));
 
 }
@@ -601,7 +591,7 @@ void spiCallback(unsigned int irq_source) {
 
     if(irq_source == SPIC_TRANS_SUCCESS) {
 
-        dfmemDeselectChip();        
+        dfmemDeselectChip();
 
     } else if(irq_source == SPIC_TRANS_TIMEOUT) {
 
@@ -634,19 +624,10 @@ static inline unsigned char dfmemReadByte (void)
 }
 
 // Selects the memory chip.
-//static inline void dfmemSelectChip(void) { SPI_CS = 0; }
+static inline void dfmemSelectChip(void) { spic2BeginTransaction(); }
 
-static inline void dfmemSelectChip(void) {
-    spic2BeginTransaction();
-}
-
-// Deselects the memory chip.
-//static inline void dfmemDeselectChip(void) { SPI_CS = 1; }
-
-static inline void dfmemDeselectChip(void) {
-    spic2EndTransaction();
-}
-
+// De-selects the memory chip.
+static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
 
 // Initializes the SPIx bus for communicating with the memory.
 //
