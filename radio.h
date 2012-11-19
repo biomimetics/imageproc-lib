@@ -73,8 +73,8 @@ typedef struct {
     unsigned char soft_retries;     // (1)
     unsigned char hard_retries;     // (1)
     unsigned char watchdog_running; // (1)
-    unsigned int watchdog_timeout;  // (2)
-} RadioConfiguration;               // Total: (10)
+    unsigned long watchdog_timeout; // (4)
+} RadioConfiguration;               // Total: (12)
 
 typedef struct {
     RadioState state;               // (2)
