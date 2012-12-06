@@ -127,9 +127,9 @@ unsigned int data_wait);
 //TODO: Implement
 static inline unsigned int writeString(unsigned int length, unsigned char* data);								   
 //TODO: Implement
-static inline void sendByte( unsigned char byte );
+static inline void mpuSendByte( unsigned char byte );
 //TODO: Implement
-static inline unsigned char receiveByte(void);
+static inline unsigned char mpuReceiveByte(void);
 
 
 /*-----------------------------------------------------------------------------
@@ -141,7 +141,8 @@ static inline unsigned char receiveByte(void);
 void mpuSetup(void) {
     
     // setup SPI port
-    setupSPI();
+   setupSPI();
+   spicSetupChannel2();
    unsigned char reg;
     
    writeReg(MPU_REG_PMGT1, 0x83);           //Reset IMU
@@ -223,6 +224,33 @@ float mpuGetTempScale(void) {
     return mpu_params.temp_scale;
 }
 
+
+void mpuUpdate(void) {
+
+    unsigned char buff[UPDATE_SIZE], rev[UPDATE_SIZE], i;	
+    unsigned int read_bytes;
+	
+    spic2BeginTransaction();
+	spic2Transmit(MPU_REG_XLBASE);			//send address of first registry of IMU read back
+    read_bytes = spic2MassTransmit(UPDATE_SIZE, NULL, 9*UPDATE_SIZE);
+    spic2EndTransaction();
+	
+    spic2ReadBuffer(read_bytes, buff);
+	
+	// Order is XL[6] TEMP[2] GYRO[6]
+    // Reverse data
+    for(i = 0; i < UPDATE_SIZE; i++) {
+        rev[i] = buff[UPDATE_SIZE - i - 1];
+    }
+    
+    // Order is now GYRO[6] TEMP[2] XL[6]
+    // Copy into buffers
+    memcpy(mpu_data.gyro_data, rev, 6);
+    memcpy(mpu_data.temp, rev + 6, 2);
+    memcpy(mpu_data.xl_data, rev + 8, 6);
+	
+}
+
 /*
 void mpuUpdate(void) {
 
@@ -293,18 +321,7 @@ static unsigned char readReg(unsigned char regaddr) {
     return c;
 }
 
-/*****************************************************************************
-* Function Name : readString
-* Description   : It reads predetermined data string length from the SPI bus.
-* Parameters    : length is the string length to read
-*                 data is the storage for received mpu data
-*                 data_wait is the timeout value
-* Return Value  : Number of bytes read before timeout.
-*****************************************************************************/
-static inline unsigned int readString(unsigned int length, unsigned char * data,
-unsigned int data_wait) {
-    return getsSPI2(length, data, data_wait);
-}
+
 
 /*****************************************************************************
 * Function Name : mpuWriteString
@@ -324,8 +341,9 @@ static inline unsigned int writeString(unsigned int length, unsigned char * data
 * Parameters    : byte - a byte to send
 * Return Value  : None
 *****************************************************************************/
-static inline void sendByte( unsigned char byte ) {
-	
+static inline void mpuSendByte( unsigned char byte ) {
+	 
+	 spic2Transmit(byte);
 
 }
 
@@ -335,7 +353,7 @@ static inline void sendByte( unsigned char byte ) {
 * Parameters    : None
 * Return Value  : None
 *****************************************************************************/
-static inline unsigned char receiveByte(void) {
+static inline unsigned char mpuReceiveByte(void) {
     return NULL;
 }
 
