@@ -340,7 +340,7 @@ static void radioReset(void) {
     status.state = STATE_OFF;
     radioSetStateIdle();
     watchdogProgress();
-    LED_ORANGE = 0;
+    LED_GREEN = 0;
     LED_RED = ~LED_RED;
 
 }
@@ -364,7 +364,7 @@ void trxCallback(unsigned int irq_cause) {
 
         // Beginning reception process
         if(irq_cause == RADIO_RX_START) {
-            LED_ORANGE = 1;
+            LED_GREEN = 1;
             status.state = STATE_RX_BUSY;
         }
 
@@ -375,7 +375,7 @@ void trxCallback(unsigned int irq_cause) {
             radioProcessRx();   // Process newly received data
             status.last_rssi = trxReadRSSI();
             status.last_ed = trxReadED();
-            LED_ORANGE = 0;
+            LED_GREEN = 0;
             status.state = STATE_RX_IDLE;    // Transition after data processed
         }
 
@@ -384,7 +384,7 @@ void trxCallback(unsigned int irq_cause) {
     } else if(status.state == STATE_TX_BUSY) {
 
         status.state = STATE_TX_IDLE;
-        LED_ORANGE = 0;
+        LED_GREEN = 0;
         // Transmit successful
         if(irq_cause == RADIO_TX_SUCCESS) {
             radioReturnPacket(carrayPopHead(tx_queue));
@@ -527,7 +527,7 @@ static void radioProcessTx(void) {
 
     // State should be STATE_TX_IDLE upon entering function
     status.state = STATE_TX_BUSY;    // Update state
-    LED_ORANGE = 1;                    // Indicate RX activity
+    LED_GREEN = 1;                    // Indicate RX activity
 
     macSetSeqNum(packet, status.sequence_number++); // Set packet sequence number
 
