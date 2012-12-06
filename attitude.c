@@ -45,6 +45,7 @@
 #include "gyro.h"
 #include "bams.h"
 #include "utils.h"
+//#include "sclock.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -197,7 +198,7 @@ void attEstimatePose(void) {
 
     gyroGetRadXYZ(rate);    // Get last read gyro values    
 
-    //timestamp = swatchToc(); // Record timestamp
+    //timestamp = sclockGetTime(); // Record timestamp
 
     // Calculate magnitude and disiplacement
     square_sum = rate[0]*rate[0] + rate[1]*rate[1] + rate[2]*rate[2];    
