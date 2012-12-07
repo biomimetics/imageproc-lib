@@ -76,6 +76,7 @@
     #define SPI_CON2        SPI2CON2
     #define SPI_STAT        SPI2STAT
     #define SPI_STATbits    SPI2STATbits
+    #define SPI_CON1bits    SPI2CON1bits
 
 #endif
 
@@ -181,9 +182,15 @@ static void spiCallback(unsigned int irq_source);
 
 void dfmemSetup(void)
 {
+    // SPI setup
     dfmemSetupPeripheral();
+    spicSetupChannel2();
     spic2SetCallback(&spiCallback);
+
+    // Wait for dfmem
     while(!dfmemIsReady());
+
+    // Geometry setup
     dfmemGeometrySetup();
 }
 
@@ -296,11 +303,11 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
     dfmemWriteByte(0x00);
     dfmemWriteByte(0x00);
 
-    //unsigned int read_bytes;
-    //read_bytes = spic2MassTransmit(length, NULL, 2*length);
-    //dfmemSelectChip(); // Busy wait
-    //spic2ReadBuffer(read_bytes, data);
-    while (length--) { *data++ = dfmemReadByte(); }
+    unsigned int read_bytes;
+    read_bytes = spic2MassTransmit(length, NULL, 2*length);
+    dfmemSelectChip(); // Busy wait
+    spic2ReadBuffer(read_bytes, data);
+    //while (length--) { *data++ = dfmemReadByte(); }
 
     dfmemDeselectChip();
 }
@@ -612,12 +619,35 @@ static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
 // The MCU is the SPI master and the clock isn't continuous.
 static void dfmemSetupPeripheral(void)
 {
-    SPI_CON1 = ENABLE_SCK_PIN & ENABLE_SDO_PIN & SPI_MODE16_OFF & SPI_SMP_OFF &
-               SPI_CKE_ON & SLAVE_ENABLE_OFF & CLK_POL_ACTIVE_HIGH &
-               MASTER_ENABLE_ON & PRI_PRESCAL_4_1 & SEC_PRESCAL_8_1;
-    SPI_CON2 = FRAME_ENABLE_OFF & FRAME_SYNC_OUTPUT & FRAME_POL_ACTIVE_HIGH &
-               FRAME_SYNC_EDGE_PRECEDE;
-    SPI_STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
+    // SPI interrupt is not used.
+    _SPI2IF = 0;    // Clear the interrupt flag
+    _SPI2IE = 0;    // Disable interrupts
+
+    // SPI2CON1 Register Settings
+    SPI_CON1bits.MSTEN = 1; // Master mode Enabled
+    SPI_CON1bits.DISSCK = 0; // Internal Serial Clock is Enabled
+    SPI_CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
+    SPI_CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
+    SPI_CON1bits.SMP = 0; // Input data is sampled at middle of data output time
+    SPI_CON1bits.SSEN = 0; // SSx pin is used
+    SPI_CON1bits.CKE = 1; // Serial output data changes on transition
+                        // from active clock trx_state to idle clock trx_state
+    SPI_CON1bits.CKP = 0; // Idle trx_state for clock is a low level;
+                            // active trx_state is a high level
+
+    // Set up SCK frequency of 13.333Mhz for 40 MIPS
+    //SPI_CON1bits.SPRE = 0b100; // Secondary prescale    3:1
+    //SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
+    SPI_CON1bits.SPRE = 0b000; // Secondary prescale    8:1
+    SPI_CON1bits.PPRE = 0b10; // Primary prescale       4:1
+
+    // SPI2CON2 Register Settings
+    SPI_CON2 = 0x0000;
+
+    // SPI2STAT Register Settings
+    SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
+    SPI_STATbits.SPIROV = 0; // Clear Overflow
+    SPI_STATbits.SPIEN = 1; // Enable SPI module
 }
 
 // Figures out memory geometry by querying its size
