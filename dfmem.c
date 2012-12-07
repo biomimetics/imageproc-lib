@@ -182,6 +182,7 @@ static void spiCallback(unsigned int irq_source);
 void dfmemSetup(void)
 {
     dfmemSetupPeripheral();
+    spicSetupChannel2();
     spic2SetCallback(&spiCallback);
     while(!dfmemIsReady());
     dfmemGeometrySetup();
