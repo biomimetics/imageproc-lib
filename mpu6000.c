@@ -140,8 +140,8 @@ static inline unsigned char receiveByte(void);
 
 void mpuSetup(void) {
     
-    // setup SPI port
-    setupSPI();
+   // setup SPI port
+   setupSPI();
    unsigned char reg;
     
    writeReg(MPU_REG_PMGT1, 0x83);           //Reset IMU
@@ -270,10 +270,10 @@ void mpuUpdate(void) {
 * Return Value  : None
 *****************************************************************************/
 static void writeReg(unsigned char regaddr, unsigned char data ){
-    spic2BeginTransaction(); // Its usually useful to return the value read too ==========
+    spic2cs2BeginTransaction(); // Its usually useful to return the value read too ==========
     spic2Transmit(regaddr);
     spic2Transmit(data);
-    spic2EndTransaction();
+    spic2cs2EndTransaction();
 }
 
 /*****************************************************************************
@@ -285,10 +285,10 @@ static void writeReg(unsigned char regaddr, unsigned char data ){
 static unsigned char readReg(unsigned char regaddr) {
     unsigned char c;
     
-    spic2BeginTransaction();
+    spic2cs2BeginTransaction();
     spic2Transmit(regaddr | READ);
     c = spic2Receive();
-    spic2EndTransaction();
+    spic2cs2EndTransaction();
     
     return c;
 }

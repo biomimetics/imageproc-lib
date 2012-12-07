@@ -174,11 +174,13 @@ void spic2SetCallback(SpicIrqHandler);
  * if used improperly.
  */
 void spic2BeginTransaction(void);
+void spic2cs2BeginTransaction(void);
 
 /**
  * End a transaction on port 2.
  */
 void spic2EndTransaction(void);
+void spic2cs2EndTransaction(void);
 
 /**
  * Resets port 2.

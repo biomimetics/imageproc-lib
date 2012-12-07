@@ -54,7 +54,7 @@
 
     #define SPI1_CS             (_LATB2)    // Radio Chip Select
     #define SPI2_CS             (_LATG9)    // Flash Chip Select
-    //#define SPI2_CS             (_LATC15)   // MPU6000 Chip Select
+    #define SPI2_CS2            (_LATC15)   // MPU6000 Chip Select
 
 #endif
 // DMA channels allocated as per Wiki assignments
@@ -161,6 +161,14 @@ void spic2BeginTransaction(void) {
 
 }
 
+void spic2cs2BeginTransaction(void) {
+
+    while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
+    port_status[1] = STAT_SPI_BUSY;
+    SPI2_CS2 = SPI_CS_ACTIVE;     // Activate chip select
+
+}
+
 void spic1EndTransaction(void) {
 
     port_status[0] = STAT_SPI_OPEN; // Free port
@@ -172,6 +180,13 @@ void spic2EndTransaction(void) {
 
     port_status[1] = STAT_SPI_OPEN; // Free port
     SPI2_CS = SPI_CS_IDLE;  // Idle chip select
+
+}
+
+void spic2cs2EndTransaction(void) {
+
+    port_status[1] = STAT_SPI_OPEN; // Free port
+    SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
 
 }
 
@@ -188,6 +203,7 @@ void spic1Reset(void) {
 void spic2Reset(void) {
 
     SPI2_CS = SPI_CS_IDLE;          // Disable chip select
+    SPI2_CS2 = SPI_CS_IDLE;
     SPIC2_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC2_DMAW_CONbits.CHEN = 0;
     SPI2STATbits.SPIROV = 0;
@@ -401,7 +417,7 @@ static void setupDMASet1(void) {
 
 static void setupDMASet2(void) {
 
-    DMA4CON =     DMA4_REGISTER_POST_INCREMENT &     // Increment address after each byte
+    DMA4CON =   DMA4_REGISTER_POST_INCREMENT &     // Increment address after each byte
                 DMA4_ONE_SHOT &                 // Stop module after transfer complete
                 PERIPHERAL_TO_DMA4 &             // Receive data from peripheral to memory
                 DMA4_SIZE_BYTE &                 // Byte-size transactions

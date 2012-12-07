@@ -213,6 +213,8 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
     spic2MassTransmit(length, data, 2*length);
+    //while (length--) { dfmemWriteByte(*data++); }
+    //dfmemDeselectChip();
 }
 
 void dfmemWriteBuffer (unsigned char *data, unsigned int length,
@@ -294,10 +296,11 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
     dfmemWriteByte(0x00);
     dfmemWriteByte(0x00);
 
-    unsigned int read_bytes;
-    read_bytes = spic2MassTransmit(length, NULL, 2*length);
-    dfmemSelectChip(); // Busy wait
-    spic2ReadBuffer(read_bytes, data);
+    //unsigned int read_bytes;
+    //read_bytes = spic2MassTransmit(length, NULL, 2*length);
+    //dfmemSelectChip(); // Busy wait
+    //spic2ReadBuffer(read_bytes, data);
+    while (length--) { *data++ = dfmemReadByte(); }
 
     dfmemDeselectChip();
 }
