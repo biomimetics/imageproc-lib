@@ -43,19 +43,19 @@ typedef struct {
     unsigned int index;
     int* data;
     long accum;
-} filterAvgInt_t;
+} dfilterAvgInt_t;
 
 // Creates a filter and returns a point.
 // Caller should check for NULL returns.
-void filterAvgCreate(filterAvgInt_t*, unsigned int);
+void dfilterAvgCreate(dfilterAvgInt_t*, unsigned int);
 
 // Add a value to the circular buffer, incrementing index
-void filterAvgUpdate(filterAvgInt_t*, int);
+void dfilterAvgUpdate(dfilterAvgInt_t*, int);
 
 // Calculate and return average value;
-int filterAvgCalc(filterAvgInt_t*);
+int dfilterAvgCalc(dfilterAvgInt_t*);
 
 //Zero all values in the filter
-void filterZero(filterAvgInt_t* filt);
+void dfilterZero(dfilterAvgInt_t* filt);
 
 #endif // __DFILTER_AVG_H
