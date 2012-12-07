@@ -55,5 +55,7 @@ void filterAvgUpdate(filterAvgInt_t*, int);
 // Calculate and return average value;
 int filterAvgCalc(filterAvgInt_t*);
 
+//Zero all values in the filter
+void filterZero(filterAvgInt_t* filt);
 
 #endif // __DFILTER_AVG_H

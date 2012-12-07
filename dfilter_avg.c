@@ -64,3 +64,10 @@ void filterAvgUpdate(filterAvgInt_t* filt, int newval){
 int filterAvgCalc(filterAvgInt_t* filt){
     return (int)(filt->accum / (filt->windowLen));
 }
+
+void filterZero(filterAvgInt_t* filt){
+    int i;
+    for(i = 0; i < filt->windowLen; i++){
+        filt->data[i] = 0;
+    }
+}
