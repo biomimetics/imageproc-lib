@@ -519,8 +519,10 @@ static void setupSPI(void) {
                             // active trx_state is a high level
 
     // Set up SCK frequency of 6.667Mhz for 40 MIPS
-    SPI_CON1bits.SPRE = 0b010; // Secondary prescale    6:1
-    SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
+    //SPI_CON1bits.SPRE = 0b010; // Secondary prescale    6:1
+    //SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
+    SPI_CON1bits.SPRE = 0b000; // Secondary prescale    8:1
+    SPI_CON1bits.PPRE = 0b10; // Primary prescale       4:1
 
     // SPI2CON2 Register Settings
     SPI_CON2 = 0x0000; // Framed SPI2 support disabled

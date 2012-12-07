@@ -53,8 +53,8 @@
 #if defined(__IMAGEPROC2)
 
     #define SPI1_CS             (_LATB2)    // Radio Chip Select
-    //#define SPI2_CS             (_LATG9)    // Flash Chip Select
-    #define SPI2_CS             (_LATC15)   // MPU6000 Chip Select
+    #define SPI2_CS             (_LATG9)    // Flash Chip Select
+    //#define SPI2_CS             (_LATC15)   // MPU6000 Chip Select
 
 #endif
 // DMA channels allocated as per Wiki assignments
