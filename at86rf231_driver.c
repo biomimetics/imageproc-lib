@@ -113,7 +113,7 @@ void trxSetup(void) {
     trxSetStateOff(); // Transition to TRX_OFF for configuring device
 
     // Interrupt configuration
-    trxWriteSubReg(SR_IRQ_MASK_MODE, IRQ_MASK_MODE_ENABLEDONLY); // Mask disabled IRQs from status register
+    trxWriteSubReg(SR_IRQ_MASK_MODE, IRQ_MASK_MODE_ALL); // Mask disabled IRQs from status register
     trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Enable IRQ at end of transceive
     trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts 
 
@@ -126,6 +126,8 @@ void trxSetup(void) {
     trxWriteSubReg(SR_AACK_FVN_MODE, FRAME_VERSION_IGNORED); // Ignore frame version
     trxWriteSubReg(SR_SPI_CMD_MODE, SPI_CMD_MODE_MONITOR_PHY_RSSI); // First byte of SPI is RSSI register
     trxSetStateIdle();
+
+    // Enable radio interrupt
     ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_4); // Radio IC interrupt
 
     last_rssi = 0;
