@@ -104,16 +104,22 @@ static unsigned char last_rssi;
 
 void trxSetup(void) {
 
+    // SPI setup
     setupSPI();     // Set up SPI com port
     spicSetupChannel1();
     spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
-    trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts          
-    trxSetStateOff(); // Transition to TRX_OFF for configuring device    
-    trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
+
+    // Device initialization
+    trxSetStateOff(); // Transition to TRX_OFF for configuring device
+
+    // Interrupt configuration
+    trxWriteSubReg(SR_IRQ_MASK_MODE, IRQ_MASK_MODE_ENABLEDONLY); // Mask disabled IRQs from status register
+    trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Enable IRQ at end of transceive
+    trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts 
+
     trxWriteSubReg(SR_SLOTTED_OPERATION, 0);  // Disable slotted operation
     trxWriteSubReg(SR_TX_AUTO_CRC_ON, 1); // Enable automatic TX CRC
     trxWriteSubReg(SR_CLKM_CTRL, CLKM_NO_CLOCK); // No clock on CLKM pin
-    trxWriteSubReg(SR_IRQ_MASK_MODE, IRQ_MASK_MODE_ON); // Turn off interrupt polling
     trxWriteSubReg(SR_MAX_CSMA_RETRIES, DEFAULT_CSMA_RETRIES); // Set CSMA attempts
     trxWriteSubReg(SR_MAX_FRAME_RETRIES, DEFAULT_FRAME_RETRIES); // Set resend attempts
     trxWriteSubReg(SR_RX_SAFE_MODE, 0); // Disable frame buffer protection
@@ -495,7 +501,7 @@ static void trxFillBuffer(void) {
  * Copy frame buffer contents from DMA into static software buffer
  */
 static void trxReadBuffer(void) {
-    
+
     spic1ReadBuffer(FRAME_BUFFER_SIZE, frame_buffer);         
 
 }
