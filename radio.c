@@ -61,7 +61,7 @@
 #define RADIO_DEFAULT_CHANNEL           (0x15)
 #define RADIO_DEFAULT_HARD_RETRIES      (3)
 #define RADIO_DEFAULT_SOFT_RETRIES      (2)
-#define RADIO_DEFAULT_WATCHDOG_STATE    (1) // Default on
+#define RADIO_DEFAULT_WATCHDOG_STATE    (0) // Default off
 #define RADIO_DEFAULT_WATCHDOG_TIME     (400000) // 400 ms timeout
 
 //#define RADIO_AUTOCALIBRATE   // Define to enable auto calibration
