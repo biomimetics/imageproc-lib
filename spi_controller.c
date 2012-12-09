@@ -45,6 +45,7 @@
 #include "spi.h"
 #include "timer.h"
 #include "dma.h"
+#include "init_default.h"
 
 #include <string.h>
 
@@ -81,9 +82,6 @@
 #define SPIC2_TX_BUFF_LEN       (264) // Currently not in use
 
 #define US_TO_TICKS(X)          ((X*10)/16) // Microseconds to cycles with 64:1 prescale
-
-// TODO: Move this into some generics.h !!
-#define FCY                     (40000000)
 
 #define SPI_CS_ACTIVE           (0)
 #define SPI_CS_IDLE             (1)
