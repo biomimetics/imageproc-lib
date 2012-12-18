@@ -35,7 +35,7 @@
 * v alpha
 *
 * Revisions:
-* 
+* Duncan Haldane  11/1/2011  Made it work
 *                      
 * Notes:
 *  - This module uses an SPI port for communicating with the chip
@@ -147,14 +147,15 @@ void mpuSetup(void) {
    writeReg(MPU_REG_PMGT1, 0x83);           //Reset IMU
    delay_ms(100);
    writeReg(MPU_REG_PMGT1, 0x03);           // Set clock to PLL Z Gyro
-   writeReg(MPU_REG_USERCON, 0x10);        // Disable I2C
+   writeReg(MPU_REG_USERCON, 0b00010000);        // Disable I2C, FIFO Operations
    					
    reg = readReg(MPU_REG_WHOAMI);		// Some sort of check here? =============== HH
     
     writeReg(MPU_REG_RATEDIV, DEFAULT_RATEDIV);	// Set rate divider
+	writeReg(MPU_REG_CONFIG, 0b00000001);		// DLPF configured to 188Hz Bandwidth [Fastest filtered mode]
     
-    writeReg(MPU_REG_GYROCONFIG, 0b00010000);	// Set gyro scale 1000 DPS (4x)
-    mpu_params.gyro_scale = GYRO_SCALE_BASE*4;
+    writeReg(MPU_REG_GYROCONFIG, 0b00011000);	// Set gyro scale 2000 DPS (8x)
+    mpu_params.gyro_scale = GYRO_SCALE_BASE*8;
     
     writeReg(MPU_REG_XLCONFIG, 0b00010000);		// Set xl scale 8g (4x)
     mpu_params.xl_scale = XL_SCALE_BASE*4;		
@@ -163,7 +164,7 @@ void mpuSetup(void) {
     mpu_params.temp_offset = DEFAULT_TEMP_OFFSET;
     
     writeReg(MPU_REG_INTENABLE, 0);				// Disable interrupts
-    writeReg(MPU_REG_CONFIG, 0);				// Set frame sync and DLPF off
+    //writeReg(MPU_REG_CONFIG, 0);				// Set frame sync and DLPF off
     writeReg(MPU_REG_PMGT2, 0b00000000);		// Activate all sensors
 
  //   mpuRunCalib(1000);
@@ -171,7 +172,7 @@ void mpuSetup(void) {
 
 // TODO: Implement!
 void mpuRunCalib(unsigned int count){
-
+	
     unsigned int i;
     long gx, gy, gz;
 
