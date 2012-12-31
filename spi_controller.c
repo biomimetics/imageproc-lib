@@ -46,6 +46,7 @@
 #include "timer.h"
 #include "dma.h"
 #include "init_default.h"
+#include "utils.h"
 
 #include <string.h>
 
@@ -151,20 +152,28 @@ void spic1BeginTransaction(void) {
 
 }
 
-void spic2BeginTransaction(void) {
+/* need to make this atomic so competing processes do not both grab SPI2 */
 
+void spic2BeginTransaction(void) {
     while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
+  /*  risky - could have interrupt here */
     port_status[1] = STAT_SPI_BUSY;
     SPI2_CS = SPI_CS_ACTIVE;     // Activate chip select
-
 }
 
 void spic2cs2BeginTransaction(void) {
-
-    while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
-    port_status[1] = STAT_SPI_BUSY;
-    SPI2_CS2 = SPI_CS_ACTIVE;     // Activate chip select
-
+   char grab = 0;
+   while(!grab)
+   {  while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
+       CRITICAL_SECTION_START // turn off interrupts
+    	  if(port_status[1] != STAT_SPI_BUSY) // success at grabbing semaphore
+	  { port_status[1] = STAT_SPI_BUSY;
+	     SPI2_CS2 = SPI_CS_ACTIVE;     // Activate chip select
+	     grab =1;	// signal grabbed
+	  } 
+	 CRITICAL_SECTION_END
+	delay_us(100);	// give time for other processes to run
+	}
 }
 
 void spic1EndTransaction(void) {
@@ -287,6 +296,10 @@ unsigned int spic1MassTransmit(unsigned int len, unsigned char *buff, unsigned i
 
 }
 
+
+/**
+ * Transmit the contents of a buffer on port 2 via DMA
+ */
 unsigned int spic2MassTransmit(unsigned int len, unsigned char *buff, unsigned int timeout) {
 
     // Make sure requested length is in range
