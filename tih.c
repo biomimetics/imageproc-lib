@@ -15,7 +15,7 @@
 #define OUTPUT_PWM  1
 #define OUTPUT_GPIO 0
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
-
+#define MAXPWM 0xf80   // maximum PWM to allow dead time in case need to sample back EMF
 
 
 static tiHDriver outputs[4];
@@ -91,7 +91,8 @@ void tiHSetFloat(unsigned int channel, float percent){
 
 void tiHSetDC(unsigned int channel, int dutycycle){
     unsigned int idx = channel - 1;
-
+	if (dutycycle > MAXPWM) dutycycle = MAXPWM;
+	if (dutycycle < -MAXPWM) dutycycle = -MAXPWM;	
     outputs[idx].throt_f = -666.0; //TODO: not a solution; have to update float every time?
     outputs[idx].throt_i = dutycycle;
 
@@ -103,7 +104,7 @@ void tiHSetDC(unsigned int channel, int dutycycle){
     //Select correct PWM output and GPIO level for dir and mode
     tiHConfigure(channel);
 
-    //Set duty cycle
+    //Set duty cycle max = 0xfff
     SetDCMCPWM(channel, dutycycle, 0);
 }
 
