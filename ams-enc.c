@@ -73,9 +73,11 @@ void amsHallSetup()
       encSetup();
 	// initialize structure
 	for(i = 0; i< NUM_ENC; i++)
-	{ encPos[i].oticks = 0;   // set revolution counter to 0	
-	   amsGetPos(i);
+	{  encGetPos(i);	// get initial values w/o setting oticks
+	// amsGetPos(i);
 	   encPos[i].offset = encPos[i].pos; // initialize encoder
+	   encPos[i].calibPos = 0;
+   	   encPos[i].oticks = 0;   // set revolution counter to 0	
 	}
 }
 
@@ -125,26 +127,26 @@ void encGetPos(unsigned char num) {
 }
 
 /*****************************************************************************
- * Function Name : encSumPos
+ * Function Name : amsGetPos/encSumPos
  * Description   : Count encoder[num] rollovers, write to struct encPos
  * Parameters    : None
  * Return Value  : None
- *****************************************************************************/
-void encSumPos(unsigned char num) {
-
-	int prev = encPos[num].pos;
-	int update;
+ * .pos: 0 <= .pos <= 0x3fff,  0 to 2 pi range. 
+  * see hall_velocity_ip2.5.ppt 
+***************************************************************************/
+void amsGetPos(unsigned char num) {
+	unsigned int prev = encPos[num].pos;
+	unsigned int update;
 	encGetPos(num);
 	update = encPos[num].pos;
-	
-	if( (update-prev) > 8192 ){		    	//Subtract one Rev count if diff > 180
-		encPos[num].oticks--;
+	if (update > prev)
+	{	if( (update-prev) > MAX_HALL/2 )	    	//Subtract one Rev count if diff > 180
+		{	encPos[num].oticks--;}
+	} 
+	else
+	{	if( (prev-update) > MAX_HALL/2 )		//Add one Rev count if -diff > 180
+		{ encPos[num].oticks++; }
 	}
-	
-	if( (prev-update) > 8192 ){			//Add one Rev count if -diff > 180
-		encPos[num].oticks++;
-	}
-		
 }
 
 /*****************************************************************************
@@ -160,18 +162,17 @@ float encGetFloatPos(unsigned char num) {
     return pos;
 }
 
-// for fractional data type, want 0x2000 to be centered at 0, -pi = 0x0000, pi=0x4000
-// convert to 16 bits to get correct sign
-#define MAX_HALL 0x4000 // maximum Hall sensor value
-void amsGetPos(unsigned char num)
+// range 0 rad = 0x0000, 2pi=0x3fff
+// convert to 16 bits to be able to use signed long for leg angle 
+
+/* void amsGetPos(unsigned char num)
 {	int temp;
 	encSumPos(num);
-     temp = encPos[num].pos- encPos[num].offset;
-     if (temp < 0) temp = temp + MAX_HALL; // restore to 0 < temp < MAX_HALL range
-     temp = (temp - MAX_HALL/2);	// range -MAX_HALL/2 < temp < MAX_HALL/2
-     encPos[num].calibPos = temp << 2; // should be equiv of fractional type now
+     	temp = encPos[num].pos- encPos[num].offset;
+	if (temp < 0) temp = temp + MAX_HALL; // back in 0 , x < 2 pi range
+     	encPos[num].calibPos = ((unsigned int)temp) << 2; // convert to 16 bits unsigned
 }
-
+*/
 
 /*-----------------------------------------------------------------------------
  * ----------------------------------------------------------------------------

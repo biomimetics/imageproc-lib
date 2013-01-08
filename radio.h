@@ -130,6 +130,9 @@ void radioProcess(void);
 MacPacket radioRequestPacket(unsigned int data_size);
 // Return a packet + payload to the preinitialized pool
 unsigned int radioReturnPacket(MacPacket packet);
+// return a packet+payload from queue
+unsigned int radioConfirmationPacket(unsigned int dest_addr, unsigned char type,\
+	 		unsigned char status,  unsigned char length, unsigned char *frame);
 
 MacPacket __attribute__ ((deprecated)) radioCreatePacket(unsigned int data_size);
 void __attribute__ ((deprecated)) radioDeletePacket(MacPacket packet);

@@ -274,6 +274,26 @@ unsigned int radioReturnPacket(MacPacket packet) {
     return ppoolReturnFullPacket(packet);
 }
 
+/*****************
+   radioConfirmationPacket - basically queues and sends a payload in one function 
+******************/
+unsigned int radioConfirmationPacket\
+	(unsigned int dest_addr, unsigned char type, unsigned char status, \
+	 unsigned char length, unsigned char *frame)
+{ MacPacket packet; Payload pld;
+   packet = radioRequestPacket(length);
+    if(packet == NULL) return(0);
+    macSetDestAddr(packet, dest_addr);
+    // Prepare the payload
+    pld = packet->payload;
+    paySetType(pld, type);
+    paySetStatus(pld, status);
+    paySetData(pld, length, frame);  // echo back data
+    // Enqueue the packet for broadcast
+    while(!radioEnqueueTxPacket(packet));
+    return(1); //success     
+}
+
 void radioDeletePacket(MacPacket packet) {
     return;
 }

@@ -50,14 +50,14 @@
  *
  *
  */	
- 
+ #define MAX_HALL 0x4000 // maximum Hall sensor value
 #define NUM_ENC 2
-
+//Leg position struct
 typedef struct {
-   	int pos; //Leg position struct
-	long oticks;
-	int calibPos;
-	int offset;
+   	unsigned int pos; // raw reading from sensor 14 bits
+	long oticks;  // revolution counter
+	unsigned int calibPos;  // 0 to 2pi, converted to 16 bits
+	unsigned int offset; // initial reading on setup - relative zero position
 } EncObj;
 
 extern EncObj encPos[NUM_ENC];
@@ -96,3 +96,5 @@ void encSumPos(unsigned char num);
  * Return Value  : None
  *****************************************************************************/
 float encGetFloatPos(unsigned char num);
+
+void amsHallSetup();
