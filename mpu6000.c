@@ -103,8 +103,8 @@ static unsigned char readReg(unsigned char regaddr);
 static inline void setupSPI(void);
 
 //TODO: Implement
-static inline unsigned int readString(unsigned int length, unsigned char * data,
-unsigned int data_wait);
+// static inline unsigned int readString(unsigned int length, unsigned char * data,
+// unsigned int data_wait);
 //TODO: Implement
 static inline unsigned int writeString(unsigned int length, unsigned char* data);	
 //TODO: Implement
@@ -236,8 +236,10 @@ void mpuUpdate(void) {
 // need to use burst mode to ensure all readings are synchronized
 void mpuUpdate(void) 
 {  unsigned char c, buff[UPDATE_SIZE], rev[UPDATE_SIZE], i = 0;
+   
 	c= readReg(MPU_REG_XLBASE);
  	spic2cs2BeginTransaction(); 
+
  	spic2Transmit(MPU_REG_XLBASE | READ);
  	for ( i = 0; i < 14; i++)
 	{  buff[i] = spic2Receive(); }
@@ -250,9 +252,11 @@ void mpuUpdate(void)
 	}
 // Order is now GYRO[6] TEMP[2] XL[6]
 // Copy into buffers
+
 	memcpy(mpu_data.gyro_data, rev, 6);
 	memcpy(&mpu_data.temp, rev + 6, 2);
 	memcpy(mpu_data.xl_data, rev + 8, 6);
+
 }
 
 
@@ -353,6 +357,7 @@ static inline void setupSPI(void) {
                             // active trx_state is a high level
 
     // Set up SCK frequency of 13.333Mhz for 40 MIPS
+	// 1 MHz limit for MPU 6000
     //SPI_CON1bits.SPRE = 0b100; // Secondary prescale    3:1
     //SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
     SPI_CON1bits.SPRE = 0b000; // Secondary prescale    8:1

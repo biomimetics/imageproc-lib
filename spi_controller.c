@@ -88,12 +88,6 @@
 #define SPI_CS_ACTIVE           (0)
 #define SPI_CS_IDLE             (1)
 
-/** Port status codes */
-typedef enum {
-    STAT_SPI_CLOSED, /** Port not initialized */
-    STAT_SPI_OPEN,  /** Port not busy */
-    STAT_SPI_BUSY,  /** Port busy */
-} SpicStatus;
 
 // =========== Function Prototypes ============================================
 static void setupDMASet1(void);
@@ -105,7 +99,7 @@ static void setupDMASet2(void);
 static SpicIrqHandler int_handler[SPIC_NUM_PORTS];
 
 /** Current port statuses */
-static SpicStatus port_status[SPIC_NUM_PORTS];
+SpicStatus port_status[SPIC_NUM_PORTS];
 
 // Port 1 buffers
 static unsigned char spic1_rx_buff[SPIC1_RX_BUFF_LEN] __attribute__((space(dma)));
@@ -161,6 +155,7 @@ void spic2BeginTransaction(void) {
     SPI2_CS = SPI_CS_ACTIVE;     // Activate chip select
 }
 
+/// this can hang if higher priority interrupt is waiting indefinitely and locking out lower level
 void spic2cs2BeginTransaction(void) {
    char grab = 0;
    while(!grab)
@@ -172,7 +167,6 @@ void spic2cs2BeginTransaction(void) {
 	     grab =1;	// signal grabbed
 	  } 
 	 CRITICAL_SECTION_END
-	delay_us(100);	// give time for other processes to run
 	}
 }
 
@@ -233,10 +227,15 @@ unsigned char spic1Transmit(unsigned char data) {
 unsigned char spic2Transmit(unsigned char data) {
 
     unsigned char c;
+   unsigned int timeout = 0;
     SPI2STATbits.SPIROV = 0;        // Clear overflow bit
     SPI2BUF = data;                   // Initiate SPI bus cycle by byte write
-    while(SPI2STATbits.SPITBF);        // Wait for transmit to complete
-    while(!SPI2STATbits.SPIRBF);    // Wait for receive to complete
+    while(SPI2STATbits.SPITBF)        // Wait for transmit to complete
+   { timeout++;}
+    timeout = 0;
+    while(!SPI2STATbits.SPIRBF)   // Wait for receive to complete
+    { timeout++; }
+
     c = SPI2BUF;                    // Read out received data to avoid overflow
     return c;
 

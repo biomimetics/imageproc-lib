@@ -146,6 +146,9 @@
 // Memory geometry
 static DfmemGeometryStruct dfmem_geo;
 
+extern SpicStatus port_status[SPIC_NUM_PORTS];  // for debugging of SPI contention
+
+
 // Placeholders
 static unsigned int currentBuffer = 0;
 static unsigned int currentBufferOffset = 0;
@@ -192,6 +195,7 @@ void dfmemSetup(void)
 
     // Geometry setup
     dfmemGeometrySetup();
+    
 }
 
 void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
@@ -306,7 +310,7 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
     unsigned int read_bytes;
     read_bytes = spic2MassTransmit(length, NULL, 2*length);
     dfmemSelectChip(); // Busy wait
-    spic2ReadBuffer(read_bytes, data);
+    spic2ReadBuffer(read_bytes, data);  // reads DMA buffer
     //while (length--) { *data++ = dfmemReadByte(); }
 
     dfmemDeselectChip();
@@ -476,22 +480,21 @@ void dfmemResumeFromDeepSleep()
 }
 
 void dfmemSave(unsigned char* data, unsigned int length)
-{
-    //If this write will fit into the buffer, then just put it there
-    if (currentBufferOffset + length > dfmem_geo.buffer_size) {
-        dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
-        currentBuffer = (currentBuffer) ? 0 : 1;
-        currentBufferOffset = 0;
+{   //If this write will not fit into the buffer, then
+       if (currentBufferOffset + length > dfmem_geo.buffer_size) 
+       { dfmemSync(); //  i) write current buffer to memory, and  ii) switch to new buffer
+       } 
+ /*       dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
+        currentBuffer = (currentBuffer) ? 0 : 1; // toggle buffer
+        currentBufferOffset = 0;  // reset to beginning
         nextPage++;
-    }
-
-    //We know there won't be an overrun here because of the previous 'if'
-    // TODO (fgb) : Shouldn't this happen only when the buffer is full,
-    //              probably calling dfmemSync?
+*/
+    //  write data into buffer
     dfmemWriteBuffer(data, length, currentBufferOffset, currentBuffer);
     currentBufferOffset += length;
 }
 
+// write last buffer to memory
 void dfmemSync()
 {
     while(!dfmemIsReady());
@@ -500,7 +503,7 @@ void dfmemSync()
     if(currentBufferOffset != 0){
         dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
         currentBuffer = (currentBuffer) ? 0 : 1; //Toggle buffer number
-        currentBufferOffset = 0;
+        currentBufferOffset = 0; // reset to beginning of buffer
         nextPage++;
     }
 }
