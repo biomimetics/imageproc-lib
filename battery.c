@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2010, Regents of the University of California
+ * Copyright (c) 2007-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,13 @@
  *
  * by Fernando L. Garcia Bermudez and Stanley S. Baek
  *
- * v.0.1
+ * v.0.2
  *
  * Revisions:
  *  Fernando L. Garcia Bermudez     2007-8-8    Initial release
  *  Aaron M. Hoover                 2009-4-2    Moved code to interrupts.c/h
  *  Stanley S. Baek                 2010-7-5    Created this module
+ *  Humphrey Hu                     2012-07-12  Added event callback
  *
  * Notes:
  *  - Uses an external interrupt (INT0 for ImageProc1, INT2 for ImageProc2).
@@ -46,41 +47,48 @@
 #include "ports.h"
 #include "pwm.h"
 #include "utils.h"
+#include <stdlib.h>
 
+// =========== Static Variables ================================================
+BatteryEventISR event_callback;
 
-/*****************************************************************************
-* Function Name : batSetup
-* Description   : The function enables interrupt for battery supervisor
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
+// =========== Function Stubs ==================================================
+static void batHandleISR(void);
+static void batDefaultCallback(void);
+
+// =========== Public Methods ==================================================
 void batSetup(void) {
+
 #if defined(__IMAGEPROC1)
     ConfigINT0(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_7);
 #elif defined(__IMAGEPROC2)
     ConfigINT2(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_7);
 #endif
+
 }
 
+void batSetCallback(BatteryEventISR isr) {
 
-/*-----------------------------------------------------------------------------
- * ----------------------------------------------------------------------------
- * The functions below are intended for internal use, i.e., private methods.
- * Users are recommended to use functions defined above.
- * ----------------------------------------------------------------------------
------------------------------------------------------------------------------*/
+    event_callback = isr;
 
-/*****************************************************************************
-* Function Name : batHandleISR
-* Description   : The function is called by interrupt
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-void batHandleISR(void) {
+}
+
+// =========== Private Methods =================================================
+static void batHandleISR(void) {
+
+    if(event_callback == NULL) {
+        batDefaultCallback();
+    } else {
+        event_callback();
+    }
+
+}
+
+static void batDefaultCallback(void) {
+
     unsigned char i;
 
-    // Disable all interrupts
-    CRITICAL_SECTION_START;
+    CRITICAL_SECTION_START; // Disable interrupts
 
     LED_1 = 1;
     LED_2 = 1;
@@ -88,6 +96,7 @@ void batHandleISR(void) {
         LED_3 = 1;
     #endif
 
+    // TODO (fgb) : Useful, but rarely used. Maybe move to another callback?
     #if defined(__LOWBATT_STOPS_MOTORS)
         // Stop any running motors
         for (i=1; i<=4; i++) { SetDCMCPWM(i, 0, 0); }
@@ -104,23 +113,22 @@ void batHandleISR(void) {
         delay_ms(1000);
     }
 
-    CRITICAL_SECTION_END;
+    CRITICAL_SECTION_END; // Re-enable interrupts
+
 }
 
-/*****************************************************************************
-* Function Name : _INT0Interrupt/_INT2Interrupt
-* Description   : Interrupt handler for Battery Supervisor
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
 #if defined(__IMAGEPROC1)
 void __attribute__((interrupt, no_auto_psv)) _INT0Interrupt(void) {
+
     batHandleISR();
     _INT0IF = 0;    // Clear the interrupt flag
+
 }
 #elif defined(__IMAGEPROC2)
 void __attribute__((interrupt, no_auto_psv)) _INT2Interrupt(void) {
+
     batHandleISR();
     _INT2IF = 0;    // Clear the interrupt flag
+
 }
 #endif

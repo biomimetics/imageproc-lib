@@ -48,50 +48,50 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cam.h"
-#include "stopwatch.h"
+#include "sclock.h"
 
 // TODO: Read native image size from device driver, then calculate image size
 // after subsampling
 // Camera parameters for QQVGA
 // See ovcam.c for more options
-#define NATIVE_CCD_COLS         (160)
-#define NATIVE_CCD_ROWS         (240)   // Should be 240, but some rows don't seem to work
-#define NATIVE_COL_SS           (1) // Hardware skipping 0 pixels
-#define NATIVE_ROW_SS           (2) // Hardware skipping every 1/2 rows
+#define NATIVE_CCD_COLS     (160)
+#define NATIVE_CCD_ROWS     (240) // Less than 240 as some rows don't work?
+#define NATIVE_COL_SS       (1) // Hardware skipping 0 pixels
+#define NATIVE_ROW_SS       (2) // Hardware skipping every 1/2 rows
 
 // Hardware output parameters
-#define NATIVE_IMAGE_COLS       (160) // NATIVE_CCD_COLS/NATIVE_COL_SS
-#define NATIVE_IMAGE_ROWS       (120) // NATIVE_CCD_ROWS/NATIVE_ROW_SS
+#define NATIVE_IMAGE_COLS   (160) // NATIVE_CCD_COLS/NATIVE_COL_SS
+#define NATIVE_IMAGE_ROWS   (120) // NATIVE_CCD_ROWS/NATIVE_ROW_SS
 
 // TODO: Integrate row windowing
 // Windowing parameters
-#define WINDOW_START_COL                (20)
-#define WINDOW_END_COL                  (140)
-#define WINDOW_START_ROW                (0)
-#define WINDOW_END_ROW                  (120)
+#define WINDOW_START_COL    (20)
+#define WINDOW_END_COL      (140)
+#define WINDOW_START_ROW    (0)
+#define WINDOW_END_ROW      (120)
 
 // Downsampling parameters
-#define DS_COL_PERIOD           (4) // Capturing 1/4 pixels
-#define DS_ROW_PERIOD           (4) // Capturing 1/4 rows
-#define DS_FRAME_PERIOD         (1) // Capturing 1/1 frames
+#define DS_COL_PERIOD       (4) // Capturing 1/4 pixels
+#define DS_ROW_PERIOD       (4) // Capturing 1/4 rows
+#define DS_FRAME_PERIOD     (1) // Capturing 1/1 frames
 
 // Image output parameters
-#define DS_IMAGE_COLS           (30) // NATIVE_IMAGE_COLS/DS_COL_PERIOD
-#define DS_IMAGE_ROWS           (30) // NATIVE_IMAGE_ROWS/DS_ROW_PERIOD
+#define DS_IMAGE_COLS       (30) // NATIVE_IMAGE_COLS/DS_COL_PERIOD
+#define DS_IMAGE_ROWS       (30) // NATIVE_IMAGE_ROWS/DS_ROW_PERIOD
 
 // Default camera capture timings for QQVGA no subsampling, 25 fps
-#define ROW_ROW_TIME                    (32)
-#define VSYNC_ROW_TIME                  (12800)
-#define ROW_VSYNC_TIME                  (2800)
-#define VSYNC_VSYNC_TIME                (25000)
+#define ROW_ROW_TIME        (32)
+#define VSYNC_ROW_TIME      (12800)
+#define ROW_VSYNC_TIME      (2800)
+#define VSYNC_VSYNC_TIME    (25000)
 
 // Amount of time before an event to trigger timer
-#define ROW_ROW_OFFSET                  (6) // 384 cycles
-#define VSYNC_ROW_OFFSET                (6) // 384 cycles
-#define ROW_VSYNC_OFFSET                (10) // 640 cycles
-#define VSYNC_VSYNC_OFFSET              (8) // 512 cycles
+#define ROW_ROW_OFFSET      (6) // 384 cycles
+#define VSYNC_ROW_OFFSET    (6) // 384 cycles
+#define ROW_VSYNC_OFFSET    (10) // 640 cycles
+#define VSYNC_VSYNC_OFFSET  (8) // 512 cycles
 
-#define CAM_POOL_SIZE                   (4) // 4 frames shared with system
+#define CAM_POOL_SIZE       (4) // 4 frames shared with system
 
 // The timer states describe what the timer is waiting for
 // i.e. VSYNC state means timer is waiting for VSYNC event
@@ -374,7 +374,7 @@ void camCaptureRow(void) {
 
     // Fill and timestamp row buffer
     row_getter(row_buff->pixels, NATIVE_IMAGE_COLS);
-    row_buff->timestamp = swatchToc();
+    row_buff->timestamp = sclockGetTime();
     row_buff->row_num = cntrRead(row_counter);
 
     CRITICAL_SECTION_END;

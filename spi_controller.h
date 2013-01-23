@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011, Regents of the University of California
+ * Copyright (c) 2011-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,42 +29,38 @@
  *
  * Master Mode SPI Controller for the dsPIC33F
  *
- *    by Humphrey Hu
+ * by Humphrey Hu
  *
- * Revisions:
- *  Humphrey Hu         2011-11-10    Initial implemetation
- *                      
  * Usage:
- *        
- * This module serves as a wrapper for DMA-enabled SPI. Data is transferred
- * and received in "transactions," which can be started and ended with the 
- * respective function calls.
+ *  This module serves as a wrapper for DMA-enabled SPI. Data is transferred
+ *  and received in "transactions," which can be started and ended with the
+ *  respective function calls.
  *
- * Buffer and port configuration is in spi_controller.c
- * 
- * Ex:
- *  spi1BeginTransaction();
- *  // Transfer/Receive methods here
- *  spi1EndTransaction();
+ *  Buffer and port configuration is in spi_controller.c
  *
- * Data transfer and reception methods come in synchronous single-byte 
- * and asynchronous mass-transfer varieties: 
+ *  Ex:
+ *   spi1BeginTransaction();
+ *   // Transfer/Receive methods here
+ *   spi1EndTransaction();
  *
- * The synchronous methods return once the data (a single byte) has been 
- * read/written, and is useful for small transactions where the overhead of 
- * buffering is prohibitive, or when timing is critical.
+ *  Data transfer and reception methods come in synchronous single-byte
+ *  and asynchronous mass-transfer varieties:
  *
- * The asynchronous methods return once the target data has been buffered,
- * and continue the transaction in the background without using processor resources.
- * Once the transaction is complete, the registered callback is executed with a
- * interrupt source flag. This method of transfer is useful for large transactions
- * where transferring the data synchronously would consume too much processor time.
+ *  The synchronous methods return once the data (a single byte) has been
+ *  read/written, and is useful for small transactions where the overhead of
+ *  buffering is prohibitive, or when timing is critical.
  *
+ *  The asynchronous methods return once the target data has been buffered,
+ *  and continue the transaction in the background without using processor
+ *  resources. Once the transaction is complete, the registered callback is
+ *  executed with a interrupt source flag. This method of transfer is useful
+ *  for large transactions where transferring the data synchronously would
+ *  consume too much processor time.
  */
-
 
 #ifndef __SPI_CONTROLLER_H
 #define __SPI_CONTROLLER_H
+
 
 #define SPIC_NUM_PORTS             (2)
 
@@ -73,6 +69,13 @@ typedef enum {
     SPIC_TRANS_SUCCESS, /** Successful transceive */
     SPIC_TRANS_TIMEOUT, /** Transceive timeout */
 } SpicIrqSrc;
+
+/** Port status codes */
+typedef enum {
+    STAT_SPI_CLOSED, /** Port not initialized */
+    STAT_SPI_OPEN,  /** Port not busy */
+    STAT_SPI_BUSY,  /** Port busy */
+} SpicStatus;
 
 /**
  * Interrupt handler type that must be registered to the driver.
@@ -85,7 +88,8 @@ typedef void (*SpicIrqHandler) (unsigned int irq_cause);
  *
  * This must be run before module port access methods can be used.
  */
-void spicSetup(void);
+void spicSetupChannel1(void);
+void spicSetupChannel2(void);
 
 /**
  * Set the interrupt handler for port 1.
@@ -137,9 +141,9 @@ unsigned char spic1Receive(void);
 /**
  * Transmit the contents of a buffer on port 1 via DMA
  *
- * This method copies the buffer contents into port 1's transmit buffer, so the buffer 
+ * This method copies the buffer contents into port 1's transmit buffer, so the buffer
  * can be volatile. Since this method uses DMA, it returns before the write is completed.
- * 
+ *
  * @param len Number of bytes to write
  * @param buff Array of data or NULL to write all NULL bytes
  * @param timeout Number of milliseconds to wait before transaction timeout
@@ -177,11 +181,13 @@ void spic2SetCallback(SpicIrqHandler);
  * if used improperly.
  */
 void spic2BeginTransaction(void);
+void spic2cs2BeginTransaction(void);
 
 /**
  * End a transaction on port 2.
  */
 void spic2EndTransaction(void);
+void spic2cs2EndTransaction(void);
 
 /**
  * Resets port 2.
@@ -209,9 +215,9 @@ unsigned char spic2Receive(void);
 /**
  * Transmit the contents of a buffer on port 2 via DMA
  *
- * This method copies the buffer contents into port 2's transmit buffer, so the buffer 
+ * This method copies the buffer contents into port 2's transmit buffer, so the buffer
  * can be volatile. Since this method uses DMA, it returns before the write is completed.
- * 
+ *
  * @param len Number of bytes to write
  * @param buff Array of data or NULL to write all NULL bytes
  * @param timeout Number of milliseconds to wait before transaction timeout
@@ -231,6 +237,4 @@ unsigned int spic2MassTransmit(unsigned int len, unsigned char *buff, unsigned i
  */
 unsigned int spic2ReadBuffer(unsigned int len, unsigned char *buff);
 
-#endif
-
-
+#endif // __SPI_CONTROLLER_H

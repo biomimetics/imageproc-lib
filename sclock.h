@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2012, Regents of the University of California
+/**
+ * Copyright (c) 2008-2012, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,35 +27,46 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Averaging filter using a circular buffer
+ * System Time Module
  *
- * by Andrew Pullin
+ * by Stanley S. Baek and Humphrey Hu
  *
- * v.0.1
+ * v.0.2
+ *
+ * Usage:
+ *   #include "sclock.h"
+ *   #include "utils.h"
+ *
+ *   unsigned long time_elapsed;
+ *
+ *   // initialize system time module
+ *   sclockSetup();
+ *
+ *   // delay for .5 sec
+ *   delay_us(500);
+ *
+ *   time_elapsed = sclockGetTime();
+ *   // time_elapsed should hold a value of ~500.
  */
 
-#ifndef __DFILTER_AVG_H
-#define __DFILTER_AVG_H
+#ifndef __SCLOCK_H
+#define __SCLOCK_H
 
 
-typedef struct {
-    unsigned int windowLen;
-    unsigned int index;
-    int* data;
-    long accum;
-} dfilterAvgInt_t;
+// Handles initialization of required timers and resets time to 0.
+void sclockSetup(void);
 
-// Creates a filter and returns a point.
-// Caller should check for NULL returns.
-void dfilterAvgCreate(dfilterAvgInt_t*, unsigned int);
+// Requests number of ticks since the clock was started.
+//
+// 5 ticks add up to a microsecond elapsed.
+//
+// Returns : clock ticks
+unsigned long sclockGetTicks(void);
 
-// Add a value to the circular buffer, incrementing index
-void dfilterAvgUpdate(dfilterAvgInt_t*, int);
+// Requests number of microseconds since the clock was started.
+//
+// Returns : time in microseconds
+unsigned long sclockGetTime(void);
 
-// Calculate and return average value;
-int dfilterAvgCalc(dfilterAvgInt_t*);
 
-//Zero all values in the filter
-void dfilterZero(dfilterAvgInt_t* filt);
-
-#endif // __DFILTER_AVG_H
+#endif //  __SCLOCK_H

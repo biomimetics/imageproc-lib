@@ -6,13 +6,13 @@
 * modification, are permitted provided that the following conditions are met:
 *
 * - Redistributions of source code must retain the above copyright notice,
-* this list of conditions and the following disclaimer.
+*   this list of conditions and the following disclaimer.
 * - Redistributions in binary form must reproduce the above copyright notice,
-* this list of conditions and the following disclaimer in the documentation
-* and/or other materials provided with the distribution.
+*   this list of conditions and the following disclaimer in the documentation
+*   and/or other materials provided with the distribution.
 * - Neither the name of the University of California, Berkeley nor the names
-* of its contributors may be used to endorse or promote products derived
-* from this software without specific prior written permission.
+*   of its contributors may be used to endorse or promote products derived
+*   from this software without specific prior written permission.
 *
 * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -28,49 +28,26 @@
 *
 *
 * InvenSense MPU-6000 6-axis MEMS Driver
-*
+*   
 * by Richard J. Sheperd
 * based on MPU-6050 Driver by Humphrey Hu
 *
 * v alpha
 *
 * Revisions:
-*
-*
+* 
+*                      
 * Notes:
-* - This module uses an SPI port for communicating with the chip
+*  - This module uses an SPI port for communicating with the chip
 */
-// Registers
-#define MPU_REG_RATEDIV (25)
-#define MPU_REG_CONFIG (26)
-#define MPU_REG_GYROCONFIG (27)
-#define MPU_REG_XLCONFIG (28)
-#define MPU_REG_FIFOEN (35)
-#define MPU_REG_I2CMASTCON (36)
-#define MPU_REG_I2CMASTSTAT (54)
-#define MPU_REG_INTENABLE (56)
-#define MPU_REG_INTSTAT (57)
-#define MPU_REG_XLBASE (59)
-#define MPU_XLLEN (6)
-#define MPU_REG_TEMPBASE (65)
-#define MPU_TEMPLEN (2)
-#define MPU_REG_GYROBASE (67)
-#define MPU_GYROLEN (6)
-#define MPU_REG_USERCON (106)
-#define MPU_REG_PMGT1 (107)
-#define MPU_REG_PMGT2 (108)
-#define MPU_REG_FIFOCNTH (114) // Not sure if high or low
-#define MPU_REG_FIFOCNTL (115)
-#define MPU_REG_FIFORW (116)
-#define MPU_REG_WHOAMI (117)
-
 
 // Internal data buffer
  typedef struct {
     int xl_data[3];
     int gyro_data[3];
-    int temp;   // temperature
+    int temp;
 } mpuObj;
+
 
 #ifndef __MPU_SPI_H
 #define __MPU_SPI_H

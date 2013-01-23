@@ -118,13 +118,13 @@ void gyroSetup(void) {
 
     // setup I2C port
     gyroSetupPeripheral();
-
+    
     // external interrupt configuration.
     // it is NOT USED at this moment.
     ConfigINT1(RISING_EDGE_INT & EXT_INT_DISABLE & EXT_INT_PRI_3);
 
     dead_zone = DEFAULT_DEAD_ZONE;
-
+    
     delay_ms(25);   // power up delay, may not need...
     gyroReset();
     delay_ms(10);
@@ -133,12 +133,12 @@ void gyroSetup(void) {
     gyroWrite(REG_INT_CFG, 0x00);  // interrupt disabled
     gyroWrite(REG_PWR_MGM, 0x03);  // Set power management?
     delay_ms(1);   // PLL Settling time
-
+    
     is_ready = 1;
-
-    delay_ms(6); //From datasheet, standard settling time
+    
+    delay_ms(6); //From datasheet, standard settling time    
     gyroRunCalib(INITIAL_CALIB_NUM);  // quick calibration
-
+    
 }
 
 void gyroSetDeadZone(int cutoff) {
@@ -183,13 +183,13 @@ void gyroRunCalib(unsigned int count){
 
     unsigned int i;
     long x_acc, y_acc, z_acc;
-
+    
     x_acc = 0;
     y_acc = 0;
     z_acc = 0;
 
     CRITICAL_SECTION_START
-
+            
     // throw away first 200 data. Sometimes they are bad at the beginning.
     for (i = 0; i < 200; ++i) {
         gyroReadXYZ();
@@ -217,9 +217,9 @@ void gyroRunCalib(unsigned int count){
 }
 
 float gyroGetFloatTemp(void) {
-
+    
     return (35 + (gyroGetIntTemp() + 13200) / 280.0);
-
+    
 }
 
 int gyroGetIntTemp(void) {
@@ -243,7 +243,7 @@ void gyroReadTemp(void) {
 
     GyroData.chr_data[0] = temp_data[1];
     GyroData.chr_data[1] = temp_data[0];
-
+    
 }
 
 void gyroGetIntXYZ(int* data) {
@@ -251,7 +251,7 @@ void gyroGetIntXYZ(int* data) {
     data[0] = gyroGetIntX();
     data[1] = gyroGetIntY();
     data[2] = gyroGetIntZ();
-
+    
 }
 
 int gyroGetIntX(void) {
@@ -282,19 +282,19 @@ void gyroGetRadXYZ(float* data) {
 float gyroGetRadX(void) {
 
     return LSB2RAD*gyroGetIntX();
-
+    
 }
 
 float gyroGetRadY(void) {
 
     return LSB2RAD*gyroGetIntY();
-
+    
 }
 
 float gyroGetRadZ(void) {
 
     return LSB2RAD*gyroGetIntZ();
-
+    
 }
 
 void gyroGetDegXYZ(float* data) {
@@ -302,7 +302,7 @@ void gyroGetDegXYZ(float* data) {
     data[0] = gyroGetDegX();
     data[1] = gyroGetDegY();
     data[2] = gyroGetDegZ();
-
+    
 }
 
 float gyroGetDegX(void) {
@@ -331,15 +331,15 @@ unsigned char* gyroToString(void) {
 
 void gyroDumpData(unsigned char* buffer) {
 
-    memcpy(buffer, GyroData.chr_data + 2, 6);
-
+    memcpy(buffer, GyroData.chr_data + 2, 6);    
+    
 }
 
 
 unsigned char* gyroReadXYZ(void) {
-
+    
     unsigned char gyro_data[6];
-
+    
     gyroStartTx();
     gyroSendByte(GYRO_ADDR_WR);
     gyroSendByte(0x1d);
@@ -357,13 +357,13 @@ unsigned char* gyroReadXYZ(void) {
     GyroData.chr_data[7] = gyro_data[4];
 
     return GyroData.chr_data + 2;
-
+    
 }
 
 void gyroGetXYZ(unsigned char *data) {
 
     gyroReadXYZ();
-    gyroDumpData(data);
+    gyroDumpData(data);    
 
 }
 
@@ -503,5 +503,5 @@ static int applyDeadZone(int val) {
 
     if(val < dead_zone && val > -dead_zone) { val = 0; }
     return val;
-
+    
 }
