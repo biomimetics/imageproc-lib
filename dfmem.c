@@ -505,58 +505,18 @@ void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char 
     dfmemRead(pagenum, byteOffset, sampLen, data);
 }
 
-void dfmemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
-{
-    // TODO (apullin) : Add an explicit check to see if the number of saved
-    //                  samples will fit into memory!
-    LED_2 = 1;
-    unsigned int firstPageOfSector, i;
-
-    //avoid trivial case
-    if(numSamples == 0){ return;}
-
-    //Saves to dfmem will NOT overlap page boundaries, so we need to do this level by level:
-    unsigned int samplesPerPage = dfmem_geo.bytes_per_page / sampLen; //round DOWN int division
-    unsigned int numPages = (numSamples + samplesPerPage - 1) / samplesPerPage; //round UP int division
-    unsigned int numSectors = ( numPages + dfmem_geo.pages_per_sector-1) / dfmem_geo.pages_per_sector;
-
-    //At this point, it is impossible for numSectors == 0
-    //Sector 0a and 0b will be erased together always, for simplicity
-    //Note that numSectors will be the actual number of sectors to erase,
-    //   even though the sectors themselves are numbered starting at '0'
-    dfmemEraseSector(0); //Erase Sector 0a
-    dfmemEraseSector(8); //Erase Sector 0b
-
-    //Start erasing the rest from Sector 1:
-    for(i=1; i <= numSectors; i++){
-        firstPageOfSector = dfmem_geo.pages_per_sector * i;
-        //hold off until dfmem is ready for secort erase command
-        while(!dfmemIsReady());
-        //LED should blink indicating progress
-        LED_2 = ~LED_2;
-        //Send actual erase command
-        dfmemEraseSector(firstPageOfSector);
-    }
-
-    //Leadout flash, should blink faster than above, indicating the last sector
-    while(!dfmemIsReady()){
-        LED_2 = ~LED_2;
-        delay_ms(75);
-    }
-    LED_2 = 0; //Green LED off
-
-    //Since we've erased, reset our place keeper vars
-    currentBuffer = 0;
-    currentBufferOffset = 0;
-    nextPage = 0;
-}
-
 void dfmemGetGeometryParams(DfmemGeometry geo) {
 
     if(geo == NULL) { return; }
 
     memcpy(geo, &dfmem_geo, sizeof(DfmemGeometryStruct));
 
+}
+
+void dfmemZeroIndex(){
+        currentBuffer = 0;
+    currentBufferOffset = 0;
+    nextPage = 0;
 }
 
 /*-----------------------------------------------------------------------------

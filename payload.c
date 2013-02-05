@@ -43,6 +43,7 @@
 #include "utils.h"
 #include <stdlib.h>     // for malloc
 #include <stdarg.h>     // variable number of arguments
+#include <string.h>     // for memcpy
 
 #define STATUS_POS              0
 #define TYPE_POS                1
@@ -102,10 +103,11 @@ unsigned char* payToString(Payload pld) {
 
 void payAppendData(Payload pld, char loc, 
                 unsigned char data_length, unsigned char *data) {
-    while(data_length--) {
-        pld->pld_data[PAYLOAD_HEADER_LENGTH + loc++] = *(data++);
-    }
-
+    //while(data_length--) {
+    //    pld->pld_data[PAYLOAD_HEADER_LENGTH + loc++] = *(data++);
+    //}
+    memcpy(pld->pld_data + PAYLOAD_HEADER_LENGTH + loc, data, data_length);
+    pld->iter_index += data_length;
 }
 
 void payWriteByte(Payload pld, unsigned char loc, unsigned char data) {

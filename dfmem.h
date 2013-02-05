@@ -215,7 +215,7 @@ void dfmemSync();
 // of the page.
 void dfmemReadSample(unsigned long, unsigned int, unsigned char*);
 
-// Erases enough sectors to fit a specified number of samples into the flash
-void dfmemEraseSectorsForSamples(unsigned long, unsigned int);
+// This resets the current page and offset tracking variable to zero.
+void dfmemZeroIndex();
 
 #endif // __DFMEM_H
