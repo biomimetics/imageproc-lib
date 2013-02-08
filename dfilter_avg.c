@@ -43,14 +43,14 @@
 
 ///////////////   Public functions  //////////////////
 
-void filterAvgCreate(filterAvgInt_t* filt, unsigned int length){
+void dfilterAvgCreate(dfilterAvgInt_t* filt, unsigned int length){
     filt->data = calloc(length, sizeof(int)); //Initialize data to 0
     filt->windowLen = length;
     filt->index = 0;
     filt->accum = 0;
 }
 
-void filterAvgUpdate(filterAvgInt_t* filt, int newval){
+void dfilterAvgUpdate(dfilterAvgInt_t* filt, int newval){
     // Add new value to accumulation, subtract existing value that is
     // going to be overwritten.
     filt->accum += newval - filt->data[filt->index];
@@ -61,6 +61,13 @@ void filterAvgUpdate(filterAvgInt_t* filt, int newval){
 }
 
 // TODO (apullin) : more efficient calculation? DSP? delta?
-int filterAvgCalc(filterAvgInt_t* filt){
+int dfilterAvgCalc(dfilterAvgInt_t* filt){
     return (int)(filt->accum / (filt->windowLen));
+}
+
+void dfilterZero(dfilterAvgInt_t* filt){
+    int i;
+    for(i = 0; i < filt->windowLen; i++){
+        filt->data[i] = 0;
+    }
 }
