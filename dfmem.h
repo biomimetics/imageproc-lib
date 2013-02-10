@@ -69,8 +69,8 @@ typedef struct {
 typedef DfmemGeometryStruct* DfmemGeometry;
 
 // Handles initialization of communication peripherals and makes sure the
-// memory is initially deselected.
-void dfmemSetup (void);
+// memory is initially deselected. Must pass in chip select pin index.
+void dfmemSetup (unsigned char cs);
 
 // Writes the contents of a data array to memory.
 //

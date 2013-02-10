@@ -288,29 +288,8 @@ static unsigned char readReg(unsigned char regaddr) {
 * Return Value  : None
 *****************************************************************************/
 static inline void setupSPI(void) {
-	// SPI2CON1 Register Settings
-  SPI_CON1bits.MSTEN = 1;   // Master mode Enabled
-  SPI_CON1bits.DISSCK = 0;  // Internal Serial Clock is Enabled
-  SPI_CON1bits.DISSDO = 0;  // SDOx pin is controlled by the module
-  SPI_CON1bits.MODE16 = 0;  // Communication is byte-wide (8 bits)
-  SPI_CON1bits.SMP = 0;     // Input data is sampled at middle of data output time
-  SPI_CON1bits.SSEN = 0;    // SSx pin is used
-  SPI_CON1bits.CKE = 1;     // Serial output data changes on transition
-                            // from active clock trx_state to idle clock trx_state
-  SPI_CON1bits.CKP = 0;     // Idle trx_state for clock is a low level;
-                            // active trx_state is a high level
-
-  // Set up SCK frequency of 13.333Mhz for 40 MIPS
-  SPI_CON1bits.SPRE = 0b100;  // Secondary prescale     3:1
-  SPI_CON1bits.PPRE = 0b11;   // Primary prescale       1:1
-
-	// SPI2CON2 Register Settings
-  SPI_CON2 = 0x0000;
-
-	// SPI2STAT Register Settings
-  SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
-  SPI_STATbits.SPIROV = 0;  // Clear Overflow
-  SPI_STATbits.SPIEN = 1;   // Enable SPI module
-
+  spicSetupChannel2(spi_cs, ENABLE_SCK_PIN & ENABLE_SDO_PIN & SPI_MODE16_OFF &
+      SPI_SMP_OFF & SPI_CKE_ON & SLAVE_ENABLE_OFF & CLK_POL_ACTIVE_HIGH & 
+      MASTER_ENABLE_ON & PRI_PRESCAL_1_1 & SEC_PRESCAL_3_1);
   spic2SetCallback(spi_cs, &mpuFinishUpdate);
 }

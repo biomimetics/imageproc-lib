@@ -150,6 +150,9 @@ static unsigned int currentBuffer = 0;
 static unsigned int currentBufferOffset = 0;
 static unsigned int nextPage = 0;
 
+// Chip select
+static unsigned char spi_cs;
+
 enum FlashSizeType {
     DFMEM_8MBIT    = 0b00101,
     DFMEM_16MBIT   = 0b00110,
@@ -179,11 +182,11 @@ static void spiCallback(unsigned int irq_source);
  *          Public functions
 -----------------------------------------------------------------------------*/
 
-void dfmemSetup(void)
+void dfmemSetup(unsigned char cs)
 {
+    spi_cs = cs;
     dfmemSetupPeripheral();
-    spicSetupChannel2();
-    spic2SetCallback(&spiCallback);
+    spic2SetCallback(cs, &spiCallback);
     while(!dfmemIsReady());
     dfmemGeometrySetup();
 }
@@ -600,7 +603,7 @@ static inline unsigned char dfmemReadByte (void)
 }
 
 // Selects the memory chip.
-static inline void dfmemSelectChip(void) { spic2BeginTransaction(); }
+static inline void dfmemSelectChip(void) { spic2BeginTransaction(spi_cs); }
 
 // De-selects the memory chip.
 static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
@@ -610,12 +613,10 @@ static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
 // The MCU is the SPI master and the clock isn't continuous.
 static void dfmemSetupPeripheral(void)
 {
-    SPI_CON1 = ENABLE_SCK_PIN & ENABLE_SDO_PIN & SPI_MODE16_OFF & SPI_SMP_OFF &
-               SPI_CKE_ON & SLAVE_ENABLE_OFF & CLK_POL_ACTIVE_HIGH &
-               MASTER_ENABLE_ON & PRI_PRESCAL_1_1 & SEC_PRESCAL_4_1;
-    SPI_CON2 = FRAME_ENABLE_OFF & FRAME_SYNC_OUTPUT & FRAME_POL_ACTIVE_HIGH &
-               FRAME_SYNC_EDGE_PRECEDE;
-    SPI_STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
+    spicSetupChannel2(spi_cs, ENABLE_SCK_PIN & ENABLE_SDO_PIN & SPI_MODE16_OFF &
+               SPI_SMP_OFF & SPI_CKE_ON & SLAVE_ENABLE_OFF & 
+               CLK_POL_ACTIVE_HIGH & MASTER_ENABLE_ON & PRI_PRESCAL_1_1 & 
+               SEC_PRESCAL_4_1);
 }
 
 // Figures out memory geometry by querying its size
