@@ -114,23 +114,15 @@ static struct {
     float temp_scale;	// For celsius
 } mpu_params;
 
+static unsigned char spi_cs;
+
 /*-----------------------------------------------------------------------------
 *          Declaration of static functions
 -----------------------------------------------------------------------------*/
 static void writeReg(unsigned char regaddr, unsigned char data );
 static unsigned char readReg(unsigned char regaddr);
 static inline void setupSPI(void);
-
-//TODO: Implement
-static inline unsigned int readString(unsigned int length, unsigned char * data,
-unsigned int data_wait);
-//TODO: Implement
-static inline unsigned int writeString(unsigned int length, unsigned char* data);								   
-//TODO: Implement
-static inline void sendByte( unsigned char byte );
-//TODO: Implement
-static inline unsigned char receiveByte(void);
-
+static void mpuFinishUpdate(unsigned int cause);
 
 /*-----------------------------------------------------------------------------
 *          Public functions
@@ -138,34 +130,35 @@ static inline unsigned char receiveByte(void);
 
 // Note to self: FIFO State change requires power cycle!
 
-void mpuSetup(void) {
+void mpuSetup(unsigned char cs) {
+  spi_cs = cs;
+
+  // setup SPI port
+  setupSPI();
+  unsigned char reg;
+
+  writeReg(MPU_REG_PMGT1, 0x83);              //Reset IMU
+  delay_ms(100);
+  writeReg(MPU_REG_PMGT1, 0x03);              // Set clock to PLL Z Gyro
+  writeReg(MPU_REG_USERCON, 0b00010000);      // Disable I2C, FIFO Operations
+
+  reg = readReg(MPU_REG_WHOAMI);		          // Some sort of check here? =============== HH
+
+  writeReg(MPU_REG_RATEDIV, DEFAULT_RATEDIV);	// Set rate divider
+	writeReg(MPU_REG_CONFIG, 0b00000001);		    // DLPF configured to 188Hz Bandwidth [Fastest filtered mode]
+
+  writeReg(MPU_REG_GYROCONFIG, 0b00011000);	  // Set gyro scale 2000 DPS (8x)
+  mpu_params.gyro_scale = GYRO_SCALE_BASE*8;
     
-    // setup SPI port
-    setupSPI();
-   unsigned char reg;
+  writeReg(MPU_REG_XLCONFIG, 0b00010000);     // Set xl scale 8g (4x)
+  mpu_params.xl_scale = XL_SCALE_BASE*4;		
     
-   writeReg(MPU_REG_PMGT1, 0x83);           //Reset IMU
-   delay_ms(100);
-   writeReg(MPU_REG_PMGT1, 0x03);           // Set clock to PLL Z Gyro
-   writeReg(MPU_REG_USERCON, 0b00010000);        // Disable I2C, FIFO Operations
-   					
-   reg = readReg(MPU_REG_WHOAMI);		// Some sort of check here? =============== HH
+  mpu_params.temp_scale = TEMP_SCALE;
+  mpu_params.temp_offset = DEFAULT_TEMP_OFFSET;
     
-    writeReg(MPU_REG_RATEDIV, DEFAULT_RATEDIV);	// Set rate divider
-	writeReg(MPU_REG_CONFIG, 0b00000001);		// DLPF configured to 188Hz Bandwidth [Fastest filtered mode]
-    
-    writeReg(MPU_REG_GYROCONFIG, 0b00011000);	// Set gyro scale 2000 DPS (8x)
-    mpu_params.gyro_scale = GYRO_SCALE_BASE*8;
-    
-    writeReg(MPU_REG_XLCONFIG, 0b00010000);		// Set xl scale 8g (4x)
-    mpu_params.xl_scale = XL_SCALE_BASE*4;		
-    
-    mpu_params.temp_scale = TEMP_SCALE;
-    mpu_params.temp_offset = DEFAULT_TEMP_OFFSET;
-    
-    writeReg(MPU_REG_INTENABLE, 0);				// Disable interrupts
-    //writeReg(MPU_REG_CONFIG, 0);				// Set frame sync and DLPF off
-    writeReg(MPU_REG_PMGT2, 0b00000000);		// Activate all sensors
+  writeReg(MPU_REG_INTENABLE, 0);             // Disable interrupts
+  //writeReg(MPU_REG_CONFIG, 0);				        // Set frame sync and DLPF off
+  writeReg(MPU_REG_PMGT2, 0b00000000);		    // Activate all sensors
 
  //   mpuRunCalib(1000);
 }
@@ -223,37 +216,32 @@ float mpuGetTempScale(void) {
     return mpu_params.temp_scale;
 }
 
-/*
-void mpuUpdate(void) {
-
-    unsigned char buff[UPDATE_SIZE], rev[UPDATE_SIZE], i;
-
-    startTx();
-    sendByte(MPU_ADDR_WR);
-    sendByte(MPU_REG_XLBASE);
-    endTx();
-    startTx();
-    sendByte(MPU_ADDR_RD);
-    readString(UPDATE_SIZE, buff, UPDATE_TIMEOUT);
-    sendNACK();
-    endTx();
-
-    // Order is XL[6] TEMP[2] GYRO[6]
-    // Reverse data
-    for(i = 0; i < UPDATE_SIZE; i++) {
-        rev[i] = buff[UPDATE_SIZE - i - 1];
-    }
-    
-    // Order is now GYRO[6] TEMP[2] XL[6]
-    // Copy into buffers
-    memcpy(mpu_data.gyro_data, rev, 6);
-    memcpy(mpu_data.temp, rev + 6, 2);
-    memcpy(mpu_data.xl_data, rev + 8, 6);
-    
+void mpuBeginUpdate(void) {
+  spic2BeginTransaction(spi_cs);
+  spic2Transmit(MPU_REG_XLBASE | READ);
+  //TODO(rqou): better timeout?
+  spic2MassTransmit(UPDATE_SIZE, NULL, 1000);
 }
 
-*/
+static void mpuFinishUpdate(unsigned int cause) {
+  //TODO(rqou): don't ignore cause
+  unsigned char buff[UPDATE_SIZE], rev[UPDATE_SIZE], i;
 
+  spic2ReadBuffer(UPDATE_SIZE, buff);
+  spic2EndTransaction();
+
+  // Order is XL[6] TEMP[2] GYRO[6]
+  // Reverse data
+  for(i = 0; i < UPDATE_SIZE; i++) {
+      rev[i] = buff[UPDATE_SIZE - i - 1];
+  }
+  
+  // Order is now GYRO[6] TEMP[2] XL[6]
+  // Copy into buffers
+  memcpy(mpu_data.gyro_data, rev, 6);
+  memcpy(&mpu_data.temp, rev + 6, 2);
+  memcpy(mpu_data.xl_data, rev + 8, 6);
+}
 
 /*-----------------------------------------------------------------------------
 * ----------------------------------------------------------------------------
@@ -270,10 +258,10 @@ void mpuUpdate(void) {
 * Return Value  : None
 *****************************************************************************/
 static void writeReg(unsigned char regaddr, unsigned char data ){
-    spic2BeginTransaction(); // Its usually useful to return the value read too ==========
-    spic2Transmit(regaddr);
-    spic2Transmit(data);
-    spic2EndTransaction();
+  spic2BeginTransaction(spi_cs);
+  spic2Transmit(regaddr);
+  spic2Transmit(data);
+  spic2EndTransaction();
 }
 
 /*****************************************************************************
@@ -283,60 +271,14 @@ static void writeReg(unsigned char regaddr, unsigned char data ){
 * Return Value  : register contents
 *****************************************************************************/
 static unsigned char readReg(unsigned char regaddr) {
-    unsigned char c;
+  unsigned char c;
     
-    spic2BeginTransaction();
-    spic2Transmit(regaddr | READ);
-    c = spic2Receive();
-    spic2EndTransaction();
+  spic2BeginTransaction(spi_cs);
+  spic2Transmit(regaddr | READ);
+  c = spic2Receive();
+  spic2EndTransaction();
     
-    return c;
-}
-
-/*****************************************************************************
-* Function Name : readString
-* Description   : It reads predetermined data string length from the SPI bus.
-* Parameters    : length is the string length to read
-*                 data is the storage for received mpu data
-*                 data_wait is the timeout value
-* Return Value  : Number of bytes read before timeout.
-*****************************************************************************/
-static inline unsigned int readString(unsigned int length, unsigned char * data,
-unsigned int data_wait) {
-    return getsSPI2(length, data, data_wait);
-}
-
-/*****************************************************************************
-* Function Name : mpuWriteString
-* Description   : Writes a buffer of data to the SPI bus
-* Parameters    : length is the string length to write
-*                 data is a pointer to buffer containing data to write
-* Return Value  : Error codes: -3 if collision, 0 if successful
-*****************************************************************************/
-static inline unsigned int writeString(unsigned int length, unsigned char * data) {
-	return 0;//putsSPI2(length, data);  Modified by doug in desperate attempt to get code to work.
-}
-
-
-/*****************************************************************************
-* Function Name : sendByte
-* Description   : Send a byte to mpuscope
-* Parameters    : byte - a byte to send
-* Return Value  : None
-*****************************************************************************/
-static inline void sendByte( unsigned char byte ) {
-	
-
-}
-
-/*****************************************************************************
-* Function Name : receiveByte
-* Description   : Receive a byte from mpuscope
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-static inline unsigned char receiveByte(void) {
-    return NULL;
+  return c;
 }
 
 /*****************************************************************************
@@ -346,28 +288,29 @@ static inline unsigned char receiveByte(void) {
 * Return Value  : None
 *****************************************************************************/
 static inline void setupSPI(void) {
-
 	// SPI2CON1 Register Settings
-    SPI_CON1bits.MSTEN = 1; // Master mode Enabled
-    SPI_CON1bits.DISSCK = 0; // Internal Serial Clock is Enabled
-    SPI_CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
-    SPI_CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
-    SPI_CON1bits.SMP = 0; // Input data is sampled at middle of data output time
-    SPI_CON1bits.SSEN = 0; // SSx pin is used
-    SPI_CON1bits.CKE = 1; // Serial output data changes on transition
-                        // from active clock trx_state to idle clock trx_state
-    SPI_CON1bits.CKP = 0; // Idle trx_state for clock is a low level;
+  SPI_CON1bits.MSTEN = 1;   // Master mode Enabled
+  SPI_CON1bits.DISSCK = 0;  // Internal Serial Clock is Enabled
+  SPI_CON1bits.DISSDO = 0;  // SDOx pin is controlled by the module
+  SPI_CON1bits.MODE16 = 0;  // Communication is byte-wide (8 bits)
+  SPI_CON1bits.SMP = 0;     // Input data is sampled at middle of data output time
+  SPI_CON1bits.SSEN = 0;    // SSx pin is used
+  SPI_CON1bits.CKE = 1;     // Serial output data changes on transition
+                            // from active clock trx_state to idle clock trx_state
+  SPI_CON1bits.CKP = 0;     // Idle trx_state for clock is a low level;
                             // active trx_state is a high level
 
-    // Set up SCK frequency of 13.333Mhz for 40 MIPS
-    SPI_CON1bits.SPRE = 0b100; // Secondary prescale    3:1
-    SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
-	
+  // Set up SCK frequency of 13.333Mhz for 40 MIPS
+  SPI_CON1bits.SPRE = 0b100;  // Secondary prescale     3:1
+  SPI_CON1bits.PPRE = 0b11;   // Primary prescale       1:1
+
 	// SPI2CON2 Register Settings
-	SPI_CON2 = 0x0000;
-	
+  SPI_CON2 = 0x0000;
+
 	// SPI2STAT Register Settings
-    SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
-    SPI_STATbits.SPIROV = 0; // Clear Overflow
-    SPI_STATbits.SPIEN = 1; // Enable SPI module
+  SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
+  SPI_STATbits.SPIROV = 0;  // Clear Overflow
+  SPI_STATbits.SPIEN = 1;   // Enable SPI module
+
+  spic2SetCallback(spi_cs, &mpuFinishUpdate);
 }
