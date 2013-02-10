@@ -54,8 +54,8 @@
 #if defined(__IMAGEPROC2)
 
     #define SPI1_CS             (_LATB2)    // Radio Chip Select
-    //#define SPI2_CS             (_LATG9)    // Flash Chip Select
-    #define SPI2_CS             (_LATC15)   // MPU6000 Chip Select
+    #define SPI2_CS1            (_LATG9)    // Flash Chip Select
+    #define SPI2_CS2            (_LATC15)   // MPU6000 Chip Select
 
 #endif
 // DMA channels allocated as per Wiki assignments
@@ -101,10 +101,14 @@ static void setupDMASet2(void);
 // =========== Static Variables ===============================================
 
 /** Interrupt handlers */
-static SpicIrqHandler int_handler[SPIC_NUM_PORTS];
+static SpicIrqHandler int_handler_ch1[1];
+static SpicIrqHandler int_handler_ch2[2];
 
 /** Current port statuses */
 static SpicStatus port_status[SPIC_NUM_PORTS];
+
+/** Current port chip select */
+static unsigned char port_cs_line[SPIC_NUM_PORTS];
 
 // Port 1 buffers
 static unsigned char spic1_rx_buff[SPIC1_RX_BUFF_LEN] __attribute__((space(dma)));
@@ -130,38 +134,62 @@ void spicSetupChannel2(void) {
 
 }
 
-void spic1SetCallback(SpicIrqHandler handler) {
+void spic1SetCallback(unsigned char cs, SpicIrqHandler handler) {
 
-    int_handler[0] = handler;
-
-}
-
-
-void spic2SetCallback(SpicIrqHandler handler) {
-
-    int_handler[1] = handler;
+    int_handler_ch1[cs] = handler;
 
 }
 
-void spic1BeginTransaction(void) {
+
+void spic2SetCallback(unsigned char cs, SpicIrqHandler handler) {
+
+    int_handler_ch2[cs] = handler;
+
+}
+
+int spic1BeginTransaction(unsigned char cs) {
     // TODO: Timeout?
+    // TODO: Possible race condition if interrupt/non-interrrupt both try to
+    //  start a transaction. Need to change this to atomic test-and-set
+
+    // TODO: generalize?
+    if (cs > 0)
+      // Only one CS line is supported
+      return -1;
+
     while(port_status[0] == STAT_SPI_BUSY); // Wait for port to become available
     port_status[0] = STAT_SPI_BUSY;
+    port_cs_line[0] = cs;
     SPI1_CS = SPI_CS_ACTIVE;    // Activate chip select
 
+    return 0;
 }
 
-void spic2BeginTransaction(void) {
+int spic2BeginTransaction(unsigned char cs) {
+    // TODO: Timeout?
+    // TODO: Possible race condition if interrupt/non-interrrupt both try to
+    //  start a transaction. Need to change this to atomic test-and-set
+
+    // TODO: generalize?
+    if (cs > 1)
+      // Two CS lines are supported
+      return -1;
 
     while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
     port_status[1] = STAT_SPI_BUSY;
-    SPI2_CS = SPI_CS_ACTIVE;     // Activate chip select
+    port_cs_line[1] = cs;
+    if (cs == 0)
+      SPI2_CS1 = SPI_CS_ACTIVE;     // Activate chip select
+    if (cs == 1)
+      SPI2_CS2 = SPI_CS_ACTIVE;     // Activate chip select
 
+    return 0;
 }
 
 void spic1EndTransaction(void) {
 
     port_status[0] = STAT_SPI_OPEN; // Free port
+    // Only one CS line
     SPI1_CS = SPI_CS_IDLE;  // Idle chip select after freeing since may cause irq
 
 }
@@ -169,7 +197,10 @@ void spic1EndTransaction(void) {
 void spic2EndTransaction(void) {
 
     port_status[1] = STAT_SPI_OPEN; // Free port
-    SPI2_CS = SPI_CS_IDLE;  // Idle chip select
+    if (port_cs_line[1] == 0)
+      SPI2_CS1 = SPI_CS_IDLE;  // Idle chip select
+    if (port_cs_line[1] == 1)
+      SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
 
 }
 
@@ -185,7 +216,8 @@ void spic1Reset(void) {
 
 void spic2Reset(void) {
 
-    SPI2_CS = SPI_CS_IDLE;          // Disable chip select
+    SPI2_CS1 = SPI_CS_IDLE;         // Disable chip select
+    SPI2_CS2 = SPI_CS_IDLE;         // Disable chip select
     SPIC2_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC2_DMAW_CONbits.CHEN = 0;
     SPI2STATbits.SPIROV = 0;
@@ -197,8 +229,8 @@ unsigned char spic1Transmit(unsigned char data) {
 
     unsigned char c;
     SPI1STATbits.SPIROV = 0;        // Clear overflow bit
-    SPI1BUF = data;                   // Initiate SPI bus cycle by byte write
-    while(SPI1STATbits.SPITBF);        // Wait for transmit to complete
+    SPI1BUF = data;                 // Initiate SPI bus cycle by byte write
+    while(SPI1STATbits.SPITBF);     // Wait for transmit to complete
     while(!SPI1STATbits.SPIRBF);    // Wait for receive to complete
     c = SPI1BUF;                    // Read out received data to avoid overflow
     return c;
@@ -209,8 +241,8 @@ unsigned char spic2Transmit(unsigned char data) {
 
     unsigned char c;
     SPI2STATbits.SPIROV = 0;        // Clear overflow bit
-    SPI2BUF = data;                   // Initiate SPI bus cycle by byte write
-    while(SPI2STATbits.SPITBF);        // Wait for transmit to complete
+    SPI2BUF = data;                 // Initiate SPI bus cycle by byte write
+    while(SPI2STATbits.SPITBF);     // Wait for transmit to complete
     while(!SPI2STATbits.SPIRBF);    // Wait for receive to complete
     c = SPI2BUF;                    // Read out received data to avoid overflow
     return c;
@@ -325,7 +357,8 @@ unsigned int spic2ReadBuffer(unsigned int len, unsigned char *buff) {
 // ISR for DMA2 interrupt, currently DMAR for channel 1
 void __attribute__((interrupt, no_auto_psv)) _DMA2Interrupt(void) {
 
-    int_handler[0](SPIC_TRANS_SUCCESS);        // Call registered callback function
+    // Call registered callback function
+    int_handler_ch1[port_cs_line[0]](SPIC_TRANS_SUCCESS);
     _DMA2IF = 0;
 
 }
@@ -340,7 +373,8 @@ void __attribute__((interrupt, no_auto_psv)) _DMA3Interrupt(void) {
 // ISR for DMA4 interrupt, currently DMAR for channel 2
 void __attribute__((interrupt, no_auto_psv)) _DMA4Interrupt(void) {
 
-    int_handler[1](SPIC_TRANS_SUCCESS);        // Call registered callback function
+    // Call registered callback function
+    int_handler_ch2[port_cs_line[1]](SPIC_TRANS_SUCCESS);
     _DMA4IF = 0;
 
 }
