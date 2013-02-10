@@ -104,6 +104,10 @@ static void setupDMASet2(void);
 static SpicIrqHandler int_handler_ch1[1];
 static SpicIrqHandler int_handler_ch2[2];
 
+/** Port configurations */
+static unsigned int spicon_ch1[1];
+static unsigned int spicon_ch2[2];
+
 /** Current port statuses */
 static SpicStatus port_status[SPIC_NUM_PORTS];
 
@@ -120,16 +124,18 @@ static unsigned char spic2_tx_buff[SPIC2_TX_BUFF_LEN] __attribute__((space(dma))
 
 // =========== Public Methods =================================================
 
-void spicSetupChannel1(void) {
+void spicSetupChannel1(unsigned char cs, unsigned int spiCon1) {
 
     setupDMASet1();     // Set up DMA channels
+    spicon_ch1[cs] = spiCon1;           // Remember SPI config
     port_status[0] = STAT_SPI_CLOSED;   // Initialize status
 
 }
 
-void spicSetupChannel2(void) {
+void spicSetupChannel2(unsigned char cs, unsigned int spiCon1) {
 
     setupDMASet2();
+    spicon_ch2[cs] = spiCon1;           // Remember SPI config
     port_status[1] = STAT_SPI_CLOSED;
 
 }
@@ -159,6 +165,10 @@ int spic1BeginTransaction(unsigned char cs) {
 
     while(port_status[0] == STAT_SPI_BUSY); // Wait for port to become available
     port_status[0] = STAT_SPI_BUSY;
+    // Reconfigure port
+    SPI1STAT = 0;
+    SPI1CON1 = spicon_ch1[cs];
+    SPI1STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
     port_cs_line[0] = cs;
     SPI1_CS = SPI_CS_ACTIVE;    // Activate chip select
 
@@ -177,6 +187,10 @@ int spic2BeginTransaction(unsigned char cs) {
 
     while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
     port_status[1] = STAT_SPI_BUSY;
+    // Reconfigure port
+    SPI2STAT = 0;
+    SPI2CON1 = spicon_ch2[cs];
+    SPI2STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
     port_cs_line[1] = cs;
     if (cs == 0)
       SPI2_CS1 = SPI_CS_ACTIVE;     // Activate chip select
