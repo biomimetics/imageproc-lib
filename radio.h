@@ -38,7 +38,6 @@
 #define __RADIO_H
 
 #include "mac_packet.h"
-#include "payload.h"
 
 // Radio interrupt flags
 typedef enum {

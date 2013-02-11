@@ -485,7 +485,6 @@ void dfmemSave(unsigned char* data, unsigned int length)
 
 void dfmemSync()
 {
-
     while(!dfmemIsReady());
 
     //if currentBufferOffset == 0, then we don't need to write anything to be sync'd

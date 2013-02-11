@@ -42,7 +42,6 @@
 #include "utils.h"
 #include "init_default.h"
 #include "radio.h"
-#include "payload.h"
 #include "carray.h"
 #include "mac_packet.h"
 #include "sclock.h"
