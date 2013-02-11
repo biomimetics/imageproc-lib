@@ -38,8 +38,8 @@
  *  continually creating and destroying them.
  *
  * Usage:
- *  All the rules for video rentals apply to packet rentals. 
- *      - Check the rental (for NULL) before using it 
+ *  All the rules for video rentals apply to packet rentals.
+ *      - Check the rental (for NULL) before using it
  *      - Don't return rentals damaged or altered
  *      - Don't return rentals more than once
  *      - Don't use rentals after returning them
@@ -47,23 +47,23 @@
  *  To request a packet or payload:
  *      // Call the respective method
  *      MacPacket packet = ppoolRequestPacket();
- *      if(packet == NULL) { 
- *          // Handle request failure 
- *      }    
+ *      if(packet == NULL) {
+ *          // Handle request failure
+ *      }
  *
  *  To return a packet or payload:
- *      if(!ppoolReturnPacket(packet)) { 
+ *      if(!ppoolReturnPacket(packet)) {
  *          // Handle return failure
  *      }
  *
  */
- 
+
 #ifndef __PPOOL_H_
 
 #define __PPOOL_H
- 
+
 #include "mac_packet.h"
- 
+
 // Initialize packet pool module
 unsigned int ppoolInit(void);
 // Free module resources
@@ -80,5 +80,5 @@ unsigned int ppoolReturnPacket(MacPacket packet);
 // Request/return a payload
 Payload ppoolRequestPayload(unsigned int size);
 unsigned int ppoolReturnPayload(Payload pld);
- 
+
 #endif
