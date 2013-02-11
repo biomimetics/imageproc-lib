@@ -50,7 +50,6 @@
 #include "radio.h"              // Need radio status codes
 #include "spi_controller.h"
 #include "utils.h"
-#include "led.h"
 
 #include <string.h>
 
