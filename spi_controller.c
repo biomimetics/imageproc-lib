@@ -348,6 +348,7 @@ void __attribute__((interrupt, no_auto_psv)) _DMA4Interrupt(void) {
 // Currently not used, though it may be useful for debugging
 void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void) {
 
+    //int_handler[1](SPIC_TRANS_SUCCESS);        // Call registered callback function
     _DMA5IF = 0;
 
 }
@@ -369,7 +370,7 @@ static void setupDMASet1(void) {
     DMA2CNT = 0; // Default
 
     // Need this to avoid compiler bitlength issues
-    unsigned long priority = DMA2_INT_PRI_5;
+    unsigned long priority = DMA2_INT_PRI_7;
     SetPriorityIntDMA2(priority);
 
     EnableIntDMA2;
@@ -389,9 +390,9 @@ static void setupDMASet1(void) {
     DMA3PAD = (volatile unsigned int) &SPI1BUF;
     DMA3CNT = 0; // Default
 
-    priority = DMA3_INT_PRI_5;
+    priority = DMA3_INT_PRI_7;
     SetPriorityIntDMA3(priority);
-    DisableIntDMA3;             // Only need one of the DMA interrupts
+    EnableIntDMA3;             // Only need one of the DMA interrupts
     _DMA3IF  = 0;        // Clear DMA interrupt
 
 }
@@ -413,7 +414,7 @@ static void setupDMASet2(void) {
     DMA4CNT = 0; // Default
 
     // Need this to avoid compiler bitlength issues
-    unsigned long priority = DMA4_INT_PRI_5;
+    unsigned long priority = DMA4_INT_PRI_7;
     SetPriorityIntDMA4(priority);
 
     EnableIntDMA4;
@@ -433,7 +434,7 @@ static void setupDMASet2(void) {
     DMA5PAD = (volatile unsigned int) &SPI2BUF;
     DMA5CNT = 0; // Default
 
-    priority = DMA5_INT_PRI_5;
+    priority = DMA5_INT_PRI_7;
     SetPriorityIntDMA5(priority);
     DisableIntDMA5; // Only need one of the DMA interrupts
     _DMA5IF  = 0;        // Clear DMA interrupt

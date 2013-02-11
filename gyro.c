@@ -71,7 +71,7 @@
 #define LSB2RAD             (0.00121414209)
 
 // Other parameters
-#define DEFAULT_DEAD_ZONE   (2)             // Initial dead zone (0 disabled)
+#define DEFAULT_DEAD_ZONE   (3)             // Initial dead zone (0 disabled)
 #define INITIAL_CALIB_NUM   (200)           // Initial calibration samples
 #define I2C_TIMEOUT_BYTES   (200)           // Number of bytes for I2C timeout
 
@@ -191,7 +191,7 @@ void gyroRunCalib(unsigned int count){
     CRITICAL_SECTION_START
             
     // throw away first 200 data. Sometimes they are bad at the beginning.
-    for (i = 0; i < 200; ++i) {
+    for (i = 0; i < 300; ++i) {
         gyroReadXYZ();
         delay_us(100);
     }

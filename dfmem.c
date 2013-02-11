@@ -485,6 +485,7 @@ void dfmemSave(unsigned char* data, unsigned int length)
 
 void dfmemSync()
 {
+
     while(!dfmemIsReady());
 
     //if currentBufferOffset == 0, then we don't need to write anything to be sync'd
@@ -494,6 +495,7 @@ void dfmemSync()
         currentBufferOffset = 0;
         nextPage++;
     }
+
 }
 
 void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char *data)
@@ -514,7 +516,7 @@ void dfmemGetGeometryParams(DfmemGeometry geo) {
 }
 
 void dfmemZeroIndex(){
-        currentBuffer = 0;
+    currentBuffer = 0;
     currentBufferOffset = 0;
     nextPage = 0;
 }

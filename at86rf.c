@@ -207,7 +207,7 @@ void atInit(WordVal src_addr, WordVal pan_id) {
 	//
     g_last_ackd = 0;
 
-    ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_5); // Radio    
+    ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_5); // Radio
 }
 
 char atSetChannel(char chan){
