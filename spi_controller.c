@@ -202,19 +202,19 @@ int spic2BeginTransaction(unsigned char cs) {
 
 void spic1EndTransaction(void) {
 
-    port_status[0] = STAT_SPI_OPEN; // Free port
     // Only one CS line
     SPI1_CS = SPI_CS_IDLE;  // Idle chip select after freeing since may cause irq
+    port_status[0] = STAT_SPI_OPEN; // Free port
 
 }
 
 void spic2EndTransaction(void) {
 
-    port_status[1] = STAT_SPI_OPEN; // Free port
     if (port_cs_line[1] == 0)
       SPI2_CS1 = SPI_CS_IDLE;  // Idle chip select
     if (port_cs_line[1] == 1)
       SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
+    port_status[1] = STAT_SPI_OPEN; // Free port
 
 }
 
