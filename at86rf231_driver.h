@@ -204,6 +204,8 @@ void trxSetStateIdle(void);
  */
 void trxSetStateOff(void);
 
+unsigned char trxGetLastACKd(void);
+
 #endif
  
  

@@ -235,6 +235,8 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
     // Write data to memory
     dfmemSelectChip();
 
+    Nop();
+
     dfmemWriteByte(command);
     dfmemWriteByte(MemAddr.chr_addr[2]);
     dfmemWriteByte(MemAddr.chr_addr[1]);
@@ -485,7 +487,7 @@ void dfmemSave(unsigned char* data, unsigned int length)
 
 void dfmemSync()
 {
-    while(!dfmemIsReady());
+    //while(!dfmemIsReady());
 
     //if currentBufferOffset == 0, then we don't need to write anything to be sync'd
     if(currentBufferOffset != 0){
@@ -495,15 +497,6 @@ void dfmemSync()
         nextPage++;
     }
 
-}
-
-void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char *data)
-{
-    unsigned int samplesPerPage = dfmem_geo.bytes_per_page / sampLen; //round DOWN int division
-    unsigned int pagenum = sampNum / samplesPerPage;
-    unsigned int byteOffset = (sampNum - pagenum*samplesPerPage)*sampLen;
-
-    dfmemRead(pagenum, byteOffset, sampLen, data);
 }
 
 void dfmemGetGeometryParams(DfmemGeometry geo) {

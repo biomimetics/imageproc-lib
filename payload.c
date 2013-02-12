@@ -60,16 +60,22 @@ Payload payCreate(unsigned char data_length, unsigned char *data,
 
 
 Payload payCreateEmpty(unsigned char data_length){
-    Payload pld = (Payload)malloc(sizeof(PayloadStruct));
-	if(pld == NULL) {
-		return NULL;
-	}
+    int stemp = sizeof(PayloadStruct);
+    void* temp = malloc(stemp);
+    Payload pld;
+    if(temp == NULL){
+        while(1); //critical error, not possible to recover
+        return NULL;
+    }
+    pld = (Payload)temp;
     
-    unsigned char* data = (unsigned char*)malloc(data_length + PAYLOAD_HEADER_LENGTH);
-	if(data == NULL) {
-		free(pld);
-		return NULL;
-	}
+    temp = malloc(data_length + PAYLOAD_HEADER_LENGTH);
+    if(temp == NULL) {
+            free(pld);
+            return NULL;
+    }
+    unsigned char* data = temp;
+
     pld->pld_data = data;
     pld->data_length = data_length;
     pld->iter_index = 0;

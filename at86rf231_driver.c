@@ -435,7 +435,7 @@ void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
             }
             
         } else if(trx_state == RX_AACK_ON) {
-
+            
             // crc_valid = trxReadSubReg(SR_RX_CRC_VALID);
             // if(!crc_valid) {
             //    Drop packet if invalid
@@ -443,7 +443,8 @@ void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
             if(status == TRAC_SUCCESS) {
                 trxFillBuffer();
                 irqCallback(RADIO_RX_START);                
-            } else if(status == TRAC_WAIT_FOR_ACK) {                               
+            } else if(status == TRAC_WAIT_FOR_ACK) {
+                
                 trxFillBuffer();
                 irqCallback(RADIO_RX_START);                
                 // TODO: Add support for proper slotted ACK operation
@@ -533,7 +534,7 @@ static void setupSPI(void) {
     SPI_CON2 = 0x0000; // Framed SPI2 support disabled
 
     // SPI2STAT Register Settings
-    SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
+    SPI_STATbits.SPISIDL = 0; // Continue module when device enters idle mode
     SPI_STATbits.SPIROV = 0; // Clear Overflow
     SPI_STATbits.SPIEN = 1; // Enable SPI module
 

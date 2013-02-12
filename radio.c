@@ -210,7 +210,10 @@ void radioSetWatchdogTime(unsigned int time) {
 
 MacPacket radioDequeueRxPacket(void) {
     if(!is_ready) { return NULL; }
-    return (MacPacket)carrayPopTail(rx_queue);
+    MacPacket temp = carrayPopTail(rx_queue);
+    
+    //return (MacPacket)carrayPopTail(rx_queue);
+    return temp;
 }
 
 unsigned int radioEnqueueTxPacket(MacPacket packet) {
@@ -320,6 +323,23 @@ void radioProcess(void) {
 
 }
 
+char radioSendPayload(unsigned int dest_addr, Payload pld) {
+
+    MacPacket pkt;
+
+    pkt = radioRequestPacket(pld->data_length);
+    if(pkt == NULL) { return 0; }
+
+    macSetDestAddr(pkt, dest_addr); //SRC and PAN already set
+
+    pkt->payload = pld;
+    pkt->payload_length = payGetPayloadLength(pld);
+
+    while(!radioEnqueueTxPacket(pkt)){ radioProcess(); }
+    
+    return 1;
+}
+
 
 // =========== Private functions ==============================================
 
@@ -339,7 +359,7 @@ static void radioReset(void) {
     status.state = STATE_OFF;
     radioSetStateIdle();
     watchdogProgress();
-    LED_ORANGE = 0;
+    //LED_ORANGE = 0;
     LED_RED = ~LED_RED;
 
 }
@@ -363,7 +383,7 @@ void trxCallback(unsigned int irq_cause) {
 
         // Beginning reception process
         if(irq_cause == RADIO_RX_START) {
-            LED_ORANGE = 1;
+            //LED_ORANGE = 1;
             status.state = STATE_RX_BUSY;
         }
 
@@ -374,7 +394,7 @@ void trxCallback(unsigned int irq_cause) {
             radioProcessRx();   // Process newly received data
             status.last_rssi = trxReadRSSI();
             status.last_ed = trxReadED();
-            LED_ORANGE = 0;
+            //LED_ORANGE = 0;
             status.state = STATE_RX_IDLE;    // Transition after data processed
         }
 
@@ -526,7 +546,7 @@ static void radioProcessTx(void) {
 
     // State should be STATE_TX_IDLE upon entering function
     status.state = STATE_TX_BUSY;    // Update state
-    LED_ORANGE = 1;                    // Indicate RX activity
+    //LED_ORANGE = 1;                    // Indicate RX activity
 
     macSetSeqNum(packet, status.sequence_number++); // Set packet sequence number
 

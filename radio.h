@@ -111,6 +111,8 @@ void radioSetWatchdogTime(unsigned int time);
 unsigned int radioEnqueueTxPacket(MacPacket packet);
 MacPacket radioDequeueRxPacket(void);
 
+char radioSendPayload(unsigned int dest_addr, Payload pld);
+
 unsigned int radioTxQueueEmpty(void);
 unsigned int radioTxQueueFull(void);
 unsigned int radioGetTxQueueSize(void);
