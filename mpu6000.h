@@ -44,10 +44,11 @@
 #define __MPU_SPI_H
 
 // Setup device
-void mpuSetup(void);
+//  cs = chip select index
+void mpuSetup(unsigned char cs);
 
 // Run calibration routine
-void mpuRunCalib(unsigned int count);
+void mpuRunCalib(unsigned int discard, unsigned int count);
 
 // Set sleep mode
 void mpuSetSleep(unsigned char mode);
@@ -64,6 +65,7 @@ float mpuGetXlScale(void);
 float mpuGetTempScale(void);
 
 // Read data from MPU
-void mpuUpdate(void);
+// This begins an asynchronous update.
+void mpuBeginUpdate(void);
 
 #endif
