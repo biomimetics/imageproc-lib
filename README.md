@@ -1,6 +1,6 @@
 Note: Library updates will be pulled here, while unit tests will be pulled
 into [imageproc-test]
-(https://github.com/ryanjulian/imageproc-test/tree/imageproc2.5-integration).
+(https://github.com/biomimetics/imageproc-test/tree/imageproc2.5-integration).
 
 This is the board support integration branch for imageproc-lib on the
 ImageProc 2.5. Please send pull requests with ImageProc 2.5-related changes
