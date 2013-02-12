@@ -30,8 +30,9 @@
  * ams PID Module
  *
  * by Duncan Haldane 10/18/2012
+ *	Revised Ron Fearing 2/11/2013
  *
- * v.0.1
+ * v.0.2
  */
 
 
@@ -72,24 +73,22 @@ void amsPIDSetup(void){
 	}
 }
 
+// for fractional data type, want 0x2000 to be centered at 0, -pi = 0x0000, pi=0x4000
+// convert to 16 bits to get correct sign
+#define MAX_HALL 0x4000	// maximum Hall sensor value
 void amsGetPos(unsigned char num){
-
+	int temp;
 	encSumPos(num);
-	
-	if ( (encPos[num].POS >= encPos[num].offset)
-		&& (encPos[num].POS < 16384)){
-			encPos[num].calibPOS = encPos[num].POS - encPos[num].offset;
-			} else{
-				encPos[num].calibPOS = encPos[num].POS - encPos[num].offset + 16384;
-			}
-
+     temp = encPos[num].POS- encPos[num].offset;
+     if (temp < 0) temp = temp + MAX_HALL;  // restore to 0 < temp < MAX_HALL range
+     temp = (temp - MAX_HALL/2);			 // range -MAX_HALL/2 < temp < MAX_HALL/2
+     encPos[num].calibPOS = temp << 2; 	// should be equiv of fractional type now
+	     
 }
 		
-	
 
 
 void amsCtrlSetInput(unsigned char num, int setpnt) { //setpoint of controller
-	setpnt = (setpnt << 1);		//max 14bit to q15
 	pidSetInput(&amsPID[num], setpnt);
 }
 
@@ -97,10 +96,7 @@ void amsCtrlSetGains(unsigned char num, int Kp, int Ki, int Kd, int Kaw, int ff)
     pidSetGains(&amsPID[num], Kp, Ki, Kd, Kaw, ff);
 }
 
-void amsCtrlPIDUpdate(unsigned char num, int state){
-	state = (state);		//max 14bit to q15
-	pidUpdate(&amsPID[num], state);
+void amsCtrlPIDUpdate(unsigned char num, int output){
+	output = (fractional) output;		// cast to q15
+	pidUpdate(&amsPID[num], output);
 }
-
-
-	

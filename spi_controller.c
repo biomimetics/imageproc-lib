@@ -76,8 +76,8 @@
 #define SPI1_REQ_VAL            (0x00A) // SPI1 Transfer Done Interrupt
 #define SPI2_REQ_VAL            (0x021) // SPI2 Transfer Done Interrupt
 
-#define SPIC1_RX_BUFF_LEN       (128) // Radio buffer is 128 bytes
-#define SPIC1_TX_BUFF_LEN       (128)
+#define SPIC1_RX_BUFF_LEN       (14)//(128) // Radio buffer is 128 bytes
+#define SPIC1_TX_BUFF_LEN       (14)//(128) // Swithched to 14 bytes for IMU. Breaks radio #yolo
 
 #define SPIC2_RX_BUFF_LEN       (264) // Flash page is 264/528 bytes
 #define SPIC2_TX_BUFF_LEN       (264) // Currently not in use
