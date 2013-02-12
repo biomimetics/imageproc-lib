@@ -337,6 +337,8 @@ char radioSendPayload(unsigned int dest_addr, Payload pld) {
 
     while(!radioEnqueueTxPacket(pkt)){ radioProcess(); }
     
+    radioReturnPacket(pkt);
+
     return 1;
 }
 
