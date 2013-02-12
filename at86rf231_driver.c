@@ -104,8 +104,7 @@ static unsigned char last_rssi;
 void trxSetup(void) {
 
     setupSPI();     // Set up SPI com port
-    spicSetupChannel1();
-    spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
+    spic1SetCallback(0, &trxSpiCallback);  // Configure callback for spi interrupts
     trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts
     trxSetStateOff(); // Transition to TRX_OFF for configuring device
     trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
@@ -230,7 +229,7 @@ void trxWriteFrameBuffer(MacPacket packet) {
 
     memcpy(frame_buffer + i, payToString(pld), payGetPayloadLength(pld));
 
-    spic1BeginTransaction();
+    spic1BeginTransaction(0);
     spic1Transmit(TRX_CMD_FW);
     spic1MassTransmit(phy_len, frame_buffer, phy_len*3); // 3*length microseconds timeout seems to work well
 
@@ -335,7 +334,7 @@ void trxSetStateOff(void) {
  */
 static void trxWriteReg(unsigned char addr, unsigned char val) {
 
-    spic1BeginTransaction();
+    spic1BeginTransaction(0);
     spic1Transmit(TRX_CMD_RW | addr);
     spic1Transmit(val);
     spic1EndTransaction();
@@ -351,7 +350,7 @@ static void trxWriteReg(unsigned char addr, unsigned char val) {
 static unsigned char trxReadReg(unsigned char addr) {
 
     unsigned char c;
-    spic1BeginTransaction();
+    spic1BeginTransaction(0);
     spic1Transmit(TRX_CMD_RR | addr);
     c = spic1Receive();
     spic1EndTransaction();
@@ -482,7 +481,7 @@ static void trxSpiCallback(unsigned int interrupt_code) {
  */
 static void trxFillBuffer(void) {
 
-    spic1BeginTransaction();
+    spic1BeginTransaction(0);
     last_rssi = spic1Transmit(TRX_CMD_FR);  // Begin write (returns RSSI because of SPI_CMD_MODE)
     //current_phy_len = spic1Receive(); // Read physical frame size
     //spic1MassTransmit(current_phy_len, NULL, current_phy_len*3); // DMA rest into buffer
@@ -501,33 +500,10 @@ static void trxReadBuffer(void) {
 
 static void setupSPI(void) {
 
-    // SPI interrupt is not used.
-    _SPI1IF = 0;    // Clear the interrupt flag
-    _SPI1IE = 0;    // Disable interrupts
-
-    // SPI1CON1 Register Settings
-    SPI_CON1bits.MSTEN = 1; // Master mode Enabled
-    SPI_CON1bits.DISSCK = 0; // Internal Serial Clock is Enabled
-    SPI_CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
-    SPI_CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
-    SPI_CON1bits.SMP = 0; // Input data is sampled at middle of data output time
-    SPI_CON1bits.SSEN = 0; // SSx pin is used
-    SPI_CON1bits.CKE = 1; // Serial output data changes on transition
-                        // from active clock trx_state to idle clock trx_state
-    SPI_CON1bits.CKP = 0; // Idle trx_state for clock is a low level;
-                            // active trx_state is a high level
-
-    // Set up SCK frequency of 6.667Mhz for 40 MIPS
-    SPI_CON1bits.SPRE = 0b010; // Secondary prescale    6:1
-    SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
-
-    // SPI2CON2 Register Settings
-    SPI_CON2 = 0x0000; // Framed SPI2 support disabled
-
-    // SPI2STAT Register Settings
-    SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
-    SPI_STATbits.SPIROV = 0; // Clear Overflow
-    SPI_STATbits.SPIEN = 1; // Enable SPI module
+    spicSetupChannel1(0, ENABLE_SCK_PIN & ENABLE_SDO_PIN & SPI_MODE16_OFF &
+               SPI_SMP_OFF & SPI_CKE_ON & SLAVE_ENABLE_OFF & 
+               CLK_POL_ACTIVE_HIGH & MASTER_ENABLE_ON & PRI_PRESCAL_1_1 & 
+               SEC_PRESCAL_6_1);
 
 }
 
