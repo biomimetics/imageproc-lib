@@ -6,7 +6,7 @@
 #define AMS_DEFAULT_KFF  0
 #define SOFT_GAIN_SCALER 512
 #elif defined PID_HARDWARE
-#define AMS_DEFAULT_KP  18000
+#define AMS_DEFAULT_KP  3000
 #define AMS_DEFAULT_KI  10
 #define AMS_DEFAULT_KD  0
 #define AMS_DEFAULT_KAW 0
