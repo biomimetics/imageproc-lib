@@ -53,9 +53,9 @@ typedef void (*TrxIrqHandler)(unsigned int irq_cause);
  * This function should be called before using the other transceiver functions.
  * Upon completion, the transceiver SPI port and configuration registers will be
  * initialized to default values as specified in at86rf231_driver.c, and the
- * transceiver will be in an idle state.
+ * transceiver will be in an idle state. cs specifies the chip select line.
  */
-void trxSetup(void);
+void trxSetup(unsigned char cs);
 
 /**
  * Reset the transceiver hardware and software state.
