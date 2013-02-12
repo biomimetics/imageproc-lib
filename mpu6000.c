@@ -123,6 +123,7 @@ static void writeReg(unsigned char regaddr, unsigned char data );
 static unsigned char readReg(unsigned char regaddr);
 static inline void setupSPI(void);
 static void mpuFinishUpdate(unsigned int cause);
+static void waitDmaFinish(void);
 
 /*-----------------------------------------------------------------------------
 *          Public functions
@@ -160,17 +161,24 @@ void mpuSetup(unsigned char cs) {
   //writeReg(MPU_REG_CONFIG, 0);				        // Set frame sync and DLPF off
   writeReg(MPU_REG_PMGT2, 0b00000000);		    // Activate all sensors
 
- //   mpuRunCalib(1000);
+  mpuRunCalib(1000, 1000);
 }
 
-// TODO: Implement!
-void mpuRunCalib(unsigned int count){
+void mpuRunCalib(unsigned int discard, unsigned int count) {
 	
     unsigned int i;
-    long gx, gy, gz;
+    long gx = 0, gy = 0, gz = 0;
 
+    // Discard initial samples
+    for (i = 0; i < discard; i++) {
+      mpuBeginUpdate();
+      waitDmaFinish();
+    }
+
+    // Calibrate gyro offset
     for(i = 0; i < count; i++) {
- //       mpuUpdate();
+        mpuBeginUpdate();
+        waitDmaFinish();
         gx += mpu_data.gyro_data[0];
         gy += mpu_data.gyro_data[1];
         gz += mpu_data.gyro_data[2];
@@ -189,6 +197,7 @@ void mpuSetSleep(unsigned char mode) {
 }
 
 void mpuGetGyro(int* buff) {
+    waitDmaFinish();
     buff[0] = mpu_data.gyro_data[0] + mpu_params.gyro_offset[0];
     buff[1] = mpu_data.gyro_data[1] + mpu_params.gyro_offset[1];
     buff[2] = mpu_data.gyro_data[2] + mpu_params.gyro_offset[2];
@@ -199,6 +208,7 @@ float mpuGetGyroScale(void) {
 }
 
 void mpuGetXl(int* buff) {
+    waitDmaFinish();
     buff[0] = mpu_data.xl_data[0] + mpu_params.xl_offset[0];
     buff[1] = mpu_data.xl_data[1] + mpu_params.xl_offset[1];
     buff[2] = mpu_data.xl_data[2] + mpu_params.xl_offset[2];
@@ -208,12 +218,18 @@ float mpuGetXlScale(void) {
     return mpu_params.xl_scale;
 }
 
-void mpuGetTemp(int* buff) {    
+void mpuGetTemp(int* buff) {   
+    waitDmaFinish(); 
     *buff = mpu_data.temp + mpu_params.temp_offset;
 }    
 
 float mpuGetTempScale(void) {
     return mpu_params.temp_scale;
+}
+
+void waitDmaFinish(void) {
+  spic2BeginTransaction(spi_cs);
+  spic2EndTransaction();
 }
 
 void mpuBeginUpdate(void) {

@@ -48,7 +48,7 @@
 void mpuSetup(unsigned char cs);
 
 // Run calibration routine
-void mpuRunCalib(unsigned int count);
+void mpuRunCalib(unsigned int discard, unsigned int count);
 
 // Set sleep mode
 void mpuSetSleep(unsigned char mode);
