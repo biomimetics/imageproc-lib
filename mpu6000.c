@@ -132,7 +132,7 @@ static void waitDmaFinish(void);
 // Note to self: FIFO State change requires power cycle!
 
 void mpuSetup(unsigned char cs) {
-  spi_cs = cs;
+  spi_cs = cs;    //cs=2 for ip2.5?
 
   // setup SPI port
   setupSPI();
