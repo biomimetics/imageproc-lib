@@ -51,7 +51,7 @@
  *
  */	
  #define MAX_HALL 0x4000 // maximum Hall sensor value
-#define NUM_ENC 1 //2 Debugging config
+#define NUM_ENC 2
 //Leg position struct
 typedef struct {
    	unsigned int pos; // raw reading from sensor 14 bits
