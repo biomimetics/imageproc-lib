@@ -35,7 +35,7 @@
  *
  * Revisions:
  *  Humphrey Hu         2012-01-06      Initial implementation
- *  Humphrey Hu         2012-02-08      Added state transition methods                     
+ *  Humphrey Hu         2012-02-08      Added state transition methods
  *
  * Notes:
  *    No-Clock (sleep) RX listening mode not yet implemented
@@ -43,32 +43,31 @@
 
 #include "at86rf231.h"
 #include "at86rf231_driver.h"
-#include "ports.h"     
+#include "ports.h"
 #include "mac_packet.h"
 #include "payload.h"
 #include "spi.h"                // SFRs
 #include "radio.h"              // Need radio status codes
 #include "spi_controller.h"
 #include "utils.h"
-#include "led.h"
 
 #include <string.h>
 
 #define SPI_CON1bits        (SPI1CON1bits)
 #define SPI_CON2            (SPI1CON2)
-#define SPI_STATbits        (SPI1STATbits)    
+#define SPI_STATbits        (SPI1STATbits)
 #define SLPTR               (_LATB15) // Sleep/Transmit Pin
 
 // Basic commands
 #define TRX_CMD_RW          (0xC0) // Register Write
-#define TRX_CMD_RR          (0x80) // Register Read 
+#define TRX_CMD_RR          (0x80) // Register Read
 #define TRX_CMD_FW          (0x60) // Frame Transmit Mode
 #define TRX_CMD_FR          (0x20) // Frame Receive Mode
 #define TRX_CMD_SW          (0x40) // SRAM Write.
 #define TRX_CMD_SR          (0x00) // SRAM Read.
 
 
-// Based on 16-bit addressing for PAN and device and no 
+// Based on 16-bit addressing for PAN and device and no
 // auxiliary security header
 // TODO: Move to appropriate header file, probably mac_packet.h
 #define MAC_HEADER_LENGTH       (9)
@@ -108,8 +107,8 @@ void trxSetup(void) {
     setupSPI();     // Set up SPI com port
     spicSetupChannel1();
     spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
-    trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts          
-    trxSetStateOff(); // Transition to TRX_OFF for configuring device    
+    trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts
+    trxSetStateOff(); // Transition to TRX_OFF for configuring device
     trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
     trxWriteSubReg(SR_SLOTTED_OPERATION, 0);  // Disable slotted operation
     trxWriteSubReg(SR_TX_AUTO_CRC_ON, 1); // Enable automatic TX CRC
@@ -125,7 +124,7 @@ void trxSetup(void) {
 
     last_rssi = 0;
     is_ready = 1;
-    
+
 }
 
 
@@ -135,7 +134,7 @@ void trxReset(void) {
 
     spic1Reset();   // Reset comm
     trxWriteSubReg(SR_TRX_CMD, CMD_TRX_OFF);  // Force to off state
-    
+
     i = 0;
     while(i < 0xFFF0) {
         if(trxReadSubReg(SR_TRX_STATUS) == TRX_OFF) { break; }
@@ -151,14 +150,14 @@ void trxCalibrate(void) {
     while(trxReadSubReg(SR_FTN_START) != 0);    // Wait for completion
 
 }
- 
+
 void trxSetAddress(unsigned int addr) {
 
     trxWriteReg(RG_SHORT_ADDR_0, (addr & 0xff));
     trxWriteReg(RG_SHORT_ADDR_1, ((addr >> 8) & 0xff));
 
 }
- 
+
 void trxSetPan(unsigned int pan) {
 
     trxWriteReg(RG_PAN_ID_0, (pan & 0xff));
@@ -171,17 +170,17 @@ void trxSetChannel(unsigned char channel) {
     trxWriteSubReg(SR_CHANNEL, channel);
 
 }
- 
+
 void trxSetRetries(unsigned int retries) {
 
-    trxWriteSubReg(SR_MAX_FRAME_RETRIES, retries); 
-    
+    trxWriteSubReg(SR_MAX_FRAME_RETRIES, retries);
+
 }
- 
+
 void trxSetIrqCallback(TrxIrqHandler handler) {
 
     irqCallback = handler;
-    
+
 }
 
 void trxReadId(unsigned char *id) {
@@ -206,20 +205,22 @@ unsigned char trxReadED(void) {
 
 }
 
-unsigned char trxGetLastACKd(void){
+unsigned char trxGetLastACKd(void) {
+
     return last_ackd;
+
 }
- 
+
 void trxWriteFrameBuffer(MacPacket packet) {
-    
+
     unsigned int i;
     unsigned char phy_len;
     Payload pld;
-    
+
     // Linearize contents in buffer
     i = 0;
     phy_len = packet->payload_length + MAC_HEADER_LENGTH + CRC_LENGTH;
-    
+
     frame_buffer[i++] = phy_len; //packet->payload_length + MAC_HEADER_LENGTH + CRC_LENGTH;
     frame_buffer[i++] = packet->frame_ctrl.val.byte.LB;
     frame_buffer[i++] = packet->frame_ctrl.val.byte.HB;
@@ -233,28 +234,28 @@ void trxWriteFrameBuffer(MacPacket packet) {
 
     pld = macGetPayload(packet);
     if(pld == NULL) { return; }
-    
+
     memcpy(frame_buffer + i, payToString(pld), payGetPayloadLength(pld));
-    
+
     spic1BeginTransaction();
     spic1Transmit(TRX_CMD_FW);
     spic1MassTransmit(phy_len, frame_buffer, phy_len*3); // 3*length microseconds timeout seems to work well
-    
+
 }
- 
+
 unsigned int trxReadFrameBuffer(MacPacket packet) {
-    
-    // Read received data from DMA memory into buffer        
+
+    // Read received data from DMA memory into buffer
     return macReadFrame(frame_buffer, packet); // Decode frame data
-    
+
 }
- 
-unsigned int trxReadBufferDataLength(void) {   
+
+unsigned int trxReadBufferDataLength(void) {
 
     return macReadDataLength(frame_buffer);
 
 }
- 
+
 void trxBeginTransmission(void) {
 
     trxSetSlptr(1);
@@ -264,71 +265,71 @@ void trxBeginTransmission(void) {
 }
 
 void trxSetStateTx(void) {
-    
+
     CRITICAL_SECTION_START;
-    
+
     if(trx_state == TX_ARET_ON) { // Fast return if already in desired state
         CRITICAL_SECTION_END;
-        return; 
-    } 
-    
+        return;
+    }
+
     trxWriteSubReg(SR_TRX_CMD, CMD_TX_ARET_ON); // Begin transition
     while(trxReadSubReg(SR_TRX_STATUS) != TX_ARET_ON);  // Wait for completion
     trx_state = TX_ARET_ON; // Update state
-    
+
     CRITICAL_SECTION_END;
 
 }
 
 void trxSetStateRx(void) {
-    
+
     CRITICAL_SECTION_START;
-    
+
     if(trx_state == RX_AACK_ON) {  // Fast return
         CRITICAL_SECTION_END;
-        return; 
+        return;
     }
-    
+
     trxWriteSubReg(SR_TRX_CMD, CMD_RX_AACK_ON); // Begin transition
     while(trxReadSubReg(SR_TRX_STATUS) != RX_AACK_ON);  // Wait for completion
     trx_state = RX_AACK_ON; // Update state
-    
+
     CRITICAL_SECTION_END;
 
 }
 
-void trxSetStateIdle(void) {    
-    
+void trxSetStateIdle(void) {
+
     CRITICAL_SECTION_START;
-    
+
     if(trx_state == PLL_ON) {  // Fast return
         CRITICAL_SECTION_END;
-        return; 
+        return;
     }
-    
+
     trxWriteSubReg(SR_TRX_CMD, CMD_PLL_ON); // Begin transition
     while(trxReadSubReg(SR_TRX_STATUS) != PLL_ON);  // Wait for completion
     trx_state = PLL_ON; // Update state
-    
+
     CRITICAL_SECTION_END;
 
 }
 
 void trxSetStateOff(void) {
-    
+
     CRITICAL_SECTION_START;
-    
+
     if(trx_state == TRX_OFF) {     // Fast return
         CRITICAL_SECTION_END;
-        return; 
+        return;
     }
-    
+
     trxWriteSubReg(SR_TRX_CMD, CMD_TRX_OFF);    // Begin transition
     while(trxReadSubReg(SR_TRX_STATUS) != TRX_OFF); // Wait for completion
     trx_state = TRX_OFF;    // Update state
-    
+
     CRITICAL_SECTION_END;
-    
+
 }
 
 // =========== Private functions ==============================================
@@ -340,12 +341,12 @@ void trxSetStateOff(void) {
  * @param val 8-bit value to write to the register
  */
 static void trxWriteReg(unsigned char addr, unsigned char val) {
-   
+
     spic1BeginTransaction();
     spic1Transmit(TRX_CMD_RW | addr);
     spic1Transmit(val);
     spic1EndTransaction();
-    
+
 }
 
 /**
@@ -374,7 +375,7 @@ static unsigned char trxReadReg(unsigned char addr) {
  * @param val Value to write to subregister
  */
 static void trxWriteSubReg(unsigned char addr, unsigned char mask, unsigned char pos, unsigned char val) {
-    
+
     unsigned char temp;
     temp = trxReadReg(addr);
     temp &= ~mask;
@@ -382,9 +383,9 @@ static void trxWriteSubReg(unsigned char addr, unsigned char mask, unsigned char
     val &= mask;
     val |= temp;
     trxWriteReg(addr, val);
-    
+
 }
- 
+
 /**
  * Read bits from a transceiver subregister.
  *
@@ -392,7 +393,7 @@ static void trxWriteSubReg(unsigned char addr, unsigned char mask, unsigned char
  * @param mask Bitfield mask to apply to register value
  * @param pos Subregister position offset from main register LSB
  * @return Value read from subregister.
- */  
+ */
 static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsigned char pos) {
 
     unsigned char data;
@@ -400,7 +401,7 @@ static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsig
     data &= mask;
     data >>= pos;
     return data;
-    
+
 }
 
 void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
@@ -408,103 +409,102 @@ void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
     unsigned char irq_cause, status;
     irq_cause = 0;
     status = 0xFF;
-    
+
     irq_cause = trxReadReg(RG_IRQ_STATUS);    // Read and clear irq source
-    
+
     if(irq_cause & TRX_IRQ_TRX_END) {
-        
+
         status = trxReadSubReg(SR_TRAC_STATUS); // Determine transaction status
-    
+
         // Transmit complete case
         if(trx_state == BUSY_TX_ARET) {
-        
+
             trx_state = TX_ARET_ON; // State transition
-        
+
             if(status == TRAC_SUCCESS) {
                 last_ackd = 1;
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_SUCCESS_DATA_PENDING) {
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_CHANNEL_ACCESS_FAILURE) {
-                irqCallback(RADIO_TX_FAILURE);            
+                irqCallback(RADIO_TX_FAILURE);
             } else if(status == TRAC_NO_ACK) {
                 last_ackd = 0;
-                irqCallback(RADIO_TX_FAILURE);            
+                irqCallback(RADIO_TX_FAILURE);
             } else if(status == TRAC_INVALID) {
                 irqCallback(RADIO_TX_FAILURE);
             }
-            
+
         } else if(trx_state == RX_AACK_ON) {
-            
+
             // crc_valid = trxReadSubReg(SR_RX_CRC_VALID);
             // if(!crc_valid) {
             //    Drop packet if invalid
             // }
             if(status == TRAC_SUCCESS) {
                 trxFillBuffer();
-                irqCallback(RADIO_RX_START);                
+                irqCallback(RADIO_RX_START);
             } else if(status == TRAC_WAIT_FOR_ACK) {
-                
                 trxFillBuffer();
-                irqCallback(RADIO_RX_START);                
+                irqCallback(RADIO_RX_START);
                 // TODO: Add support for proper slotted ACK operation
             } else if(status == TRAC_INVALID) {
                 irqCallback(RADIO_RX_FAILURE);
             }
-        }    
+        }
     }
-    
+
     _INT4IF = 0;                                // Clear interrupt flag
-    
+
 }
 
 static void trxSpiCallback(unsigned int interrupt_code) {
 
     if(interrupt_code == SPIC_TRANS_SUCCESS) {
-               
+
         spic1EndTransaction(); // End previous transaction
-    
+
         if(trx_state == RX_AACK_ON) {
-            trxReadBuffer();    
+            trxReadBuffer();
             irqCallback(RADIO_RX_SUCCESS);
-            
+
         } else if(trx_state == TX_ARET_ON) {
-            
+
             // Packet was successfully transferred to the radio buffer
             // Do something?
-        
+
         }
 
     } else if(interrupt_code == SPIC_TRANS_TIMEOUT) {
-        
-        // This is indicative of some form of failure! 
+
+        // This is indicative of some form of failure!
         spic1Reset();
         irqCallback(RADIO_HW_FAILURE);
-        
+
     }
-    
+
 }
 
 // TODO: Optimize to read only packet length, not whole buffer
 /**
  * Begin transfer of frame data from transceiver into DMA buffer
  */
-static void trxFillBuffer(void) {    
-    
+static void trxFillBuffer(void) {
+
     spic1BeginTransaction();
     last_rssi = spic1Transmit(TRX_CMD_FR);  // Begin write (returns RSSI because of SPI_CMD_MODE)
     //current_phy_len = spic1Receive(); // Read physical frame size
-    //spic1MassTransmit(current_phy_len, NULL, current_phy_len*3); // DMA rest into buffer                                                    
+    //spic1MassTransmit(current_phy_len, NULL, current_phy_len*3); // DMA rest into buffer
     spic1MassTransmit(FRAME_BUFFER_SIZE, NULL, FRAME_BUFFER_SIZE*3); // DMA entire frame buffer into memory
-    
+
 }
 
 /**
  * Copy frame buffer contents from DMA into static software buffer
  */
 static void trxReadBuffer(void) {
-    
-    spic1ReadBuffer(FRAME_BUFFER_SIZE, frame_buffer);         
+
+    spic1ReadBuffer(FRAME_BUFFER_SIZE, frame_buffer);
 
 }
 
@@ -541,7 +541,7 @@ static void setupSPI(void) {
 }
 
 
-static inline void trxSetSlptr(unsigned char val) {      
+static inline void trxSetSlptr(unsigned char val) {
     SLPTR = val;
     Nop();
     Nop();

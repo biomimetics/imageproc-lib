@@ -46,7 +46,6 @@
 #include "mac_packet.h"
 #include "sclock.h"
 #include "timer.h"
-#include "led.h"
 #include "ppool.h"
 
 #include "at86rf231.h"  // Current transceiver IC
@@ -211,7 +210,7 @@ void radioSetWatchdogTime(unsigned int time) {
 MacPacket radioDequeueRxPacket(void) {
     if(!is_ready) { return NULL; }
     MacPacket temp = carrayPopTail(rx_queue);
-    
+
     //return (MacPacket)carrayPopTail(rx_queue);
     return temp;
 }
@@ -336,7 +335,7 @@ char radioSendPayload(unsigned int dest_addr, Payload pld) {
     pkt->payload_length = payGetPayloadLength(pld);
 
     while(!radioEnqueueTxPacket(pkt)){ radioProcess(); }
-    
+
     radioReturnPacket(pkt);
 
     return 1;
@@ -361,8 +360,8 @@ static void radioReset(void) {
     status.state = STATE_OFF;
     radioSetStateIdle();
     watchdogProgress();
-    //LED_ORANGE = 0;
-    LED_RED = ~LED_RED;
+    LED_3 = 0;
+    LED_1 = ~LED_1;
 
 }
 
@@ -385,7 +384,7 @@ void trxCallback(unsigned int irq_cause) {
 
         // Beginning reception process
         if(irq_cause == RADIO_RX_START) {
-            //LED_ORANGE = 1;
+            LED_3 = 1;
             status.state = STATE_RX_BUSY;
         }
 
@@ -396,7 +395,7 @@ void trxCallback(unsigned int irq_cause) {
             radioProcessRx();   // Process newly received data
             status.last_rssi = trxReadRSSI();
             status.last_ed = trxReadED();
-            //LED_ORANGE = 0;
+            LED_3 = 0;
             status.state = STATE_RX_IDLE;    // Transition after data processed
         }
 
@@ -405,7 +404,7 @@ void trxCallback(unsigned int irq_cause) {
     } else if(status.state == STATE_TX_BUSY) {
 
         status.state = STATE_TX_IDLE;
-        LED_ORANGE = 0;
+        LED_3 = 0;
         // Transmit successful
         if(irq_cause == RADIO_TX_SUCCESS) {
             radioReturnPacket(carrayPopHead(tx_queue));
@@ -548,7 +547,7 @@ static void radioProcessTx(void) {
 
     // State should be STATE_TX_IDLE upon entering function
     status.state = STATE_TX_BUSY;    // Update state
-    //LED_ORANGE = 1;                    // Indicate RX activity
+    LED_3 = 1;                    // Indicate RX activity
 
     macSetSeqNum(packet, status.sequence_number++); // Set packet sequence number
 
