@@ -30,7 +30,7 @@
  * ams PID Module
  *
  * by Duncan Haldane 10/18/2012
- *	Revised Ron Fearing 2/11/2013
+ *	
  *
  * v.0.2
  */
@@ -72,7 +72,7 @@ void amsPIDSetup(void){
 		amsPID[i].onoff = PID_ON;
 	}
 }
-
+/*
 // for fractional data type, want 0x2000 to be centered at 0, -pi = 0x0000, pi=0x4000
 // convert to 16 bits to get correct sign
 #define MAX_HALL 0x4000	// maximum Hall sensor value
@@ -86,7 +86,7 @@ void amsGetPos(unsigned char num){
 	     
 }
 		
-
+*/
 
 void amsCtrlSetInput(unsigned char num, int setpnt) { //setpoint of controller
 	pidSetInput(&amsPID[num], setpnt);

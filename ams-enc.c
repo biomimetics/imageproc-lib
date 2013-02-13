@@ -45,6 +45,7 @@
 #include "i2c.h"
 #include "ams-enc.h"
 #include "utils.h"
+#include "led.h"
  
 #define LSB2ENCDEG 0.0219
 
@@ -148,11 +149,18 @@ void amsGetPos(unsigned char num) {
 	update = encPos[num].pos;
 	if (update > prev)
 	{	if( (update-prev) > MAX_HALL/2 )	    	//Subtract one Rev count if diff > 180
-		{	encPos[num].oticks--;}
+		{	
+            encPos[num].oticks--;
+            LED_RED = ~LED_RED;
+
+        }
 	} 
 	else
 	{	if( (prev-update) > MAX_HALL/2 )		//Add one Rev count if -diff > 180
-		{ encPos[num].oticks++; }
+		{ 
+            encPos[num].oticks++; 
+            LED_BLUE = ~LED_BLUE;
+        }
 	}
 }
 
