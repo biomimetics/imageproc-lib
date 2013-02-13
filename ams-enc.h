@@ -17,7 +17,7 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE`
  * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
@@ -50,18 +50,21 @@
  *
  *
  */	
- 
-#define NUM_ENC 2
-
+ #define MAX_HALL 0x4000 // maximum Hall sensor value
+#define NUM_ENC 1 //2 Debugging config
+//Leg position struct
 typedef struct {
-    int POS; //Leg position struct
-	long oticks;
-	int calibPOS;
-	int offset;
-} ENCPOS;
+   	unsigned int pos; // raw reading from sensor 14 bits
+	long oticks;  // revolution counter
+	unsigned int calibPos;  // 0 to 2pi, converted to 16 bits
+	unsigned int offset; // initial reading on setup - relative zero position
+} EncObj;
 
+extern EncObj encPos[NUM_ENC];
 
-
+// prototypes
+void amsHallSetup(void);
+void amsGetPos(unsigned char num);
  /*****************************************************************************
 * Function Name : encSetup
 * Description   : Initialize encoder
@@ -93,3 +96,5 @@ void encSumPos(unsigned char num);
  * Return Value  : None
  *****************************************************************************/
 float encGetFloatPos(unsigned char num);
+
+void amsHallSetup();

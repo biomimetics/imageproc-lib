@@ -87,12 +87,6 @@
 #define SPI_CS_ACTIVE           (0)
 #define SPI_CS_IDLE             (1)
 
-/** Port status codes */
-typedef enum {
-    STAT_SPI_CLOSED, /** Port not initialized */
-    STAT_SPI_OPEN,  /** Port not busy */
-    STAT_SPI_BUSY,  /** Port busy */
-} SpicStatus;
 
 // =========== Function Prototypes ============================================
 static void setupDMASet1(void);

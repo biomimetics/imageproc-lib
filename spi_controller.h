@@ -70,6 +70,13 @@ typedef enum {
     SPIC_TRANS_TIMEOUT, /** Transceive timeout */
 } SpicIrqSrc;
 
+/** Port status codes */
+typedef enum {
+    STAT_SPI_CLOSED, /** Port not initialized */
+    STAT_SPI_OPEN,  /** Port not busy */
+    STAT_SPI_BUSY,  /** Port busy */
+} SpicStatus;
+
 /**
  * Interrupt handler type that must be registered to the driver.
  * The handler is called on interrupts with the source as the parameter.

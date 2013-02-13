@@ -36,7 +36,8 @@
  * Revisions:
  *  Duncan Haldane      2012-05-15    Initial release
  *  Andrew Pullin       2012-07-05    Ported to use i2c_driver module
- *                      
+ *   R. Fearing	2012-12-31  return fractional value, and put all encoder
+                                          reading in this file, encoders 0-3 instead of 1-4 for simplicity.                 
  * Notes:
  *  - This module uses the I2C1 port for communicating with the AMS encoder chips
  */
@@ -51,7 +52,7 @@
  
 unsigned int encAddr[8];	
 
-ENCPOS encPos[NUM_ENC];
+EncObj encPos[NUM_ENC];
 
 /*-----------------------------------------------------------------------------
  *          Declaration of static functions
@@ -61,20 +62,50 @@ static inline void encoderSetupPeripheral(void);
 /*-----------------------------------------------------------------------------
  *          Public functions
 -----------------------------------------------------------------------------*/
+/* ************
+* Function Name : amsHallSetup
+ * Description   : initialize I2C, and for initial calibration, set offset to current position
+ * Parameters    : None
+ * Return Value  : None
+ ***************************/
+void amsHallSetup()
+{   int i;
+      encSetup();
+	// initialize structure
+	for(i = 0; i< NUM_ENC; i++)
+	{  encGetPos(i);	// get initial values w/o setting oticks
+	// amsGetPos(i);
+	   encPos[i].offset = encPos[i].pos; // initialize encoder
+	   encPos[i].calibPos = 0;
+   	   encPos[i].oticks = 0;   // set revolution counter to 0	
+	}
+}
+
 void encSetup(void) {
     //setup I2C port I2C1
     encoderSetupPeripheral();
-	
-	encAddr[0] = 0b10000001;		//Encoder 1 rd;wr A1, A2 = low
-	encAddr[1] = 0b10000000;
+// LSB = R/W* . 
+// 1. send slave <a2:a1>, a0=W (write reg address)
+// 2. send slave register address <a7:a0>,  	
+// 3. send slave <a2:a1>, a0=R (read reg data)
+// 4. read slave data <a7:a0>
+	encAddr[0] = 0b10000001;		//Encoder 0 rd;wr A1, A2 = low
+	encAddr[1] = 0b10000000;		// write
 
-	encAddr[2] = 0b10000011;		//Encoder 2 rd;wr A1 = high, A2 = low
+    /***************Debugging */
+
+    encAddr[0] = 0b10000011;        //Encoder 0 rd;wr A1, A2 = low
+    encAddr[1] = 0b10000010;        // write
+    
+	encAddr[2] = 0b10000011;		//Encoder 1 rd;wr A2 = low, A1 = high
 	encAddr[3] = 0b10000010;
+
+
 	
-	encAddr[4] = 0b10000101;		//Encoder 3 rd;wr A1 = low, A2 = high
+	encAddr[4] = 0b10000101;		//Encoder 2 rd;wr A2 = high, A1 = low
 	encAddr[5] = 0b10000100;
 
-	encAddr[6] = 0b10000111;		//Encoder 4 rd;wr A1, A2 = high
+	encAddr[6] = 0b10000111;		//Encoder 3 rd;wr A2, A1 = high
 	encAddr[7] = 0b10000110;
 
 }
@@ -99,30 +130,30 @@ void encGetPos(unsigned char num) {
     i2cReadString(1,2,enc_data,10000);
     i2cEndTx(ENC_I2C_CHAN);
 
-    encPos[num].POS = ((enc_data[1] << 6)+(enc_data[0] & 0x3F)); //concatenate registers
+    encPos[num].pos = ((enc_data[1] << 6)+(enc_data[0] & 0x3F)); //concatenate registers
 }
 
 /*****************************************************************************
- * Function Name : encSumPos
+ * Function Name : amsGetPos/encSumPos
  * Description   : Count encoder[num] rollovers, write to struct encPos
  * Parameters    : None
  * Return Value  : None
- *****************************************************************************/
-void encSumPos(unsigned char num) {
-
-	int prev = encPos[num].POS;
-	int update;
+ * .pos: 0 <= .pos <= 0x3fff,  0 to 2 pi range. 
+  * see hall_velocity_ip2.5.ppt 
+***************************************************************************/
+void amsGetPos(unsigned char num) {
+	unsigned int prev = encPos[num].pos;
+	unsigned int update;
 	encGetPos(num);
-	update = encPos[num].POS;
-	
-	if( (update-prev) > 8192 ){		    	//Subtract one Rev count if diff > 180
-		encPos[num].oticks--;
+	update = encPos[num].pos;
+	if (update > prev)
+	{	if( (update-prev) > MAX_HALL/2 )	    	//Subtract one Rev count if diff > 180
+		{	encPos[num].oticks--;}
+	} 
+	else
+	{	if( (prev-update) > MAX_HALL/2 )		//Add one Rev count if -diff > 180
+		{ encPos[num].oticks++; }
 	}
-	
-		if( (prev-update) > 8192 ){			//Add one Rev count if -diff > 180
-		encPos[num].oticks++;
-	}
-		
 }
 
 /*****************************************************************************
@@ -132,14 +163,23 @@ void encSumPos(unsigned char num) {
  * Return Value  : None
  *****************************************************************************/
 float encGetFloatPos(unsigned char num) {
-
     float pos;
     encGetPos(num);
-	
-    pos = encPos[num].POS* LSB2ENCDEG; //calculate Float
-
+    pos = encPos[num].pos* LSB2ENCDEG; //calculate Float
     return pos;
 }
+
+// range 0 rad = 0x0000, 2pi=0x3fff
+// convert to 16 bits to be able to use signed long for leg angle 
+
+/* void amsGetPos(unsigned char num)
+{	int temp;
+	encSumPos(num);
+     	temp = encPos[num].pos- encPos[num].offset;
+	if (temp < 0) temp = temp + MAX_HALL; // back in 0 , x < 2 pi range
+     	encPos[num].calibPos = ((unsigned int)temp) << 2; // convert to 16 bits unsigned
+}
+*/
 
 /*-----------------------------------------------------------------------------
  * ----------------------------------------------------------------------------

@@ -95,6 +95,8 @@ static unsigned int radioSetStateOff(void);
 
 // =========== Public functions ===============================================
 
+
+
 // Initialize radio software and hardware
 void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length, 
     unsigned char cs) {
@@ -155,6 +157,28 @@ void radioGetConfiguration(RadioConfiguration *conf) {
 void radioGetStatus(RadioStatus *stat) {
     if(stat == NULL) { return; }
     memcpy(stat, &status, sizeof(RadioStatus));
+}
+
+// TODO (dhaldane) :This is a Ron special: Integrate into improclib
+
+/*****************
+   radioConfirmationPacket - basically queues and sends a payload in one function 
+******************/
+unsigned int radioConfirmationPacket\
+    (unsigned int dest_addr, unsigned char type, unsigned char status, \
+     unsigned char length, unsigned char *frame)
+{ MacPacket packet; Payload pld;
+   packet = radioRequestPacket(length);
+    if(packet == NULL) return(0);
+    macSetDestAddr(packet, dest_addr);
+    // Prepare the payload
+    pld = packet->payload;
+    paySetType(pld, type);
+    paySetStatus(pld, status);
+    paySetData(pld, length, frame);  // echo back data
+    // Enqueue the packet for broadcast
+    while(!radioEnqueueTxPacket(packet));
+    return(1); //success     
 }
 
 void radioSetAddress(RadioAddress *address) {
