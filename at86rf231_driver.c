@@ -75,7 +75,7 @@
 #define CRC_LENGTH              (2)
 #define FRAME_BUFFER_SIZE       (128)
 #define DEFAULT_CSMA_RETRIES    (4)     /** Number of times to attempt medium acquisition */
-#define DEFAULT_FRAME_RETRIES   (3)     /** Number of times to attempt frame resend */
+#define DEFAULT_FRAME_RETRIES   (0)     /** Number of times to attempt frame resend */
 
 // =========== Function stubs =================================================
 
