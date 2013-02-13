@@ -55,6 +55,7 @@
 #ifndef __DFMEM_H
 #define __DFMEM_H
 
+
 typedef struct {
     unsigned int byte_address_bits;
     unsigned int max_sector;
@@ -210,12 +211,8 @@ void dfmemSave(unsigned char* data, unsigned int length);
 // contains any data, and then swaps the buffer pointer.
 void dfmemSync();
 
-// Reads back a "sample" from the flash memory following special page alignment
-// rules: Samples do not cross page boundaries, and start from the beginning
-// of the page.
-void dfmemReadSample(unsigned long, unsigned int, unsigned char*);
-
 // This resets the current page and offset tracking variable to zero.
 void dfmemZeroIndex();
+
 
 #endif // __DFMEM_H

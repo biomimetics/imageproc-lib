@@ -71,7 +71,6 @@
 
 
 void SetupClock(void)
-
 {
 #if !defined(__BOOTLOAD)
 

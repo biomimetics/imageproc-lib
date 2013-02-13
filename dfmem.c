@@ -34,14 +34,14 @@
  * v.1.0 beta
  *
  * Revisions:
- *  Fernando L. Garcia Bermudez 2008-7-23   Initial release
- *                              2010-7-19   Blocking read/writes tested
+ *  Fernando L. Garcia Bermudez 2008-7-23   Initial release.
+ *                              2010-7-19   Blocking read/writes tested.
  *  Stanley S. Baek             2010-8-30   Added buffer read/writes and sector
  *                                          erase for improving writing speeds.
  *  Andrew Pullin               2011-6-7    Added ability to query for chip
  *  w/Fernando L. Garcia Bermudez           size and flags to handle them.
  *  Andrew Pullin               2011-9-23   Added ability for deep power-down.
- *  Humphrey  Hu                2012-1-22   Enabled DMA on SPI port
+ *  Humphrey  Hu                2012-1-22   Enabled DMA on SPI port.
  *  Andrew Pullin               2012-4-8    Adding auto flash geometry and
  *                                          some telemetry helper functions.
  *
@@ -234,8 +234,6 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
 
     // Write data to memory
     dfmemSelectChip();
-
-    Nop();
 
     dfmemWriteByte(command);
     dfmemWriteByte(MemAddr.chr_addr[2]);
@@ -487,8 +485,6 @@ void dfmemSave(unsigned char* data, unsigned int length)
 
 void dfmemSync()
 {
-    //while(!dfmemIsReady());
-
     //if currentBufferOffset == 0, then we don't need to write anything to be sync'd
     if(currentBufferOffset != 0){
         dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
@@ -496,18 +492,17 @@ void dfmemSync()
         currentBufferOffset = 0;
         nextPage++;
     }
-
 }
 
-void dfmemGetGeometryParams(DfmemGeometry geo) {
-
+void dfmemGetGeometryParams(DfmemGeometry geo)
+{
     if(geo == NULL) { return; }
 
     memcpy(geo, &dfmem_geo, sizeof(DfmemGeometryStruct));
-
 }
 
-void dfmemZeroIndex(){
+void dfmemZeroIndex()
+{
     currentBuffer = 0;
     currentBufferOffset = 0;
     nextPage = 0;
