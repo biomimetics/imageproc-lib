@@ -60,7 +60,7 @@
 #define RADIO_DEFAULT_CHANNEL           (0x15)
 #define RADIO_DEFAULT_HARD_RETRIES      (3)
 #define RADIO_DEFAULT_SOFT_RETRIES      (2)
-#define RADIO_DEFAULT_WATCHDOG_STATE    (1) // Default on
+#define RADIO_DEFAULT_WATCHDOG_STATE    (0) // Default off
 #define RADIO_DEFAULT_WATCHDOG_TIME     (400000) // 400 ms timeout
 
 //#define RADIO_AUTOCALIBRATE   // Define to enable auto calibration
@@ -100,14 +100,14 @@ void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length,
     unsigned char cs) {
 
     RadioConfiguration conf;
-    
+
     ppoolInit();
     trxSetup(cs); // Configure transceiver IC and driver
     trxSetIrqCallback(&trxCallback);
 
     tx_queue = carrayCreate(tx_queue_length);
-    rx_queue = carrayCreate(rx_queue_length);    
-    
+    rx_queue = carrayCreate(rx_queue_length);
+
     status.state = STATE_IDLE;
     status.packets_sent = 0;
     status.packets_received = 0;
@@ -117,7 +117,7 @@ void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length,
     status.last_ed = 0;
     status.last_calibration = 0;
     status.last_progress = 0;
-    
+
     conf.address.address = RADIO_DEFAULT_SRC_ADDR;
     conf.address.pan_id = RADIO_DEFAULT_SRC_PAN;
     conf.address.channel = RADIO_DEFAULT_CHANNEL;
@@ -126,25 +126,25 @@ void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length,
     conf.watchdog_running = RADIO_DEFAULT_WATCHDOG_STATE;
     conf.watchdog_timeout = RADIO_DEFAULT_WATCHDOG_TIME;
     radioConfigure(&conf);
-    
+
     is_ready = 1;
 
-    radioSetStateRx();        
-    
+    radioSetStateRx();
+
 }
 
 void radioConfigure(RadioConfiguration *conf) {
-    
-    if(conf == NULL) { return; }    
+
+    if(conf == NULL) { return; }
     memcpy(&configuration, conf, sizeof(RadioConfiguration));
-    
+
     radioSetAddress(&conf->address);
     radioSetSoftRetries(conf->soft_retries);
     radioSetHardRetries(conf->hard_retries);
-    if(conf->watchdog_running) { radioEnableWatchdog(); } 
+    if(conf->watchdog_running) { radioEnableWatchdog(); }
     else { radioDisableWatchdog(); }
     radioSetWatchdogTime(conf->watchdog_timeout);
-    
+
 }
 
 void radioGetConfiguration(RadioConfiguration *conf) {
@@ -158,27 +158,27 @@ void radioGetStatus(RadioStatus *stat) {
 }
 
 void radioSetAddress(RadioAddress *address) {
-    
+
     if(address == NULL) { return; }
-    
+
     radioSetSrcAddr(address->address);
     radioSetSrcPanID(address->pan_id);
     radioSetChannel(address->channel);
-    
+
 }
 
-void radioSetSrcAddr(unsigned int src_addr) {    
+void radioSetSrcAddr(unsigned int src_addr) {
     configuration.address.address = src_addr;
-    trxSetAddress(src_addr);   
+    trxSetAddress(src_addr);
 }
 
-void radioSetSrcPanID(unsigned int src_pan_id) {    
+void radioSetSrcPanID(unsigned int src_pan_id) {
     configuration.address.pan_id = src_pan_id;
     trxSetPan(src_pan_id);
 }
 
 void radioSetChannel(unsigned char channel) {
-    configuration.address.channel = channel;    
+    configuration.address.channel = channel;
     trxSetChannel(channel);
 }
 
@@ -282,7 +282,7 @@ void radioDeletePacket(MacPacket packet) {
 void radioProcess(void) {
 
     unsigned long currentTime;
-    
+
     currentTime = sclockGetTime();
 
     if(configuration.watchdog_running) {
@@ -335,7 +335,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
 }
 
 static void radioReset(void) {
-    
+
     trxReset();
     status.state = STATE_OFF;
     radioSetStateIdle();

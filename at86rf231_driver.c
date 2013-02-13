@@ -106,7 +106,8 @@ void trxSetup(unsigned char cs) {
     spi_cs = cs;
 
     setupSPI();     // Set up SPI com port
-    spic1SetCallback(cs, &trxSpiCallback);  // Configure callback for spi interrupts
+    spicSetupChannel1();
+    spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
     trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts
     trxSetStateOff(); // Transition to TRX_OFF for configuring device
     trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
@@ -509,10 +510,8 @@ static void setupSPI(void) {
 
 }
 
-
 static inline void trxSetSlptr(unsigned char val) {
     SLPTR = val;
     Nop();
     Nop();
 }
-
