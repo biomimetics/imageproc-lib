@@ -322,15 +322,15 @@ void radioProcess(void) {
 
 }
 
-char radioSendData(unsigned char* dataptr, unsigned int len, 
-        unsigned char status, unsigned char type, unsigned int dest_addr) {
+unsigned char radioSendData(unsigned int dest_addr, unsigned char status,
+           unsigned char type, unsigned int datalen, unsigned char* dataptr) {
 
     MacPacket pkt;
-    pkt = radioRequestPacket(len);
+    pkt = radioRequestPacket(datalen);
     if(pkt == NULL) { return 1; }   // Failure , unable to allocate packet
 
     Payload pld = macGetPayload(pkt);
-    paySetData(pld, len, (unsigned char*) dataptr);
+    paySetData(pld, datalen, (unsigned char*) dataptr);
     paySetType(pld, type);
     paySetStatus(pld, status);
     macSetDestAddr(pkt, dest_addr); //SRC and PAN already set
