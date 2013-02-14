@@ -104,7 +104,7 @@ unsigned char* payToString(Payload pld) {
 void payAppendData(Payload pld, char loc,
                 unsigned char data_length, unsigned char *data)
 {
-    memcpy(pld->pld_data[PAYLOAD_HEADER_LENGTH + loc], data, data_length);
+    memcpy(pld->pld_data + PAYLOAD_HEADER_LENGTH + loc, data, data_length);
 
     // TODO (apullin) : Shouldn't iter_index keep track of "loc"?
     pld->iter_index += data_length;
