@@ -46,6 +46,7 @@
 #include "timer.h"
 #include "dma.h"
 #include "init_default.h"
+#include "utils.h"
 
 #include <string.h>
 
@@ -87,12 +88,6 @@
 #define SPI_CS_ACTIVE           (0)
 #define SPI_CS_IDLE             (1)
 
-/** Port status codes */
-typedef enum {
-    STAT_SPI_CLOSED, /** Port not initialized */
-    STAT_SPI_OPEN,  /** Port not busy */
-    STAT_SPI_BUSY,  /** Port busy */
-} SpicStatus;
 
 // =========== Function Prototypes ============================================
 static void setupDMASet1(void);
@@ -109,7 +104,7 @@ static unsigned int spicon_ch1[1];
 static unsigned int spicon_ch2[2];
 
 /** Current port statuses */
-static SpicStatus port_status[SPIC_NUM_PORTS];
+SpicStatus port_status[SPIC_NUM_PORTS];
 
 /** Current port chip select */
 static unsigned char port_cs_line[SPIC_NUM_PORTS];
@@ -126,7 +121,7 @@ static unsigned char spic2_tx_buff[SPIC2_TX_BUFF_LEN] __attribute__((space(dma))
 
 void spicSetupChannel1(unsigned char cs, unsigned int spiCon1) {
 
-    setupDMASet1();     // Set up DMA channels
+    setupDMASet1();                     // Set up DMA channels
     spicon_ch1[cs] = spiCon1;           // Remember SPI config
     port_status[0] = STAT_SPI_CLOSED;   // Initialize status
 
@@ -185,8 +180,6 @@ int spic2BeginTransaction(unsigned char cs) {
       // Two CS lines are supported
       return -1;
 
-    while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
-    port_status[1] = STAT_SPI_BUSY;
     // Reconfigure port
     SPI2STAT = 0;
     SPI2CON1 = spicon_ch2[cs];
@@ -215,6 +208,13 @@ void spic2EndTransaction(void) {
     if (port_cs_line[1] == 1)
       SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
     port_status[1] = STAT_SPI_OPEN; // Free port
+
+}
+
+void spic2cs2EndTransaction(void) {
+
+    port_status[1] = STAT_SPI_OPEN; // Free port
+    SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
 
 }
 
@@ -317,6 +317,10 @@ unsigned int spic1MassTransmit(unsigned int len, unsigned char *buff, unsigned i
 
 }
 
+
+/**
+ * Transmit the contents of a buffer on port 2 via DMA
+ */
 unsigned int spic2MassTransmit(unsigned int len, unsigned char *buff, unsigned int timeout) {
 
     // Make sure requested length is in range
