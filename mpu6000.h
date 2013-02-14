@@ -36,6 +36,7 @@
 
 #ifndef __MPU6000_H
 #define __MPU6000_H
+#endif
 
 
 // Registers
