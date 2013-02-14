@@ -35,7 +35,7 @@
  *
  * Revisions:
  *  Stanley S. Baek      2010-06-05    Initial release
- *                      
+ *
  * Notes:
  */
 
@@ -59,22 +59,19 @@ Payload payCreate(unsigned char data_length, unsigned char *data,
 }
 
 
-Payload payCreateEmpty(unsigned char data_length){
-    int stemp = sizeof(PayloadStruct);
-    void* temp = malloc(stemp);
-    Payload pld;
-    if(temp == NULL){
-        while(1); //critical error, not possible to recover
-        return NULL;
+Payload payCreateEmpty(unsigned char data_length)
+{
+    Payload pld = (Payload)malloc(sizeof(PayloadStruct));
+
+    if ( pld == NULL ) return NULL;
+
+    unsigned char* data = (unsigned char*)malloc(data_length + PAYLOAD_HEADER_LENGTH);
+
+    if ( data == NULL )
+    {
+      free(pld);
+      return NULL;
     }
-    pld = (Payload)temp;
-    
-    temp = malloc(data_length + PAYLOAD_HEADER_LENGTH);
-    if(temp == NULL) {
-            free(pld);
-            return NULL;
-    }
-    unsigned char* data = temp;
 
     pld->pld_data = data;
     pld->data_length = data_length;
@@ -106,13 +103,12 @@ unsigned char* payToString(Payload pld) {
     return pld->pld_data;
 }
 
+void payAppendData(Payload pld, char loc,
+                unsigned char data_length, unsigned char *data)
+{
+    memcpy(pld->pld_data[PAYLOAD_HEADER_LENGTH + loc], data, data_length);
 
-void payAppendData(Payload pld, char loc, 
-                unsigned char data_length, unsigned char *data) {
-    //while(data_length--) {
-    //    pld->pld_data[PAYLOAD_HEADER_LENGTH + loc++] = *(data++);
-    //}
-    memcpy(pld->pld_data + PAYLOAD_HEADER_LENGTH + loc, data, data_length);
+    // TODO (apullin) : Shouldn't iter_index keep track of "loc"?
     pld->iter_index += data_length;
 }
 
@@ -160,10 +156,3 @@ void payDelete(Payload pld) {
     free(pld->pld_data);
     free(pld);
 }
-
-
-
-
-
-
-
