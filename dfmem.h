@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2012, Regents of the University of California
+ * Copyright (c) 2008-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,11 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the ATMEL DataFlash Memory (dfmem) Interface
+ * ATMEL DataFlash Memory (dfmem) Interface
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.1.0 beta
+ * v.1.0
  *
  * Usage:
  *  #include "dfmem.h"
