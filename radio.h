@@ -120,7 +120,7 @@ static inline unsigned int __attribute__ ((deprecated))
         radioConfirmationPacket (unsigned int dest_addr, unsigned char type,
                                  unsigned char status, unsigned char length,
                                  unsigned char *frame)
-                { radioSendData (dest_addr, status, type, length, frame, 0); }
+        { return radioSendData (dest_addr, status, type, length, frame, 0); }
 
 unsigned int radioTxQueueEmpty(void);
 unsigned int radioTxQueueFull(void);

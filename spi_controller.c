@@ -121,7 +121,7 @@ static unsigned char spic2_tx_buff[SPIC2_TX_BUFF_LEN] __attribute__((space(dma))
 
 void spicSetupChannel1(unsigned char cs, unsigned int spiCon1) {
 
-    setupDMASet1();     // Set up DMA channels
+    setupDMASet1();                     // Set up DMA channels
     spicon_ch1[cs] = spiCon1;           // Remember SPI config
     port_status[0] = STAT_SPI_CLOSED;   // Initialize status
 
@@ -254,7 +254,6 @@ unsigned char spic1Transmit(unsigned char data) {
 unsigned char spic2Transmit(unsigned char data) {
 
     unsigned char c;
-   unsigned int timeout = 0;
     SPI2STATbits.SPIROV = 0;        // Clear overflow bit
     SPI2BUF = data;                 // Initiate SPI bus cycle by byte write
     while(SPI2STATbits.SPITBF);     // Wait for transmit to complete

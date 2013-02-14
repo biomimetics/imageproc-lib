@@ -391,7 +391,7 @@ void trxCallback(unsigned int irq_cause) {
 
         // Beginning reception process
         if(irq_cause == RADIO_RX_START) {
-            LED_GREEN = 1;
+            LED_3 = 1;
             status.state = STATE_RX_BUSY;
         }
 
