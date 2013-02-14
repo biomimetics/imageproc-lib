@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2012, Regents of the University of California
+ * Copyright (c) 2008-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,17 +31,17 @@
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.1.0 beta
+ * v.1.0
  *
  * Revisions:
- *  Fernando L. Garcia Bermudez 2008-7-23   Initial release
- *                              2010-7-19   Blocking read/writes tested
+ *  Fernando L. Garcia Bermudez 2008-7-23   Initial release.
+ *                              2010-7-19   Blocking read/writes tested.
  *  Stanley S. Baek             2010-8-30   Added buffer read/writes and sector
  *                                          erase for improving writing speeds.
  *  Andrew Pullin               2011-6-7    Added ability to query for chip
  *  w/Fernando L. Garcia Bermudez           size and flags to handle them.
  *  Andrew Pullin               2011-9-23   Added ability for deep power-down.
- *  Humphrey  Hu                2012-1-22   Enabled DMA on SPI port
+ *  Humphrey  Hu                2012-1-22   Enabled DMA on SPI port.
  *  Andrew Pullin               2012-4-8    Adding auto flash geometry and
  *                                          some telemetry helper functions.
  *
@@ -154,6 +154,9 @@ static unsigned int currentBuffer = 0;
 static unsigned int currentBufferOffset = 0;
 static unsigned int nextPage = 0;
 
+// Chip select
+static unsigned char spi_cs;
+
 enum FlashSizeType {
     DFMEM_8MBIT    = 0b00101,
     DFMEM_16MBIT   = 0b00110,
@@ -183,19 +186,14 @@ static void spiCallback(unsigned int irq_source);
  *          Public functions
 -----------------------------------------------------------------------------*/
 
-void dfmemSetup(void)
+void dfmemSetup(unsigned char cs)
 {
-    // SPI setup
+    spi_cs = cs;
     dfmemSetupPeripheral();
-    spicSetupChannel2();
-    spic2SetCallback(&spiCallback);
-
-    // Wait for dfmem
+    spic2SetCallback(cs, &spiCallback);
     while(!dfmemIsReady());
 
-    // Geometry setup
     dfmemGeometrySetup();
-    
 }
 
 void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
@@ -481,9 +479,9 @@ void dfmemResumeFromDeepSleep()
 
 void dfmemSave(unsigned char* data, unsigned int length)
 {   //If this write will not fit into the buffer, then
-       if (currentBufferOffset + length > dfmem_geo.buffer_size) 
+       if (currentBufferOffset + length > dfmem_geo.buffer_size)
        { dfmemSync(); //  i) write current buffer to memory, and  ii) switch to new buffer
-       } 
+       }
  /*       dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
         currentBuffer = (currentBuffer) ? 0 : 1; // toggle buffer
         currentBufferOffset = 0;  // reset to beginning
@@ -497,8 +495,6 @@ void dfmemSave(unsigned char* data, unsigned int length)
 // write last buffer to memory
 void dfmemSync()
 {
-    while(!dfmemIsReady());
-
     //if currentBufferOffset == 0, then we don't need to write anything to be sync'd
     if(currentBufferOffset != 0){
         dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
@@ -508,67 +504,18 @@ void dfmemSync()
     }
 }
 
-void dfmemReadSample(unsigned long sampNum, unsigned int sampLen, unsigned char *data)
+void dfmemGetGeometryParams(DfmemGeometry geo)
 {
-    unsigned int samplesPerPage = dfmem_geo.bytes_per_page / sampLen; //round DOWN int division
-    unsigned int pagenum = sampNum / samplesPerPage;
-    unsigned int byteOffset = (sampNum - pagenum*samplesPerPage)*sampLen;
-
-    dfmemRead(pagenum, byteOffset, sampLen, data);
-}
-
-void dfmemEraseSectorsForSamples(unsigned long numSamples, unsigned int sampLen)
-{
-    // TODO (apullin) : Add an explicit check to see if the number of saved
-    //                  samples will fit into memory!
-    LED_2 = 1;
-    unsigned int firstPageOfSector, i;
-
-    //avoid trivial case
-    if(numSamples == 0){ return;}
-
-    //Saves to dfmem will NOT overlap page boundaries, so we need to do this level by level:
-    unsigned int samplesPerPage = dfmem_geo.bytes_per_page / sampLen; //round DOWN int division
-    unsigned int numPages = (numSamples + samplesPerPage - 1) / samplesPerPage; //round UP int division
-    unsigned int numSectors = ( numPages + dfmem_geo.pages_per_sector-1) / dfmem_geo.pages_per_sector;
-
-    //At this point, it is impossible for numSectors == 0
-    //Sector 0a and 0b will be erased together always, for simplicity
-    //Note that numSectors will be the actual number of sectors to erase,
-    //   even though the sectors themselves are numbered starting at '0'
-    dfmemEraseSector(0); //Erase Sector 0a
-    dfmemEraseSector(8); //Erase Sector 0b
-
-    //Start erasing the rest from Sector 1:
-    for(i=1; i <= numSectors; i++){
-        firstPageOfSector = dfmem_geo.pages_per_sector * i;
-        //hold off until dfmem is ready for secort erase command
-        while(!dfmemIsReady());
-        //LED should blink indicating progress
-        LED_2 = ~LED_2;
-        //Send actual erase command
-        dfmemEraseSector(firstPageOfSector);
-    }
-
-    //Leadout flash, should blink faster than above, indicating the last sector
-    while(!dfmemIsReady()){
-        LED_2 = ~LED_2;
-        delay_ms(75);
-    }
-    LED_2 = 0; //Green LED off
-
-    //Since we've erased, reset our place keeper vars
-    currentBuffer = 0;
-    currentBufferOffset = 0;
-    nextPage = 0;
-}
-
-void dfmemGetGeometryParams(DfmemGeometry geo) {
-
     if(geo == NULL) { return; }
 
     memcpy(geo, &dfmem_geo, sizeof(DfmemGeometryStruct));
+}
 
+void dfmemZeroIndex()
+{
+    currentBuffer = 0;
+    currentBufferOffset = 0;
+    nextPage = 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -612,7 +559,7 @@ static inline unsigned char dfmemReadByte (void)
 }
 
 // Selects the memory chip.
-static inline void dfmemSelectChip(void) { spic2BeginTransaction(); }
+static inline void dfmemSelectChip(void) { spic2BeginTransaction(spi_cs); }
 
 // De-selects the memory chip.
 static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
@@ -622,35 +569,17 @@ static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
 // The MCU is the SPI master and the clock isn't continuous.
 static void dfmemSetupPeripheral(void)
 {
-    // SPI interrupt is not used.
-    _SPI2IF = 0;    // Clear the interrupt flag
-    _SPI2IE = 0;    // Disable interrupts
-
-    // SPI2CON1 Register Settings
-    SPI_CON1bits.MSTEN = 1; // Master mode Enabled
-    SPI_CON1bits.DISSCK = 0; // Internal Serial Clock is Enabled
-    SPI_CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
-    SPI_CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
-    SPI_CON1bits.SMP = 0; // Input data is sampled at middle of data output time
-    SPI_CON1bits.SSEN = 0; // SSx pin is used
-    SPI_CON1bits.CKE = 1; // Serial output data changes on transition
-                        // from active clock trx_state to idle clock trx_state
-    SPI_CON1bits.CKP = 0; // Idle trx_state for clock is a low level;
-                            // active trx_state is a high level
-
-    // Set up SCK frequency of 13.333Mhz for 40 MIPS
-    //SPI_CON1bits.SPRE = 0b100; // Secondary prescale    3:1
-    //SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
-    SPI_CON1bits.SPRE = 0b000; // Secondary prescale    8:1
-    SPI_CON1bits.PPRE = 0b10; // Primary prescale       4:1
-
-    // SPI2CON2 Register Settings
-    SPI_CON2 = 0x0000;
-
-    // SPI2STAT Register Settings
-    SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
-    SPI_STATbits.SPIROV = 0; // Clear Overflow
-    SPI_STATbits.SPIEN = 1; // Enable SPI module
+    spicSetupChannel2(spi_cs,
+                      ENABLE_SCK_PIN &
+                      ENABLE_SDO_PIN &
+                      SPI_MODE16_OFF &
+                      SPI_SMP_OFF &
+                      SPI_CKE_ON &
+                      SLAVE_ENABLE_OFF &
+                      CLK_POL_ACTIVE_HIGH &
+                      MASTER_ENABLE_ON &
+                      PRI_PRESCAL_1_1 &
+                      SEC_PRESCAL_4_1);
 }
 
 // Figures out memory geometry by querying its size

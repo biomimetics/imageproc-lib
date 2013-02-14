@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2012, Regents of the University of California
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,18 +27,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Radio with DMA Functionality Header File
+ * High Level Wireless Communications Driver
  *
  * by Humphrey Hu
  *
- * v. 0.4
+ * v.0.5
  */
 
 #ifndef __RADIO_H
 #define __RADIO_H
 
+
 #include "mac_packet.h"
-#include "payload.h"
 
 // Radio interrupt flags
 typedef enum {
@@ -89,7 +89,8 @@ typedef struct {
 } RadioStatus;                      // Total: (18)
 
 // Setup and initialization
-void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length);
+void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length,
+    unsigned char cs);
 
 // Configuration methods
 void radioConfigure(RadioConfiguration *conf);
@@ -112,6 +113,15 @@ void radioSetWatchdogTime(unsigned int time);
 unsigned int radioEnqueueTxPacket(MacPacket packet);
 MacPacket radioDequeueRxPacket(void);
 
+unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
+                             unsigned char type, unsigned int datalen,
+                             unsigned char* dataptr, unsigned char fast_fail);
+static inline unsigned int __attribute__ ((deprecated))
+        radioConfirmationPacket (unsigned int dest_addr, unsigned char type,
+                                 unsigned char status, unsigned char length,
+                                 unsigned char *frame)
+                { radioSendData (dest_addr, status, type, length, frame, 0); }
+
 unsigned int radioTxQueueEmpty(void);
 unsigned int radioTxQueueFull(void);
 unsigned int radioGetTxQueueSize(void);
@@ -130,11 +140,9 @@ void radioProcess(void);
 MacPacket radioRequestPacket(unsigned int data_size);
 // Return a packet + payload to the preinitialized pool
 unsigned int radioReturnPacket(MacPacket packet);
-// return a packet+payload from queue
-unsigned int radioConfirmationPacket(unsigned int dest_addr, unsigned char type,\
-	 		unsigned char status,  unsigned char length, unsigned char *frame);
 
 MacPacket __attribute__ ((deprecated)) radioCreatePacket(unsigned int data_size);
 void __attribute__ ((deprecated)) radioDeletePacket(MacPacket packet);
+
 
 #endif // __RADIO_H

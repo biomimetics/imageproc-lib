@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2012, Regents of the University of California
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,20 +34,18 @@
  * v.0.5
  *
  * Revisions:
- *  Humphrey Hu     2011-06-06      Initial implementation
- *  Humphrey Hu     2012-02-03      Structural changes to reduce irq handler runtime
- *  Humphrey Hu     2012-070-18     Consolidated state into data structures
+ *  Humphrey Hu     2011-6-6    Initial implementation
+ *  Humphrey Hu     2012-2-3    Structural changes to reduce irq handler runtime
+ *  Humphrey Hu     2012-7-18   Consolidated state into data structures
  */
 
 #include "utils.h"
 #include "init_default.h"
 #include "radio.h"
-#include "payload.h"
 #include "carray.h"
 #include "mac_packet.h"
 #include "sclock.h"
 #include "timer.h"
-#include "led.h"
 #include "ppool.h"
 
 #include "at86rf231.h"  // Current transceiver IC
@@ -97,12 +95,13 @@ static unsigned int radioSetStateOff(void);
 // =========== Public functions ===============================================
 
 // Initialize radio software and hardware
-void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
+void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length,
+    unsigned char cs) {
 
     RadioConfiguration conf;
 
     ppoolInit();
-    trxSetup(); // Configure transceiver IC and driver
+    trxSetup(cs); // Configure transceiver IC and driver
     trxSetIrqCallback(&trxCallback);
 
     tx_queue = carrayCreate(tx_queue_length);
@@ -209,8 +208,10 @@ void radioSetWatchdogTime(unsigned int time) {
     watchdogProgress();
 }
 
-MacPacket radioDequeueRxPacket(void) {
-    if(!is_ready) { return NULL; }
+MacPacket radioDequeueRxPacket(void)
+{
+    if ( !is_ready ) return NULL;
+
     return (MacPacket)carrayPopTail(rx_queue);
 }
 
@@ -274,26 +275,6 @@ unsigned int radioReturnPacket(MacPacket packet) {
     return ppoolReturnFullPacket(packet);
 }
 
-/*****************
-   radioConfirmationPacket - basically queues and sends a payload in one function 
-******************/
-unsigned int radioConfirmationPacket\
-	(unsigned int dest_addr, unsigned char type, unsigned char status, \
-	 unsigned char length, unsigned char *frame)
-{ MacPacket packet; Payload pld;
-   packet = radioRequestPacket(length);
-    if(packet == NULL) return(0);
-    macSetDestAddr(packet, dest_addr);
-    // Prepare the payload
-    pld = packet->payload;
-    paySetType(pld, type);
-    paySetStatus(pld, status);
-    paySetData(pld, length, frame);  // echo back data
-    // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
-    return(1); //success     
-}
-
 void radioDeletePacket(MacPacket packet) {
     return;
 }
@@ -341,6 +322,32 @@ void radioProcess(void) {
 
 }
 
+unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
+                             unsigned char type, unsigned int datalen,
+                             unsigned char* dataptr, unsigned char fast_fail)
+{
+    MacPacket packet;
+    Payload pld;
+
+    packet = radioRequestPacket(datalen);
+    if ( packet == NULL ) return 1;    // Unable to allocate packet
+    macSetDestAddr(packet, dest_addr); //SRC and PAN already set
+
+    pld = macGetPayload(packet);
+    paySetData(pld, datalen, (unsigned char*) dataptr);
+    paySetType(pld, type);
+    paySetStatus(pld, status);
+
+    if (fast_fail)
+    {
+        if ( !radioEnqueueTxPacket(packet) ) radioReturnPacket(packet);
+    } else {
+        while ( !radioEnqueueTxPacket(packet) ) radioProcess();
+    }
+
+    return 0;
+}
+
 
 // =========== Private functions ==============================================
 
@@ -360,8 +367,8 @@ static void radioReset(void) {
     status.state = STATE_OFF;
     radioSetStateIdle();
     watchdogProgress();
-    LED_GREEN = 0;
-    LED_RED = ~LED_RED;
+    LED_3 = 0;
+    LED_1 = ~LED_1;
 
 }
 
@@ -395,7 +402,7 @@ void trxCallback(unsigned int irq_cause) {
             radioProcessRx();   // Process newly received data
             status.last_rssi = trxReadRSSI();
             status.last_ed = trxReadED();
-            LED_GREEN = 0;
+            LED_3 = 0;
             status.state = STATE_RX_IDLE;    // Transition after data processed
         }
 
@@ -404,7 +411,7 @@ void trxCallback(unsigned int irq_cause) {
     } else if(status.state == STATE_TX_BUSY) {
 
         status.state = STATE_TX_IDLE;
-        LED_GREEN = 0;
+        LED_3 = 0;
         // Transmit successful
         if(irq_cause == RADIO_TX_SUCCESS) {
             radioReturnPacket(carrayPopHead(tx_queue));
@@ -547,7 +554,7 @@ static void radioProcessTx(void) {
 
     // State should be STATE_TX_IDLE upon entering function
     status.state = STATE_TX_BUSY;    // Update state
-    LED_GREEN = 1;                    // Indicate RX activity
+    LED_3 = 1;                    // Indicate RX activity
 
     macSetSeqNum(packet, status.sequence_number++); // Set packet sequence number
 

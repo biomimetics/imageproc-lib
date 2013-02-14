@@ -36,13 +36,13 @@
  * Revisions:
  *  Humphrey Hu         2012-02-04      Initial implementation
  *  Humphrey Hu         2012-02-08      Restructured to allow requesting of
- *                                      separate items 
+ *                                      separate items
  *  Humphrey Hu         2012-02-13      Fixed initialization bug
- *                      
+ *
  * Notes:
- *  
+ *
  */
- 
+
 #include "ppool.h"
 #include "mac_packet.h"
 #include "carray.h"
@@ -80,20 +80,20 @@ unsigned int ppoolInit(void) {
     CircArray fq;
 
     if(is_initialized) { return 1; }
-    
+
     packet_pool = carrayCreate(NUM_PACKETS);
-    if(packet_pool == NULL) { 
-        return 0; 
+    if(packet_pool == NULL) {
+        return 0;
     }
-    
+
     for(i = 0; i < NUM_CUTOFFS; i++) {
         payload_pools[i] = carrayCreate(QUANTITIES[i]);
-        if(payload_pools[i] == NULL) { 
+        if(payload_pools[i] == NULL) {
             ppoolClose();
-            return 0; 
+            return 0;
         }
     }
-        
+
     for(i = 0; i < NUM_PACKETS; i++) {
         packet = macCreateDataPacket();
         if(packet == NULL) {
@@ -114,10 +114,10 @@ unsigned int ppoolInit(void) {
             carrayAddHead(fq, pld);
         }
     }
-    
+
     is_initialized = 1;
     return 1;
-    
+
 }
 
 void ppoolClose(void) {
@@ -126,15 +126,15 @@ void ppoolClose(void) {
     MacPacket packet;
     Payload pld;
     CircArray fq;
-    
+
     if(packet_pool != NULL) {
         while(!carrayIsEmpty(packet_pool)) {
             packet = carrayPopTail(packet_pool);
             macDeletePacket(packet);
-        }           
+        }
         carrayDelete(packet_pool);
     }
-    
+
     for(i = 0; i < NUM_CUTOFFS; i++) {
         fq = payload_pools[i];
         if(fq != NULL) {
@@ -145,7 +145,7 @@ void ppoolClose(void) {
             carrayDelete(fq);
         }
     }
-    
+
 }
 
 // Request a MacPacket with payload capacity of appropriate size
@@ -160,29 +160,29 @@ MacPacket ppoolRequestFullPacket(unsigned int size) {
 
     packet = ppoolRequestPacket();
     if(packet == NULL) { return NULL; }
-    
-    pld = ppoolRequestPayload(size); 
+
+    pld = ppoolRequestPayload(size);
     if(pld == NULL) {
         // Assume that we don't have to check the return value
-        ppoolReturnPacket(packet);        
+        ppoolReturnPacket(packet);
         return NULL;
     }
-    
+
     macSetPayload(packet, pld);
 
     return packet;
-    
+
 }
 
 MacPacket ppoolRequestPacket(void) {
-    
+
     MacPacket packet;
-    
+
     packet = (MacPacket) carrayPopTail(packet_pool);    // Get a packet
     if(packet == NULL) {    // Check for failure
         return NULL;
     }
-    
+
     return packet;
 
 }
@@ -192,12 +192,12 @@ Payload ppoolRequestPayload(unsigned int size) {
     int index;
     Payload pld;
     CircArray payq;
-    
+
     index = ppoolFindOffsetIndex(size);
     if(index < 0) {
         return NULL;
     }
-    
+
     payq = payload_pools[index]; // Retrieve appropriate payload pool
     pld = (Payload) carrayPopTail(payq);  // Get a payload
     if(pld == NULL) {   // Check for failure
@@ -216,15 +216,15 @@ unsigned int ppoolReturnFullPacket(MacPacket packet) {
     if(packet == NULL) { return 0; }    // Don't deal with damaged returns
     pld = macGetPayload(packet);
     if(pld == NULL) { return 0; }
-    
+
     if(!ppoolReturnPayload(pld)) {    // Try to return packet
         return 0;   // Check for failure
     }
     if(!ppoolReturnPacket(packet)) {  // Try to return payload
         return 0;   // Sort of screwed since we already returned packet...oh well
-    }    
+    }
     return 1;
-    
+
 }
 
 unsigned int ppoolReturnPacket(MacPacket packet) {
@@ -245,13 +245,13 @@ unsigned int ppoolReturnPayload(Payload pld) {
 
     index = ppoolFindOffsetIndex(payGetDataLength(pld));
     if(index < 0) { return 0; }     // Invalid payload size
-    
+
     fq = payload_pools[index];
     if(!carrayAddTail(fq, pld)) {
         return 0;   // Check for failure
     }
     return 1;
-    
+
 }
 
 // ================ PRIVATE FUNCTIONS =========================================
@@ -269,5 +269,5 @@ static inline int ppoolFindOffsetIndex(unsigned int size) {
         }
     }
     return -1;
-    
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2012, Regents of the University of California
+ * Copyright (c) 2008-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,11 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the ATMEL DataFlash Memory (dfmem) Interface
+ * ATMEL DataFlash Memory (dfmem) Interface
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.1.0 beta
+ * v.1.0
  *
  * Usage:
  *  #include "dfmem.h"
@@ -55,6 +55,7 @@
 #ifndef __DFMEM_H
 #define __DFMEM_H
 
+
 typedef struct {
     unsigned int byte_address_bits;
     unsigned int max_sector;
@@ -69,8 +70,8 @@ typedef struct {
 typedef DfmemGeometryStruct* DfmemGeometry;
 
 // Handles initialization of communication peripherals and makes sure the
-// memory is initially deselected.
-void dfmemSetup (void);
+// memory is initially deselected. Must pass in chip select pin index.
+void dfmemSetup (unsigned char cs);
 
 // Writes the contents of a data array to memory.
 //
@@ -210,12 +211,8 @@ void dfmemSave(unsigned char* data, unsigned int length);
 // contains any data, and then swaps the buffer pointer.
 void dfmemSync();
 
-// Reads back a "sample" from the flash memory following special page alignment
-// rules: Samples do not cross page boundaries, and start from the beginning
-// of the page.
-void dfmemReadSample(unsigned long, unsigned int, unsigned char*);
+// This resets the current page and offset tracking variable to zero.
+void dfmemZeroIndex();
 
-// Erases enough sectors to fit a specified number of samples into the flash
-void dfmemEraseSectorsForSamples(unsigned long, unsigned int);
 
 #endif // __DFMEM_H

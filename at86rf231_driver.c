@@ -35,7 +35,7 @@
  *
  * Revisions:
  *  Humphrey Hu         2012-01-06      Initial implementation
- *  Humphrey Hu         2012-02-08      Added state transition methods                     
+ *  Humphrey Hu         2012-02-08      Added state transition methods
  *
  * Notes:
  *    No-Clock (sleep) RX listening mode not yet implemented
@@ -43,39 +43,38 @@
 
 #include "at86rf231.h"
 #include "at86rf231_driver.h"
-#include "ports.h"     
+#include "ports.h"
 #include "mac_packet.h"
 #include "payload.h"
 #include "spi.h"                // SFRs
 #include "radio.h"              // Need radio status codes
 #include "spi_controller.h"
 #include "utils.h"
-#include "led.h"
 
 #include <string.h>
 
 #define SPI_CON1bits        (SPI1CON1bits)
 #define SPI_CON2            (SPI1CON2)
-#define SPI_STATbits        (SPI1STATbits)    
+#define SPI_STATbits        (SPI1STATbits)
 #define SLPTR               (_LATB15) // Sleep/Transmit Pin
 
 // Basic commands
 #define TRX_CMD_RW          (0xC0) // Register Write
-#define TRX_CMD_RR          (0x80) // Register Read 
+#define TRX_CMD_RR          (0x80) // Register Read
 #define TRX_CMD_FW          (0x60) // Frame Transmit Mode
 #define TRX_CMD_FR          (0x20) // Frame Receive Mode
 #define TRX_CMD_SW          (0x40) // SRAM Write.
 #define TRX_CMD_SR          (0x00) // SRAM Read.
 
 
-// Based on 16-bit addressing for PAN and device and no 
+// Based on 16-bit addressing for PAN and device and no
 // auxiliary security header
 // TODO: Move to appropriate header file, probably mac_packet.h
 #define MAC_HEADER_LENGTH       (9)
 #define CRC_LENGTH              (2)
 #define FRAME_BUFFER_SIZE       (128)
 #define DEFAULT_CSMA_RETRIES    (4)     /** Number of times to attempt medium acquisition */
-#define DEFAULT_FRAME_RETRIES   (3)     /** Number of times to attempt frame resend */
+#define DEFAULT_FRAME_RETRIES   (0)     /** Number of times to attempt frame resend */
 
 // =========== Function stubs =================================================
 
@@ -94,29 +93,30 @@ static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsig
 
 
 // =========== Static variables ===============================================
+
 static unsigned char is_ready = 0; // Mostly for debugging - no checking so code is faster
 static TrxIrqHandler irqCallback;
 // See at86rf231.h
 static tal_trx_status_t trx_state;
 static unsigned char frame_buffer[FRAME_BUFFER_SIZE];
 static unsigned char last_rssi;
+static unsigned char spi_cs;
+static unsigned char last_ackd = 0;
+
+
 // =========== Public functions ===============================================
 
-void trxSetup(void) {
+void trxSetup(unsigned char cs)
+{
+    spi_cs = cs;
 
     // SPI setup
     setupSPI();     // Set up SPI com port
     spicSetupChannel1();
     spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
-
-    // Device initialization
+    trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts
     trxSetStateOff(); // Transition to TRX_OFF for configuring device
-
-    // Interrupt configuration
-    trxWriteSubReg(SR_IRQ_MASK_MODE, IRQ_MASK_MODE_ALL); // Mask disabled IRQs from status register
-    trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Enable IRQ at end of transceive
-    trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts 
-
+    trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
     trxWriteSubReg(SR_SLOTTED_OPERATION, 0);  // Disable slotted operation
     trxWriteSubReg(SR_TX_AUTO_CRC_ON, 1); // Enable automatic TX CRC
     trxWriteSubReg(SR_CLKM_CTRL, CLKM_NO_CLOCK); // No clock on CLKM pin
@@ -126,13 +126,10 @@ void trxSetup(void) {
     trxWriteSubReg(SR_AACK_FVN_MODE, FRAME_VERSION_IGNORED); // Ignore frame version
     trxWriteSubReg(SR_SPI_CMD_MODE, SPI_CMD_MODE_MONITOR_PHY_RSSI); // First byte of SPI is RSSI register
     trxSetStateIdle();
-
-    // Enable radio interrupt
-    ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_4); // Radio IC interrupt
+    ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_5); // Radio IC interrupt
 
     last_rssi = 0;
     is_ready = 1;
-    
 }
 
 
@@ -142,7 +139,7 @@ void trxReset(void) {
 
     spic1Reset();   // Reset comm
     trxWriteSubReg(SR_TRX_CMD, CMD_TRX_OFF);  // Force to off state
-    
+
     i = 0;
     while(i < 0xFFF0) {
         if(trxReadSubReg(SR_TRX_STATUS) == TRX_OFF) { break; }
@@ -158,14 +155,14 @@ void trxCalibrate(void) {
     while(trxReadSubReg(SR_FTN_START) != 0);    // Wait for completion
 
 }
- 
+
 void trxSetAddress(unsigned int addr) {
 
     trxWriteReg(RG_SHORT_ADDR_0, (addr & 0xff));
     trxWriteReg(RG_SHORT_ADDR_1, ((addr >> 8) & 0xff));
 
 }
- 
+
 void trxSetPan(unsigned int pan) {
 
     trxWriteReg(RG_PAN_ID_0, (pan & 0xff));
@@ -178,17 +175,17 @@ void trxSetChannel(unsigned char channel) {
     trxWriteSubReg(SR_CHANNEL, channel);
 
 }
- 
+
 void trxSetRetries(unsigned int retries) {
 
-    trxWriteSubReg(SR_MAX_FRAME_RETRIES, retries); 
-    
+    trxWriteSubReg(SR_MAX_FRAME_RETRIES, retries);
+
 }
- 
+
 void trxSetIrqCallback(TrxIrqHandler handler) {
 
     irqCallback = handler;
-    
+
 }
 
 void trxReadId(unsigned char *id) {
@@ -212,17 +209,23 @@ unsigned char trxReadED(void) {
     return trxReadReg(RG_PHY_ED_LEVEL);
 
 }
- 
+
+unsigned char trxGetLastACKd(void) {
+
+    return last_ackd;
+
+}
+
 void trxWriteFrameBuffer(MacPacket packet) {
-    
+
     unsigned int i;
     unsigned char phy_len;
     Payload pld;
-    
+
     // Linearize contents in buffer
     i = 0;
     phy_len = packet->payload_length + MAC_HEADER_LENGTH + CRC_LENGTH;
-    
+
     frame_buffer[i++] = phy_len; //packet->payload_length + MAC_HEADER_LENGTH + CRC_LENGTH;
     frame_buffer[i++] = packet->frame_ctrl.val.byte.LB;
     frame_buffer[i++] = packet->frame_ctrl.val.byte.HB;
@@ -236,102 +239,102 @@ void trxWriteFrameBuffer(MacPacket packet) {
 
     pld = macGetPayload(packet);
     if(pld == NULL) { return; }
-    
+
     memcpy(frame_buffer + i, payToString(pld), payGetPayloadLength(pld));
-    
-    spic1BeginTransaction();
+
+    spic1BeginTransaction(spi_cs);
     spic1Transmit(TRX_CMD_FW);
     spic1MassTransmit(phy_len, frame_buffer, phy_len*3); // 3*length microseconds timeout seems to work well
-    
+
 }
- 
+
 unsigned int trxReadFrameBuffer(MacPacket packet) {
-    
-    // Read received data from DMA memory into buffer        
+
+    // Read received data from DMA memory into buffer
     return macReadFrame(frame_buffer, packet); // Decode frame data
-    
+
 }
- 
-unsigned int trxReadBufferDataLength(void) {   
+
+unsigned int trxReadBufferDataLength(void) {
 
     return macReadDataLength(frame_buffer);
 
 }
- 
+
 void trxBeginTransmission(void) {
 
     trxSetSlptr(1);
     trxSetSlptr(0);
     trx_state = BUSY_TX_ARET;   // Update state accordingly
-
+    last_ackd = 0;
 }
 
 void trxSetStateTx(void) {
-    
+
     CRITICAL_SECTION_START;
-    
+
     if(trx_state == TX_ARET_ON) { // Fast return if already in desired state
         CRITICAL_SECTION_END;
-        return; 
-    } 
-    
+        return;
+    }
+
     trxWriteSubReg(SR_TRX_CMD, CMD_TX_ARET_ON); // Begin transition
     while(trxReadSubReg(SR_TRX_STATUS) != TX_ARET_ON);  // Wait for completion
     trx_state = TX_ARET_ON; // Update state
-    
+
     CRITICAL_SECTION_END;
 
 }
 
 void trxSetStateRx(void) {
-    
+
     CRITICAL_SECTION_START;
-    
+
     if(trx_state == RX_AACK_ON) {  // Fast return
         CRITICAL_SECTION_END;
-        return; 
+        return;
     }
-    
+
     trxWriteSubReg(SR_TRX_CMD, CMD_RX_AACK_ON); // Begin transition
     while(trxReadSubReg(SR_TRX_STATUS) != RX_AACK_ON);  // Wait for completion
     trx_state = RX_AACK_ON; // Update state
-    
+
     CRITICAL_SECTION_END;
 
 }
 
-void trxSetStateIdle(void) {    
-    
+void trxSetStateIdle(void) {
+
     CRITICAL_SECTION_START;
-    
+
     if(trx_state == PLL_ON) {  // Fast return
         CRITICAL_SECTION_END;
-        return; 
+        return;
     }
-    
+
     trxWriteSubReg(SR_TRX_CMD, CMD_PLL_ON); // Begin transition
     while(trxReadSubReg(SR_TRX_STATUS) != PLL_ON);  // Wait for completion
     trx_state = PLL_ON; // Update state
-    
+
     CRITICAL_SECTION_END;
 
 }
 
 void trxSetStateOff(void) {
-    
+
     CRITICAL_SECTION_START;
-    
+
     if(trx_state == TRX_OFF) {     // Fast return
         CRITICAL_SECTION_END;
-        return; 
+        return;
     }
-    
+
     trxWriteSubReg(SR_TRX_CMD, CMD_TRX_OFF);    // Begin transition
     while(trxReadSubReg(SR_TRX_STATUS) != TRX_OFF); // Wait for completion
     trx_state = TRX_OFF;    // Update state
-    
+
     CRITICAL_SECTION_END;
-    
+
 }
 
 // =========== Private functions ==============================================
@@ -343,12 +346,12 @@ void trxSetStateOff(void) {
  * @param val 8-bit value to write to the register
  */
 static void trxWriteReg(unsigned char addr, unsigned char val) {
-   
-    spic1BeginTransaction();
+
+    spic1BeginTransaction(spi_cs);
     spic1Transmit(TRX_CMD_RW | addr);
     spic1Transmit(val);
     spic1EndTransaction();
-    
+
 }
 
 /**
@@ -360,7 +363,7 @@ static void trxWriteReg(unsigned char addr, unsigned char val) {
 static unsigned char trxReadReg(unsigned char addr) {
 
     unsigned char c;
-    spic1BeginTransaction();
+    spic1BeginTransaction(spi_cs);
     spic1Transmit(TRX_CMD_RR | addr);
     c = spic1Receive();
     spic1EndTransaction();
@@ -377,7 +380,7 @@ static unsigned char trxReadReg(unsigned char addr) {
  * @param val Value to write to subregister
  */
 static void trxWriteSubReg(unsigned char addr, unsigned char mask, unsigned char pos, unsigned char val) {
-    
+
     unsigned char temp;
     temp = trxReadReg(addr);
     temp &= ~mask;
@@ -385,9 +388,9 @@ static void trxWriteSubReg(unsigned char addr, unsigned char mask, unsigned char
     val &= mask;
     val |= temp;
     trxWriteReg(addr, val);
-    
+
 }
- 
+
 /**
  * Read bits from a transceiver subregister.
  *
@@ -395,7 +398,7 @@ static void trxWriteSubReg(unsigned char addr, unsigned char mask, unsigned char
  * @param mask Bitfield mask to apply to register value
  * @param pos Subregister position offset from main register LSB
  * @return Value read from subregister.
- */  
+ */
 static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsigned char pos) {
 
     unsigned char data;
@@ -403,7 +406,7 @@ static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsig
     data &= mask;
     data >>= pos;
     return data;
-    
+
 }
 
 void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
@@ -411,30 +414,32 @@ void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
     unsigned char irq_cause, status;
     irq_cause = 0;
     status = 0xFF;
-    
+
     irq_cause = trxReadReg(RG_IRQ_STATUS);    // Read and clear irq source
-    
+
     if(irq_cause & TRX_IRQ_TRX_END) {
-        
+
         status = trxReadSubReg(SR_TRAC_STATUS); // Determine transaction status
-    
+
         // Transmit complete case
         if(trx_state == BUSY_TX_ARET) {
-        
+
             trx_state = TX_ARET_ON; // State transition
-        
+
             if(status == TRAC_SUCCESS) {
+                last_ackd = 1;
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_SUCCESS_DATA_PENDING) {
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_CHANNEL_ACCESS_FAILURE) {
-                irqCallback(RADIO_TX_FAILURE);            
+                irqCallback(RADIO_TX_FAILURE);
             } else if(status == TRAC_NO_ACK) {
-                irqCallback(RADIO_TX_FAILURE);            
+                last_ackd = 0;
+                irqCallback(RADIO_TX_FAILURE);
             } else if(status == TRAC_INVALID) {
                 irqCallback(RADIO_TX_FAILURE);
             }
-            
+
         } else if(trx_state == RX_AACK_ON) {
 
             // crc_valid = trxReadSubReg(SR_RX_CRC_VALID);
@@ -443,60 +448,60 @@ void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
             // }
             if(status == TRAC_SUCCESS) {
                 trxFillBuffer();
-                irqCallback(RADIO_RX_START);                
-            } else if(status == TRAC_WAIT_FOR_ACK) {                               
+                irqCallback(RADIO_RX_START);
+            } else if(status == TRAC_WAIT_FOR_ACK) {
                 trxFillBuffer();
-                irqCallback(RADIO_RX_START);                
+                irqCallback(RADIO_RX_START);
                 // TODO: Add support for proper slotted ACK operation
             } else if(status == TRAC_INVALID) {
                 irqCallback(RADIO_RX_FAILURE);
             }
-        }    
+        }
     }
-    
+
     _INT4IF = 0;                                // Clear interrupt flag
-    
+
 }
 
 static void trxSpiCallback(unsigned int interrupt_code) {
 
     if(interrupt_code == SPIC_TRANS_SUCCESS) {
-               
+
         spic1EndTransaction(); // End previous transaction
-    
+
         if(trx_state == RX_AACK_ON) {
-            trxReadBuffer();    
+            trxReadBuffer();
             irqCallback(RADIO_RX_SUCCESS);
-            
+
         } else if(trx_state == TX_ARET_ON) {
-            
+
             // Packet was successfully transferred to the radio buffer
             // Do something?
-        
+
         }
 
     } else if(interrupt_code == SPIC_TRANS_TIMEOUT) {
-        
-        // This is indicative of some form of failure! 
+
+        // This is indicative of some form of failure!
         spic1Reset();
         irqCallback(RADIO_HW_FAILURE);
-        
+
     }
-    
+
 }
 
 // TODO: Optimize to read only packet length, not whole buffer
 /**
  * Begin transfer of frame data from transceiver into DMA buffer
  */
-static void trxFillBuffer(void) {    
-    
-    spic1BeginTransaction();
+static void trxFillBuffer(void) {
+
+    spic1BeginTransaction(spi_cs);
     last_rssi = spic1Transmit(TRX_CMD_FR);  // Begin write (returns RSSI because of SPI_CMD_MODE)
     //current_phy_len = spic1Receive(); // Read physical frame size
-    //spic1MassTransmit(current_phy_len, NULL, current_phy_len*3); // DMA rest into buffer                                                    
+    //spic1MassTransmit(current_phy_len, NULL, current_phy_len*3); // DMA rest into buffer
     spic1MassTransmit(FRAME_BUFFER_SIZE, NULL, FRAME_BUFFER_SIZE*3); // DMA entire frame buffer into memory
-    
+
 }
 
 /**
@@ -504,48 +509,27 @@ static void trxFillBuffer(void) {
  */
 static void trxReadBuffer(void) {
 
-    spic1ReadBuffer(FRAME_BUFFER_SIZE, frame_buffer);         
+    spic1ReadBuffer(FRAME_BUFFER_SIZE, frame_buffer);
 
 }
 
-static void setupSPI(void) {
-
-    // SPI interrupt is not used.
-    _SPI1IF = 0;    // Clear the interrupt flag
-    _SPI1IE = 0;    // Disable interrupts
-
-    // SPI1CON1 Register Settings
-    SPI_CON1bits.MSTEN = 1; // Master mode Enabled
-    SPI_CON1bits.DISSCK = 0; // Internal Serial Clock is Enabled
-    SPI_CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
-    SPI_CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
-    SPI_CON1bits.SMP = 0; // Input data is sampled at middle of data output time
-    SPI_CON1bits.SSEN = 0; // SSx pin is used
-    SPI_CON1bits.CKE = 1; // Serial output data changes on transition
-                        // from active clock trx_state to idle clock trx_state
-    SPI_CON1bits.CKP = 0; // Idle trx_state for clock is a low level;
-                            // active trx_state is a high level
-
-    // Set up SCK frequency of 6.667Mhz for 40 MIPS
-    //SPI_CON1bits.SPRE = 0b010; // Secondary prescale    6:1
-    //SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
-    SPI_CON1bits.SPRE = 0b000; // Secondary prescale    8:1
-    SPI_CON1bits.PPRE = 0b10; // Primary prescale       4:1
-
-    // SPI2CON2 Register Settings
-    SPI_CON2 = 0x0000; // Framed SPI2 support disabled
-
-    // SPI2STAT Register Settings
-    SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
-    SPI_STATbits.SPIROV = 0; // Clear Overflow
-    SPI_STATbits.SPIEN = 1; // Enable SPI module
-
+static void setupSPI(void)
+{
+    spicSetupChannel1(spi_cs,
+                      ENABLE_SCK_PIN &
+                      ENABLE_SDO_PIN &
+                      SPI_MODE16_OFF &
+                      SPI_SMP_OFF &
+                      SPI_CKE_ON &
+                      SLAVE_ENABLE_OFF &
+                      CLK_POL_ACTIVE_HIGH &
+                      MASTER_ENABLE_ON &
+                      PRI_PRESCAL_1_1 &
+                      SEC_PRESCAL_6_1);
 }
 
-
-static inline void trxSetSlptr(unsigned char val) {      
+static inline void trxSetSlptr(unsigned char val) {
     SLPTR = val;
     Nop();
     Nop();
 }
-

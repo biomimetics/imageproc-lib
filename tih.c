@@ -8,7 +8,6 @@
 #include "tih.h"
 #include "pwm.h"
 #include "ports.h"
-//#include "led.h"
 #include "init_default.h"
 
 #define NUM_PWM 4
@@ -62,7 +61,7 @@ static void tiHSetupPeripheral(void) {
 
     //Call Microchip library setup function
     OpenMCPWM(PTPERvalue, SEVTCMPvalue, PTCONvalue, PWMCON1value, PWMCON2value);
-   
+
 }
 
 void tiHSetFloat(unsigned int channel, float percent){
@@ -91,16 +90,18 @@ void tiHSetFloat(unsigned int channel, float percent){
 
 void tiHSetDC(unsigned int channel, int dutycycle){
     unsigned int idx = channel - 1;
-	if (dutycycle > MAXPWM) dutycycle = MAXPWM;
-	if (dutycycle < -MAXPWM) dutycycle = -MAXPWM;	
-  	 outputs[idx].throt_f = -666.0; //TODO: not a solution; have to update float every time?
-   	 outputs[idx].throt_i = dutycycle;
+    if (dutycycle > MAXPWM) dutycycle = MAXPWM;
+    if (dutycycle < -MAXPWM) dutycycle = -MAXPWM;
+     outputs[idx].throt_f = -666.0; //TODO: not a solution; have to update float every time?
+     outputs[idx].throt_i = dutycycle;
 
-    	if (dutycycle < 0)
-	{ outputs[idx].dir = TIH_REV;
-         dutycycle = -dutycycle;
-    	}
-	else {outputs[idx].dir = TIH_FWD;}  // make sure to set FWD if not reverse	
+    outputs[idx].throt_f = -666.0; //TODO: not a solution; have to update float every time?
+    outputs[idx].throt_i = dutycycle;
+
+    if (dutycycle < 0){
+        outputs[idx].dir = TIH_REV;
+        dutycycle = -dutycycle;
+    } else{outputs[idx].dir = TIH_FWD;}
 
     //Select correct PWM output and GPIO level for dir and mode
     tiHConfigure(channel);
@@ -131,7 +132,7 @@ void tiHConfigure(unsigned int channel) {
         lbit = OUTPUT_PWM;
     }
 
-    
+
     if(outputs[idx].dir == TIH_FWD){
         if(outputs[idx].mode == TIH_MODE_BRAKE){
             hbit = OUTPUT_GPIO;
@@ -154,7 +155,7 @@ void tiHConfigure(unsigned int channel) {
     }
 
     unsigned int gpio_val = outputs[idx].mode;
-    
+
 
     //Clear and set ONLY pertinent bits
     unsigned int PWMCON1val = PWMCON1;
@@ -169,7 +170,7 @@ void tiHConfigure(unsigned int channel) {
     //Mode
     LATEval &= ~( 0b11 << bidx ); //clear
     LATEval |= ((gpio_val << 1) | gpio_val) << bidx; //set
-    
+
     LATE = LATEval; //Mode
     PWMCON1 = PWMCON1val; //Direction
 }

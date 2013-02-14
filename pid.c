@@ -66,8 +66,8 @@
 
 //////////////////////////
 
-void pidUpdate(pidObj *pid, int feedback) {
-    pid->error = pid->input - feedback;
+void pidUpdate(pidObj *pid, int output) {
+    pid->error = pid->input - output;
 #ifdef PID_SOFTWARE
     pid->p = (long) pid->Kp * pid->error;
     pid->i = (long) pid->Ki * pid->iState;
@@ -88,7 +88,7 @@ void pidUpdate(pidObj *pid, int feedback) {
 
 #elif defined PID_HARDWARE
     pid->dspPID.controlReference = pid->input;
-    pid->preSat = pidHWRun(&(pid->dspPID), feedback); //Do PID calculate via DSP lib
+    pid->preSat = pidHWRun(&(pid->dspPID), output); //Do PID calculate via DSP lib
 #endif
 
     //Feedforward term

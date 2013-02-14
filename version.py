@@ -21,6 +21,7 @@ fileheader = 'version.h'
 version    = sys.argv[1] # version string within single quotes
 date       = time.strftime("%a %b %d %H:%M:%S %Y")
 
+
 fullstr = version + ': ' + date
 verstr = fullstr[0:VER_STR_LENGTH_MAX]  #limit version string length
 

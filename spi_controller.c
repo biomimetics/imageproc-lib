@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2012, Regents of the University of California
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@
 #if defined(__IMAGEPROC2)
 
     #define SPI1_CS             (_LATB2)    // Radio Chip Select
-    #define SPI2_CS             (_LATG9)    // Flash Chip Select
+    #define SPI2_CS1            (_LATG9)    // Flash Chip Select
     #define SPI2_CS2            (_LATC15)   // MPU6000 Chip Select
 
 #endif
@@ -80,8 +80,8 @@
 #define SPIC1_RX_BUFF_LEN       (128) // Radio buffer is 128 bytes
 #define SPIC1_TX_BUFF_LEN       (128)
 
-#define SPIC2_RX_BUFF_LEN       (264) // Flash page is 264/528 bytes
-#define SPIC2_TX_BUFF_LEN       (264) // Currently not in use
+#define SPIC2_RX_BUFF_LEN       (528) // Flash page is 264/528 bytes
+#define SPIC2_TX_BUFF_LEN       (528) // Currently not in use
 
 #define US_TO_TICKS(X)          ((X*10)/16) // Microseconds to cycles with 64:1 prescale
 
@@ -96,10 +96,18 @@ static void setupDMASet2(void);
 // =========== Static Variables ===============================================
 
 /** Interrupt handlers */
-static SpicIrqHandler int_handler[SPIC_NUM_PORTS];
+static SpicIrqHandler int_handler_ch1[1];
+static SpicIrqHandler int_handler_ch2[2];
+
+/** Port configurations */
+static unsigned int spicon_ch1[1];
+static unsigned int spicon_ch2[2];
 
 /** Current port statuses */
 SpicStatus port_status[SPIC_NUM_PORTS];
+
+/** Current port chip select */
+static unsigned char port_cs_line[SPIC_NUM_PORTS];
 
 // Port 1 buffers
 static unsigned char spic1_rx_buff[SPIC1_RX_BUFF_LEN] __attribute__((space(dma)));
@@ -111,76 +119,95 @@ static unsigned char spic2_tx_buff[SPIC2_TX_BUFF_LEN] __attribute__((space(dma))
 
 // =========== Public Methods =================================================
 
-void spicSetupChannel1(void) {
+void spicSetupChannel1(unsigned char cs, unsigned int spiCon1) {
 
     setupDMASet1();     // Set up DMA channels
+    spicon_ch1[cs] = spiCon1;           // Remember SPI config
     port_status[0] = STAT_SPI_CLOSED;   // Initialize status
 
 }
 
-void spicSetupChannel2(void) {
+void spicSetupChannel2(unsigned char cs, unsigned int spiCon1) {
 
     setupDMASet2();
+    spicon_ch2[cs] = spiCon1;           // Remember SPI config
     port_status[1] = STAT_SPI_CLOSED;
 
 }
 
-void spic1SetCallback(SpicIrqHandler handler) {
+void spic1SetCallback(unsigned char cs, SpicIrqHandler handler) {
 
-    int_handler[0] = handler;
-
-}
-
-
-void spic2SetCallback(SpicIrqHandler handler) {
-
-    int_handler[1] = handler;
+    int_handler_ch1[cs] = handler;
 
 }
 
-void spic1BeginTransaction(void) {
+
+void spic2SetCallback(unsigned char cs, SpicIrqHandler handler) {
+
+    int_handler_ch2[cs] = handler;
+
+}
+
+int spic1BeginTransaction(unsigned char cs) {
     // TODO: Timeout?
+    // TODO: Possible race condition if interrupt/non-interrrupt both try to
+    //  start a transaction. Need to change this to atomic test-and-set
+
+    // TODO: generalize?
+    if (cs > 0)
+      // Only one CS line is supported
+      return -1;
+
     while(port_status[0] == STAT_SPI_BUSY); // Wait for port to become available
     port_status[0] = STAT_SPI_BUSY;
+    // Reconfigure port
+    SPI1STAT = 0;
+    SPI1CON1 = spicon_ch1[cs];
+    SPI1STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
+    port_cs_line[0] = cs;
     SPI1_CS = SPI_CS_ACTIVE;    // Activate chip select
 
+    return 0;
 }
 
-/* need to make this atomic so competing processes do not both grab SPI2 */
+int spic2BeginTransaction(unsigned char cs) {
+    // TODO: Timeout?
+    // TODO: Possible race condition if interrupt/non-interrrupt both try to
+    //  start a transaction. Need to change this to atomic test-and-set
 
-void spic2BeginTransaction(void) {
-    while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
-  /*  risky - could have interrupt here */
-    port_status[1] = STAT_SPI_BUSY;
-    SPI2_CS = SPI_CS_ACTIVE;     // Activate chip select
-}
+    // TODO: generalize?
+    if (cs > 1)
+      // Two CS lines are supported
+      return -1;
 
-/// this can hang if higher priority interrupt is waiting indefinitely and locking out lower level
-void spic2cs2BeginTransaction(void) {
-   char grab = 0;
-   while(!grab)
-   {  while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
-       CRITICAL_SECTION_START // turn off interrupts
-    	  if(port_status[1] != STAT_SPI_BUSY) // success at grabbing semaphore
-	  { port_status[1] = STAT_SPI_BUSY;
-	     SPI2_CS2 = SPI_CS_ACTIVE;     // Activate chip select
-	     grab =1;	// signal grabbed
-	  } 
-	 CRITICAL_SECTION_END
-	}
+    // Reconfigure port
+    SPI2STAT = 0;
+    SPI2CON1 = spicon_ch2[cs];
+    SPI2STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
+    port_cs_line[1] = cs;
+    if (cs == 0)
+      SPI2_CS1 = SPI_CS_ACTIVE;     // Activate chip select
+    if (cs == 1)
+      SPI2_CS2 = SPI_CS_ACTIVE;     // Activate chip select
+
+    return 0;
 }
 
 void spic1EndTransaction(void) {
 
-    port_status[0] = STAT_SPI_OPEN; // Free port
+    // Only one CS line
     SPI1_CS = SPI_CS_IDLE;  // Idle chip select after freeing since may cause irq
+    port_status[0] = STAT_SPI_OPEN; // Free port
 
 }
 
 void spic2EndTransaction(void) {
 
+    if (port_cs_line[1] == 0)
+      SPI2_CS1 = SPI_CS_IDLE;  // Idle chip select
+    if (port_cs_line[1] == 1)
+      SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
     port_status[1] = STAT_SPI_OPEN; // Free port
-    SPI2_CS = SPI_CS_IDLE;  // Idle chip select
 
 }
 
@@ -203,8 +230,8 @@ void spic1Reset(void) {
 
 void spic2Reset(void) {
 
-    SPI2_CS = SPI_CS_IDLE;          // Disable chip select
-    SPI2_CS2 = SPI_CS_IDLE;
+    SPI2_CS1 = SPI_CS_IDLE;         // Disable chip select
+    SPI2_CS2 = SPI_CS_IDLE;         // Disable chip select
     SPIC2_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC2_DMAW_CONbits.CHEN = 0;
     SPI2STATbits.SPIROV = 0;
@@ -216,8 +243,8 @@ unsigned char spic1Transmit(unsigned char data) {
 
     unsigned char c;
     SPI1STATbits.SPIROV = 0;        // Clear overflow bit
-    SPI1BUF = data;                   // Initiate SPI bus cycle by byte write
-    while(SPI1STATbits.SPITBF);        // Wait for transmit to complete
+    SPI1BUF = data;                 // Initiate SPI bus cycle by byte write
+    while(SPI1STATbits.SPITBF);     // Wait for transmit to complete
     while(!SPI1STATbits.SPIRBF);    // Wait for receive to complete
     c = SPI1BUF;                    // Read out received data to avoid overflow
     return c;
@@ -229,13 +256,9 @@ unsigned char spic2Transmit(unsigned char data) {
     unsigned char c;
    unsigned int timeout = 0;
     SPI2STATbits.SPIROV = 0;        // Clear overflow bit
-    SPI2BUF = data;                   // Initiate SPI bus cycle by byte write
-    while(SPI2STATbits.SPITBF)        // Wait for transmit to complete
-   { timeout++;}
-    timeout = 0;
-    while(!SPI2STATbits.SPIRBF)   // Wait for receive to complete
-    { timeout++; }
-
+    SPI2BUF = data;                 // Initiate SPI bus cycle by byte write
+    while(SPI2STATbits.SPITBF);     // Wait for transmit to complete
+    while(!SPI2STATbits.SPIRBF);    // Wait for receive to complete
     c = SPI2BUF;                    // Read out received data to avoid overflow
     return c;
 
@@ -353,7 +376,8 @@ unsigned int spic2ReadBuffer(unsigned int len, unsigned char *buff) {
 // ISR for DMA2 interrupt, currently DMAR for channel 1
 void __attribute__((interrupt, no_auto_psv)) _DMA2Interrupt(void) {
 
-    int_handler[0](SPIC_TRANS_SUCCESS);        // Call registered callback function
+    // Call registered callback function
+    int_handler_ch1[port_cs_line[0]](SPIC_TRANS_SUCCESS);
     _DMA2IF = 0;
 
 }
@@ -368,7 +392,8 @@ void __attribute__((interrupt, no_auto_psv)) _DMA3Interrupt(void) {
 // ISR for DMA4 interrupt, currently DMAR for channel 2
 void __attribute__((interrupt, no_auto_psv)) _DMA4Interrupt(void) {
 
-    int_handler[1](SPIC_TRANS_SUCCESS);        // Call registered callback function
+    // Call registered callback function
+    int_handler_ch2[port_cs_line[1]](SPIC_TRANS_SUCCESS);
     _DMA4IF = 0;
 
 }
@@ -381,89 +406,88 @@ void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void) {
 
 }
 
-static void setupDMASet1(void) {
-
-    DMA2CON =   DMA2_REGISTER_POST_INCREMENT &     // Increment address after each byte
-                DMA2_ONE_SHOT &                 // Stop module after transfer complete
-                PERIPHERAL_TO_DMA2 &             // Receive data from peripheral to memory
-                DMA2_SIZE_BYTE &                 // Byte-size transactions
-                DMA2_INTERRUPT_BLOCK &             // Interrupt after entire transaction
-                DMA2_NORMAL &                     //
-                DMA2_MODULE_OFF;                // Start module disabled
+static void setupDMASet1 (void)
+{
+    DMA2CON = DMA2_REGISTER_POST_INCREMENT & // Increment address after each byte
+              DMA2_ONE_SHOT &                // Stop module after transfer complete
+              PERIPHERAL_TO_DMA2 &           // Receive data from peripheral to memory
+              DMA2_SIZE_BYTE &               // Byte-size transactions
+              DMA2_INTERRUPT_BLOCK &         // Interrupt after entire transaction
+              DMA2_NORMAL &                  //
+              DMA2_MODULE_OFF;               // Start module disabled
 
     DMA2REQ = SPI1_REQ_VAL;
     DMA2STA = __builtin_dmaoffset(spic1_rx_buff);
     DMA2STB = __builtin_dmaoffset(spic1_rx_buff);
     DMA2PAD = (volatile unsigned int) &SPI1BUF;
-    DMA2CNT = 0; // Default
+    DMA2CNT = 0;    // Default
 
     // Need this to avoid compiler bitlength issues
-    unsigned long priority = DMA2_INT_PRI_5;
+    unsigned long priority = DMA2_INT_PRI_6;
     SetPriorityIntDMA2(priority);
 
     EnableIntDMA2;
-    _DMA2IF  = 0;        // Clear DMA interrupt flag
+    _DMA2IF  = 0;   // Clear DMA interrupt flag
 
-    DMA3CON =     DMA3_REGISTER_POST_INCREMENT &     // Increment address after each byte
-                DMA3_ONE_SHOT &                 // Stop module after transfer complete
-                DMA3_TO_PERIPHERAL &            // Send data to peripheral from memory
-                DMA3_SIZE_BYTE &                 // Byte-size transaction
-                DMA3_INTERRUPT_BLOCK &             // Interrupt after entire transaction
-                DMA3_NORMAL &                     //
-                DMA3_MODULE_OFF;                // Start module disabled
+    DMA3CON = DMA3_REGISTER_POST_INCREMENT & // Increment address after each byte
+              DMA3_ONE_SHOT &                // Stop module after transfer complete
+              DMA3_TO_PERIPHERAL &           // Send data to peripheral from memory
+              DMA3_SIZE_BYTE &               // Byte-size transaction
+              DMA3_INTERRUPT_BLOCK &         // Interrupt after entire transaction
+              DMA3_NORMAL &                  //
+              DMA3_MODULE_OFF;               // Start module disabled
 
     DMA3REQ = SPI1_REQ_VAL;
     DMA3STA = __builtin_dmaoffset(spic1_tx_buff);
     DMA3STB = __builtin_dmaoffset(spic1_tx_buff);
     DMA3PAD = (volatile unsigned int) &SPI1BUF;
-    DMA3CNT = 0; // Default
+    DMA3CNT = 0;    // Default
 
-    priority = DMA3_INT_PRI_5;
+    priority = DMA3_INT_PRI_6;
     SetPriorityIntDMA3(priority);
-    DisableIntDMA3;             // Only need one of the DMA interrupts
-    _DMA3IF  = 0;        // Clear DMA interrupt
-
+    DisableIntDMA3; // Only need one of the DMA interrupts
+    _DMA3IF  = 0;   // Clear DMA interrupt
 }
 
-static void setupDMASet2(void) {
-
-    DMA4CON =   DMA4_REGISTER_POST_INCREMENT &     // Increment address after each byte
-                DMA4_ONE_SHOT &                 // Stop module after transfer complete
-                PERIPHERAL_TO_DMA4 &             // Receive data from peripheral to memory
-                DMA4_SIZE_BYTE &                 // Byte-size transactions
-                DMA4_INTERRUPT_BLOCK &             // Interrupt after entire transaction
-                DMA4_NORMAL &                     //
-                DMA4_MODULE_OFF;                // Start module disabled
+static void setupDMASet2 (void)
+{
+    DMA4CON = DMA4_REGISTER_POST_INCREMENT & // Increment address after ea/byte
+              DMA4_ONE_SHOT &                // Stop module after transfer done
+              PERIPHERAL_TO_DMA4 &           // Receive data from perip to mem
+              DMA4_SIZE_BYTE &               // Byte-size transactions
+              DMA4_INTERRUPT_BLOCK &         // Interrupt after transaction
+              DMA4_NORMAL &                  //
+              DMA4_MODULE_OFF;               // Start module disabled
 
     DMA4REQ = SPI2_REQ_VAL;
     DMA4STA = __builtin_dmaoffset(spic2_rx_buff);
     DMA4STB = __builtin_dmaoffset(spic2_rx_buff);
     DMA4PAD = (volatile unsigned int) &SPI2BUF;
-    DMA4CNT = 0; // Default
+    DMA4CNT = 0;    // Default
 
     // Need this to avoid compiler bitlength issues
-    unsigned long priority = DMA4_INT_PRI_5;
+    unsigned long priority = DMA4_INT_PRI_6;
     SetPriorityIntDMA4(priority);
 
     EnableIntDMA4;
-    _DMA4IF  = 0;        // Clear DMA interrupt flag
+    _DMA4IF  = 0;   // Clear DMA interrupt flag
 
-    DMA5CON =   DMA5_REGISTER_POST_INCREMENT &     // Increment address after each byte
-                DMA5_ONE_SHOT &                 // Stop module after transfer complete
-                DMA5_TO_PERIPHERAL &            // Send data to peripheral from memory
-                DMA5_SIZE_BYTE &                 // Byte-size transaction
-                DMA5_INTERRUPT_BLOCK &             // Interrupt after entire transaction
-                DMA5_NORMAL &                     //
-                DMA5_MODULE_OFF;                // Start module disabled
+    DMA5CON = DMA5_REGISTER_POST_INCREMENT & // Increment address after ea/byte
+              DMA5_ONE_SHOT &                // Stop module after transfer done
+              DMA5_TO_PERIPHERAL &           // Send data to periph from mem
+              DMA5_SIZE_BYTE &               // Byte-size transaction
+              DMA5_INTERRUPT_BLOCK &         // Interrupt after transaction
+              DMA5_NORMAL &                  //
+              DMA5_MODULE_OFF;               // Start module disabled
+
     DMA5REQ = SPI2_REQ_VAL;
     DMA5STA = __builtin_dmaoffset(spic2_tx_buff);
     DMA5STB = __builtin_dmaoffset(spic2_tx_buff);
     DMA5PAD = (volatile unsigned int) &SPI2BUF;
-    DMA5CNT = 0; // Default
+    DMA5CNT = 0;    // Default
 
-    priority = DMA5_INT_PRI_5;
+    priority = DMA5_INT_PRI_6;
     SetPriorityIntDMA5(priority);
     DisableIntDMA5; // Only need one of the DMA interrupts
-    _DMA5IF  = 0;        // Clear DMA interrupt
-
+    _DMA5IF  = 0;   // Clear DMA interrupt
 }

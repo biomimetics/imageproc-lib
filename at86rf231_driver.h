@@ -36,8 +36,9 @@
  *  parameters.
  */
 
-#ifndef __AT86RF231_DRIVER
-#define __AT86RF231_DRIVER
+#ifndef __AT86RF231_DRIVER_H
+#define __AT86RF231_DRIVER_H
+
 
 #include "mac_packet.h"
 
@@ -52,10 +53,10 @@ typedef void (*TrxIrqHandler)(unsigned int irq_cause);
  *
  * This function should be called before using the other transceiver functions.
  * Upon completion, the transceiver SPI port and configuration registers will be
- * initialized to default values as specified in at86rf231_driver.c, and the 
- * transceiver will be in an idle state.
+ * initialized to default values as specified in at86rf231_driver.c, and the
+ * transceiver will be in an idle state. cs specifies the chip select line.
  */
-void trxSetup(void);
+void trxSetup(unsigned char cs);
 
 /**
  * Reset the transceiver hardware and software state.
@@ -134,10 +135,17 @@ unsigned char trxReadRSSI(void);
 unsigned char trxReadED(void);
 
 /**
+ * Return last ACK
+ *
+ * @return 1 for transmission success, 0 for failure.
+ */
+unsigned char trxGetLastACKd(void);
+
+/**
  * Write the contents of a packet to the transceiver.
  *
- * Serializes and writes a MacPacket object to the transceiver via its SPI port. 
- * The current implementation uses a DMA buffer, so the method will return before 
+ * Serializes and writes a MacPacket object to the transceiver via its SPI port.
+ * The current implementation uses a DMA buffer, so the method will return before
  * the write is complete.
  *
  * @param packet MacPacket object to write to the transceiver.
@@ -204,8 +212,5 @@ void trxSetStateIdle(void);
  */
 void trxSetStateOff(void);
 
-#endif
- 
- 
- 
- 
+
+#endif // __AT86RF231_DRIVER_H
