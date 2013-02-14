@@ -339,7 +339,7 @@ unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
 
     if (fast_fail)
     {
-        if ( !radioEnqueueTxPacket(pkt) ) radioReturnPacket(packet);
+        if ( !radioEnqueueTxPacket(packet) ) radioReturnPacket(packet);
     } else {
         while ( !radioEnqueueTxPacket(packet) ) radioProcess();
     }
