@@ -51,7 +51,9 @@
 
 #define UART_MAX_SIZE 200
 
-void uartInit(void);
+typedef void (*packet_callback)(MacPacket);
+
+void uartInit(packet_callback rx_cb);
 void uartSend(unsigned char length,unsigned char *frame);
 void uartSendPayload(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 void uartSendPacket(MacPacket packet);

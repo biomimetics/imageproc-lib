@@ -3,7 +3,6 @@
 #include "mac_packet.h"
 #include "payload.h"
 #include "ppool.h"
-#include "cmd.h"
 
 static MacPacket tx_packet = NULL;
 static Payload tx_payload = NULL;
@@ -15,7 +14,9 @@ static Payload rx_payload = NULL;
 static unsigned char rx_idx;
 static unsigned char rx_checksum;
 
-void uartInit(void)
+static packet_callback rx_callback = NULL;
+
+void uartInit(packet_callback rx_cb)
 {
     /// UART2 for RS-232 w/PC @ 230400, 8bit, No parity, 1 stop bit
     unsigned int U2MODEvalue, U2STAvalue, U2BRGvalue;
@@ -26,11 +27,15 @@ void uartInit(void)
     U2STAvalue  = UART_INT_TX & UART_INT_RX_CHAR &UART_SYNC_BREAK_DISABLED &
                   UART_TX_ENABLE & UART_ADR_DETECT_DIS &
                   UART_IrDA_POL_INV_ZERO; // If not, whole output inverted.
-    U2BRGvalue  = 43; // (Fcy / ({16|4} * baudrate)) - 1
+    U2BRGvalue  = 43; // =43 for 230500Baud (Fcy / ({16|4} * baudrate)) - 1
+    //U2BRGvalue  = 1041; // =1041 for 9600 Baud
+    //U2BRGvalue  = 86; // =1041 for 9600 Baud
+
     OpenUART2(U2MODEvalue, U2STAvalue, U2BRGvalue);
 
     tx_idx = UART_TX_IDLE;
     rx_idx = UART_RX_IDLE;
+    rx_callback = rx_cb;
 
     ConfigIntUART2(UART_TX_INT_EN & UART_TX_INT_PR4 & UART_RX_INT_EN & UART_RX_INT_PR4);
     EnableIntU2TX;
@@ -142,8 +147,8 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
             ppoolReturnFullPacket(rx_packet);
         }
     } else if (rx_idx == rx_payload->data_length + PAYLOAD_HEADER_LENGTH) {
-        if(rx_checksum == rx_byte) {
-            cmdPushFunc(rx_packet);
+        if(rx_checksum == rx_byte && rx_callback != NULL) {
+            (rx_callback)(rx_packet);
         } else {
             ppoolReturnFullPacket(rx_packet);
         }
