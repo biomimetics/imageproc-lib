@@ -44,7 +44,7 @@
 #define __UTILS_H
 
 
-#include "p33Fxxxx.h"
+#include <p33Fxxxx.h>
 
 // Abstracting LEDs for easier control of their status
 #if defined(__IMAGEPROC1)

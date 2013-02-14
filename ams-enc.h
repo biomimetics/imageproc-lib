@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2012-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,52 +33,67 @@
  *
  * v.1.0
  *
- * Revisions:
- *  Duncan Haldane      2012-05-15    Initial release
- *                      
- * Notes:
- *  - This module uses the I2C2 port for communicating with the AMS encoder chips
- *Usage:
- * #include "enc.h"
+ * Usage:
+ *  #include "enc.h"
  *
  *  // initialize encoder module
  *  encSetup();
- * 
- * //get position of right encoder write to ENCPOS struct
- * void encGetRPos()
  *
- *
- *
- */	
- #define MAX_HALL 0x4000 // maximum Hall sensor value
+ *  //get position of right encoder write to ENCPOS struct
+ *  void encGetRPos()
+ */
+
+#ifndef __AMS_ENC_H
+#define __AMS_ENC_H
+
+
+#define MAX_HALL 0x4000 // maximum Hall sensor value
 #define NUM_ENC 2
+
 //Leg position struct
 typedef struct {
-   	unsigned int pos; // raw reading from sensor 14 bits
-	long oticks;  // revolution counter
-	unsigned int calibPos;  // 0 to 2pi, converted to 16 bits
-	unsigned int offset; // initial reading on setup - relative zero position
+    unsigned int pos; // raw reading from sensor 14 bits
+    long oticks;  // revolution counter
+    unsigned int calibPos;  // 0 to 2pi, converted to 16 bits
+    unsigned int offset; // initial reading on setup - relative zero position
 } EncObj;
 
 extern EncObj encPos[NUM_ENC];
 
-// prototypes
+/*****************************************************************************
+ * Function Name : amsHallSetup
+ * Description   : initialize I2C, and for initial calibration, set offset
+ *                 to current position
+ * Parameters    : None
+ * Return Value  : None
+ *****************************************************************************/
 void amsHallSetup(void);
+
+/*****************************************************************************
+ * Function Name : amsGetPos/encSumPos
+ * Description   : Count encoder[num] rollovers, write to struct encPos
+ * Parameters    : None
+ * Return Value  : None
+ * .pos: 0 <= .pos <= 0x3fff,  0 to 2 pi range.
+ * see hall_velocity_ip2.5.ppt
+ *****************************************************************************/
 void amsGetPos(unsigned char num);
- /*****************************************************************************
-* Function Name : encSetup
-* Description   : Initialize encoder
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
- void encSetup(void);
- 
- /*****************************************************************************
-* Function Name : encGetPos
-* Description   : Read the angular position of the right encoder, write to struct encPos
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
+
+/*****************************************************************************
+ * Function Name : encSetup
+ * Description   : Initialize encoder
+ * Parameters    : None
+ * Return Value  : None
+ *****************************************************************************/
+void encSetup(void);
+
+/*****************************************************************************
+ * Function Name : encGetPos
+ * Description   : Read the angular position of the right encoder, write to
+ *                 struct encPos
+ * Parameters    : None
+ * Return Value  : None
+ *****************************************************************************/
 void encGetPos(unsigned char num);
 
 /*****************************************************************************
@@ -97,4 +112,5 @@ void encSumPos(unsigned char num);
  *****************************************************************************/
 float encGetFloatPos(unsigned char num);
 
-void amsHallSetup();
+
+#endif // __AMS_ENC_H

@@ -191,6 +191,7 @@ int spic2BeginTransaction(unsigned char cs);
  * End a transaction on port 2.
  */
 void spic2EndTransaction(void);
+void spic2cs2EndTransaction(void);
 
 /**
  * Resets port 2.
