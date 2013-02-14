@@ -322,7 +322,8 @@ void radioProcess(void) {
 }
 
 unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
-            unsigned char type, unsigned int datalen, unsigned char* dataptr)
+                             unsigned char type, unsigned int datalen,
+                             unsigned char* dataptr, unsigned char fast_fail)
 {
     MacPacket packet;
     Payload pld;
@@ -336,7 +337,12 @@ unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
     paySetType(pld, type);
     paySetStatus(pld, status);
 
-    while ( !radioEnqueueTxPacket(packet) ) radioProcess();
+    if (fast_fail)
+    {
+        if ( !radioEnqueueTxPacket(pkt) ) radioReturnPacket(packet);
+    } else {
+        while ( !radioEnqueueTxPacket(packet) ) radioProcess();
+    }
 
     return 0;
 }
