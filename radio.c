@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2012, Regents of the University of California
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,15 +34,14 @@
  * v.0.5
  *
  * Revisions:
- *  Humphrey Hu     2011-06-06      Initial implementation
- *  Humphrey Hu     2012-02-03      Structural changes to reduce irq handler runtime
- *  Humphrey Hu     2012-070-18     Consolidated state into data structures
+ *  Humphrey Hu     2011-6-6    Initial implementation
+ *  Humphrey Hu     2012-2-3    Structural changes to reduce irq handler runtime
+ *  Humphrey Hu     2012-7-18   Consolidated state into data structures
  */
 
 #include "utils.h"
 #include "init_default.h"
 #include "radio.h"
-#include "payload.h"
 #include "carray.h"
 #include "mac_packet.h"
 #include "sclock.h"
@@ -209,8 +208,10 @@ void radioSetWatchdogTime(unsigned int time) {
     watchdogProgress();
 }
 
-MacPacket radioDequeueRxPacket(void) {
-    if(!is_ready) { return NULL; }
+MacPacket radioDequeueRxPacket(void)
+{
+    if ( !is_ready ) return NULL;
+
     return (MacPacket)carrayPopTail(rx_queue);
 }
 
@@ -319,6 +320,32 @@ void radioProcess(void) {
     // If the code runs to this point, all buffers are clear and radio is idle
     watchdogProgress();
 
+}
+
+unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
+                             unsigned char type, unsigned int datalen,
+                             unsigned char* dataptr, unsigned char fast_fail)
+{
+    MacPacket packet;
+    Payload pld;
+
+    packet = radioRequestPacket(datalen);
+    if ( packet == NULL ) return 1;    // Unable to allocate packet
+    macSetDestAddr(packet, dest_addr); //SRC and PAN already set
+
+    pld = macGetPayload(packet);
+    paySetData(pld, datalen, (unsigned char*) dataptr);
+    paySetType(pld, type);
+    paySetStatus(pld, status);
+
+    if (fast_fail)
+    {
+        if ( !radioEnqueueTxPacket(packet) ) radioReturnPacket(packet);
+    } else {
+        while ( !radioEnqueueTxPacket(packet) ) radioProcess();
+    }
+
+    return 0;
 }
 
 
