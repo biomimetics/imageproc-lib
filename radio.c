@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2012, Regents of the University of California
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,9 +34,9 @@
  * v.0.5
  *
  * Revisions:
- *  Humphrey Hu     2011-06-06      Initial implementation
- *  Humphrey Hu     2012-02-03      Structural changes to reduce irq handler runtime
- *  Humphrey Hu     2012-070-18     Consolidated state into data structures
+ *  Humphrey Hu     2011-6-6    Initial implementation
+ *  Humphrey Hu     2012-2-3    Structural changes to reduce irq handler runtime
+ *  Humphrey Hu     2012-7-18   Consolidated state into data structures
  */
 
 #include "utils.h"
@@ -207,12 +207,11 @@ void radioSetWatchdogTime(unsigned int time) {
     watchdogProgress();
 }
 
-MacPacket radioDequeueRxPacket(void) {
-    if(!is_ready) { return NULL; }
-    MacPacket temp = carrayPopTail(rx_queue);
+MacPacket radioDequeueRxPacket(void)
+{
+    if ( !is_ready ) return NULL;
 
-    //return (MacPacket)carrayPopTail(rx_queue);
-    return temp;
+    return (MacPacket)carrayPopTail(rx_queue);
 }
 
 unsigned int radioEnqueueTxPacket(MacPacket packet) {
@@ -322,25 +321,24 @@ void radioProcess(void) {
 
 }
 
-unsigned char radioSendData(unsigned int dest_addr, unsigned char status,
-           unsigned char type, unsigned int datalen, unsigned char* dataptr) {
+unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
+            unsigned char type, unsigned int datalen, unsigned char* dataptr)
+{
+    MacPacket packet;
+    Payload pld;
 
-    MacPacket pkt;
-    pkt = radioRequestPacket(datalen);
-    if(pkt == NULL) { return 1; }   // Failure , unable to allocate packet
+    packet = radioRequestPacket(datalen);
+    if ( packet == NULL ) return 1;    // Unable to allocate packet
+    macSetDestAddr(packet, dest_addr); //SRC and PAN already set
 
-    Payload pld = macGetPayload(pkt);
+    pld = macGetPayload(packet);
     paySetData(pld, datalen, (unsigned char*) dataptr);
     paySetType(pld, type);
     paySetStatus(pld, status);
-    macSetDestAddr(pkt, dest_addr); //SRC and PAN already set
 
-    if(!radioEnqueueTxPacket(pkt)) {
-        radioReturnPacket(pkt);	// Delete packet if append fails
-    }
-    //radioProcess(); //unclear if this should be called here
+    while ( !radioEnqueueTxPacket(packet) ) radioProcess();
 
-    return 0;   // Success
+    return 0;
 }
 
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2012, Regents of the University of California
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,11 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Radio with DMA Functionality Header File
+ * High Level Wireless Communications Driver
  *
  * by Humphrey Hu
  *
- * v. 0.4
+ * v.0.5
  */
 
 #ifndef __RADIO_H
@@ -112,7 +112,7 @@ unsigned int radioEnqueueTxPacket(MacPacket packet);
 MacPacket radioDequeueRxPacket(void);
 
 unsigned char radioSendData(unsigned int dest_addr, unsigned char status,
-        unsigned char type, unsigned int datalen, unsigned char* dataptr);
+            unsigned char type, unsigned int datalen, unsigned char* dataptr);
 
 unsigned int radioTxQueueEmpty(void);
 unsigned int radioTxQueueFull(void);
