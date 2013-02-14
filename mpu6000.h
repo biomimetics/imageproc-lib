@@ -36,7 +36,6 @@
 
 #ifndef __MPU6000_H
 #define __MPU6000_H
-#endif
 
 
 // Registers
@@ -71,8 +70,6 @@
     int temp;   // temperature
 } mpuObj;
 
-#ifndef __MPU_SPI_H
-#define __MPU_SPI_H
 
 // Setup device
 //  cs = chip select index
