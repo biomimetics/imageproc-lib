@@ -74,7 +74,7 @@
 #define CRC_LENGTH              (2)
 #define FRAME_BUFFER_SIZE       (128)
 #define DEFAULT_CSMA_RETRIES    (4)     /** Number of times to attempt medium acquisition */
-#define DEFAULT_FRAME_RETRIES   (3)     /** Number of times to attempt frame resend */
+#define DEFAULT_FRAME_RETRIES   (0)     /** Number of times to attempt frame resend */
 
 // =========== Function stubs =================================================
 
@@ -93,6 +93,7 @@ static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsig
 
 
 // =========== Static variables ===============================================
+
 static unsigned char is_ready = 0; // Mostly for debugging - no checking so code is faster
 static TrxIrqHandler irqCallback;
 // See at86rf231.h
@@ -100,13 +101,18 @@ static tal_trx_status_t trx_state;
 static unsigned char frame_buffer[FRAME_BUFFER_SIZE];
 static unsigned char last_rssi;
 static unsigned char spi_cs;
+static unsigned char last_ackd = 0;
+
+
 // =========== Public functions ===============================================
 
-void trxSetup(unsigned char cs) {
+void trxSetup(unsigned char cs)
+{
     spi_cs = cs;
 
     setupSPI();     // Set up SPI com port
-    spic1SetCallback(cs, &trxSpiCallback);  // Configure callback for spi interrupts
+    spicSetupChannel1();
+    spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
     trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts
     trxSetStateOff(); // Transition to TRX_OFF for configuring device
     trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
@@ -120,11 +126,10 @@ void trxSetup(unsigned char cs) {
     trxWriteSubReg(SR_AACK_FVN_MODE, FRAME_VERSION_IGNORED); // Ignore frame version
     trxWriteSubReg(SR_SPI_CMD_MODE, SPI_CMD_MODE_MONITOR_PHY_RSSI); // First byte of SPI is RSSI register
     trxSetStateIdle();
-    ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_4); // Radio IC interrupt
+    ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_5); // Radio IC interrupt
 
     last_rssi = 0;
     is_ready = 1;
-
 }
 
 
@@ -205,6 +210,12 @@ unsigned char trxReadED(void) {
 
 }
 
+unsigned char trxGetLastACKd(void) {
+
+    return last_ackd;
+
+}
+
 void trxWriteFrameBuffer(MacPacket packet) {
 
     unsigned int i;
@@ -255,7 +266,7 @@ void trxBeginTransmission(void) {
     trxSetSlptr(1);
     trxSetSlptr(0);
     trx_state = BUSY_TX_ARET;   // Update state accordingly
-
+    last_ackd = 0;
 }
 
 void trxSetStateTx(void) {
@@ -416,12 +427,14 @@ void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
             trx_state = TX_ARET_ON; // State transition
 
             if(status == TRAC_SUCCESS) {
+                last_ackd = 1;
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_SUCCESS_DATA_PENDING) {
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_CHANNEL_ACCESS_FAILURE) {
                 irqCallback(RADIO_TX_FAILURE);
             } else if(status == TRAC_NO_ACK) {
+                last_ackd = 0;
                 irqCallback(RADIO_TX_FAILURE);
             } else if(status == TRAC_INVALID) {
                 irqCallback(RADIO_TX_FAILURE);
@@ -500,19 +513,23 @@ static void trxReadBuffer(void) {
 
 }
 
-static void setupSPI(void) {
-
-    spicSetupChannel1(spi_cs, ENABLE_SCK_PIN & ENABLE_SDO_PIN & SPI_MODE16_OFF &
-               SPI_SMP_OFF & SPI_CKE_ON & SLAVE_ENABLE_OFF & 
-               CLK_POL_ACTIVE_HIGH & MASTER_ENABLE_ON & PRI_PRESCAL_1_1 & 
-               SEC_PRESCAL_6_1);
-
+static void setupSPI(void)
+{
+    spicSetupChannel1(spi_cs,
+                      ENABLE_SCK_PIN &
+                      ENABLE_SDO_PIN &
+                      SPI_MODE16_OFF &
+                      SPI_SMP_OFF &
+                      SPI_CKE_ON &
+                      SLAVE_ENABLE_OFF &
+                      CLK_POL_ACTIVE_HIGH &
+                      MASTER_ENABLE_ON &
+                      PRI_PRESCAL_1_1 &
+                      SEC_PRESCAL_6_1);
 }
-
 
 static inline void trxSetSlptr(unsigned char val) {
     SLPTR = val;
     Nop();
     Nop();
 }
-

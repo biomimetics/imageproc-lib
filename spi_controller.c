@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2012, Regents of the University of California
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,8 +79,8 @@
 #define SPIC1_RX_BUFF_LEN       (128) // Radio buffer is 128 bytes
 #define SPIC1_TX_BUFF_LEN       (128)
 
-#define SPIC2_RX_BUFF_LEN       (264) // Flash page is 264/528 bytes
-#define SPIC2_TX_BUFF_LEN       (264) // Currently not in use
+#define SPIC2_RX_BUFF_LEN       (528) // Flash page is 264/528 bytes
+#define SPIC2_TX_BUFF_LEN       (528) // Currently not in use
 
 #define US_TO_TICKS(X)          ((X*10)/16) // Microseconds to cycles with 64:1 prescale
 
@@ -395,89 +395,88 @@ void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void) {
 
 }
 
-static void setupDMASet1(void) {
-
-    DMA2CON =   DMA2_REGISTER_POST_INCREMENT &     // Increment address after each byte
-                DMA2_ONE_SHOT &                 // Stop module after transfer complete
-                PERIPHERAL_TO_DMA2 &             // Receive data from peripheral to memory
-                DMA2_SIZE_BYTE &                 // Byte-size transactions
-                DMA2_INTERRUPT_BLOCK &             // Interrupt after entire transaction
-                DMA2_NORMAL &                     //
-                DMA2_MODULE_OFF;                // Start module disabled
+static void setupDMASet1 (void)
+{
+    DMA2CON = DMA2_REGISTER_POST_INCREMENT & // Increment address after each byte
+              DMA2_ONE_SHOT &                // Stop module after transfer complete
+              PERIPHERAL_TO_DMA2 &           // Receive data from peripheral to memory
+              DMA2_SIZE_BYTE &               // Byte-size transactions
+              DMA2_INTERRUPT_BLOCK &         // Interrupt after entire transaction
+              DMA2_NORMAL &                  //
+              DMA2_MODULE_OFF;               // Start module disabled
 
     DMA2REQ = SPI1_REQ_VAL;
     DMA2STA = __builtin_dmaoffset(spic1_rx_buff);
     DMA2STB = __builtin_dmaoffset(spic1_rx_buff);
     DMA2PAD = (volatile unsigned int) &SPI1BUF;
-    DMA2CNT = 0; // Default
+    DMA2CNT = 0;    // Default
 
     // Need this to avoid compiler bitlength issues
-    unsigned long priority = DMA2_INT_PRI_5;
+    unsigned long priority = DMA2_INT_PRI_6;
     SetPriorityIntDMA2(priority);
 
     EnableIntDMA2;
-    _DMA2IF  = 0;        // Clear DMA interrupt flag
+    _DMA2IF  = 0;   // Clear DMA interrupt flag
 
-    DMA3CON =     DMA3_REGISTER_POST_INCREMENT &     // Increment address after each byte
-                DMA3_ONE_SHOT &                 // Stop module after transfer complete
-                DMA3_TO_PERIPHERAL &            // Send data to peripheral from memory
-                DMA3_SIZE_BYTE &                 // Byte-size transaction
-                DMA3_INTERRUPT_BLOCK &             // Interrupt after entire transaction
-                DMA3_NORMAL &                     //
-                DMA3_MODULE_OFF;                // Start module disabled
+    DMA3CON = DMA3_REGISTER_POST_INCREMENT & // Increment address after each byte
+              DMA3_ONE_SHOT &                // Stop module after transfer complete
+              DMA3_TO_PERIPHERAL &           // Send data to peripheral from memory
+              DMA3_SIZE_BYTE &               // Byte-size transaction
+              DMA3_INTERRUPT_BLOCK &         // Interrupt after entire transaction
+              DMA3_NORMAL &                  //
+              DMA3_MODULE_OFF;               // Start module disabled
 
     DMA3REQ = SPI1_REQ_VAL;
     DMA3STA = __builtin_dmaoffset(spic1_tx_buff);
     DMA3STB = __builtin_dmaoffset(spic1_tx_buff);
     DMA3PAD = (volatile unsigned int) &SPI1BUF;
-    DMA3CNT = 0; // Default
+    DMA3CNT = 0;    // Default
 
-    priority = DMA3_INT_PRI_5;
+    priority = DMA3_INT_PRI_6;
     SetPriorityIntDMA3(priority);
-    DisableIntDMA3;             // Only need one of the DMA interrupts
-    _DMA3IF  = 0;        // Clear DMA interrupt
-
+    DisableIntDMA3; // Only need one of the DMA interrupts
+    _DMA3IF  = 0;   // Clear DMA interrupt
 }
 
-static void setupDMASet2(void) {
-
-    DMA4CON =     DMA4_REGISTER_POST_INCREMENT &     // Increment address after each byte
-                DMA4_ONE_SHOT &                 // Stop module after transfer complete
-                PERIPHERAL_TO_DMA4 &             // Receive data from peripheral to memory
-                DMA4_SIZE_BYTE &                 // Byte-size transactions
-                DMA4_INTERRUPT_BLOCK &             // Interrupt after entire transaction
-                DMA4_NORMAL &                     //
-                DMA4_MODULE_OFF;                // Start module disabled
+static void setupDMASet2 (void)
+{
+    DMA4CON = DMA4_REGISTER_POST_INCREMENT & // Increment address after ea/byte
+              DMA4_ONE_SHOT &                // Stop module after transfer done
+              PERIPHERAL_TO_DMA4 &           // Receive data from perip to mem
+              DMA4_SIZE_BYTE &               // Byte-size transactions
+              DMA4_INTERRUPT_BLOCK &         // Interrupt after transaction
+              DMA4_NORMAL &                  //
+              DMA4_MODULE_OFF;               // Start module disabled
 
     DMA4REQ = SPI2_REQ_VAL;
     DMA4STA = __builtin_dmaoffset(spic2_rx_buff);
     DMA4STB = __builtin_dmaoffset(spic2_rx_buff);
     DMA4PAD = (volatile unsigned int) &SPI2BUF;
-    DMA4CNT = 0; // Default
+    DMA4CNT = 0;    // Default
 
     // Need this to avoid compiler bitlength issues
-    unsigned long priority = DMA4_INT_PRI_5;
+    unsigned long priority = DMA4_INT_PRI_6;
     SetPriorityIntDMA4(priority);
 
     EnableIntDMA4;
-    _DMA4IF  = 0;        // Clear DMA interrupt flag
+    _DMA4IF  = 0;   // Clear DMA interrupt flag
 
-    DMA5CON =   DMA5_REGISTER_POST_INCREMENT &     // Increment address after each byte
-                DMA5_ONE_SHOT &                 // Stop module after transfer complete
-                DMA5_TO_PERIPHERAL &            // Send data to peripheral from memory
-                DMA5_SIZE_BYTE &                 // Byte-size transaction
-                DMA5_INTERRUPT_BLOCK &             // Interrupt after entire transaction
-                DMA5_NORMAL &                     //
-                DMA5_MODULE_OFF;                // Start module disabled
+    DMA5CON = DMA5_REGISTER_POST_INCREMENT & // Increment address after ea/byte
+              DMA5_ONE_SHOT &                // Stop module after transfer done
+              DMA5_TO_PERIPHERAL &           // Send data to periph from mem
+              DMA5_SIZE_BYTE &               // Byte-size transaction
+              DMA5_INTERRUPT_BLOCK &         // Interrupt after transaction
+              DMA5_NORMAL &                  //
+              DMA5_MODULE_OFF;               // Start module disabled
+
     DMA5REQ = SPI2_REQ_VAL;
     DMA5STA = __builtin_dmaoffset(spic2_tx_buff);
     DMA5STB = __builtin_dmaoffset(spic2_tx_buff);
     DMA5PAD = (volatile unsigned int) &SPI2BUF;
-    DMA5CNT = 0; // Default
+    DMA5CNT = 0;    // Default
 
-    priority = DMA5_INT_PRI_5;
+    priority = DMA5_INT_PRI_6;
     SetPriorityIntDMA5(priority);
     DisableIntDMA5; // Only need one of the DMA interrupts
-    _DMA5IF  = 0;        // Clear DMA interrupt
-
+    _DMA5IF  = 0;   // Clear DMA interrupt
 }
