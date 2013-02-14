@@ -74,7 +74,7 @@
 #define CRC_LENGTH              (2)
 #define FRAME_BUFFER_SIZE       (128)
 #define DEFAULT_CSMA_RETRIES    (4)     /** Number of times to attempt medium acquisition */
-#define DEFAULT_FRAME_RETRIES   (3)     /** Number of times to attempt frame resend */
+#define DEFAULT_FRAME_RETRIES   (0)     /** Number of times to attempt frame resend */
 
 // =========== Function stubs =================================================
 
@@ -99,6 +99,7 @@ static TrxIrqHandler irqCallback;
 static tal_trx_status_t trx_state;
 static unsigned char frame_buffer[FRAME_BUFFER_SIZE];
 static unsigned char last_rssi;
+static unsigned char last_ackd = 0;
 // =========== Public functions ===============================================
 
 void trxSetup(void) {
@@ -119,7 +120,7 @@ void trxSetup(void) {
     trxWriteSubReg(SR_AACK_FVN_MODE, FRAME_VERSION_IGNORED); // Ignore frame version
     trxWriteSubReg(SR_SPI_CMD_MODE, SPI_CMD_MODE_MONITOR_PHY_RSSI); // First byte of SPI is RSSI register
     trxSetStateIdle();
-    ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_4); // Radio IC interrupt
+    ConfigINT4(RISING_EDGE_INT & EXT_INT_ENABLE & EXT_INT_PRI_5); // Radio IC interrupt
 
     last_rssi = 0;
     is_ready = 1;
@@ -204,6 +205,12 @@ unsigned char trxReadED(void) {
 
 }
 
+unsigned char trxGetLastACKd(void) {
+
+    return last_ackd;
+
+}
+
 void trxWriteFrameBuffer(MacPacket packet) {
 
     unsigned int i;
@@ -254,7 +261,7 @@ void trxBeginTransmission(void) {
     trxSetSlptr(1);
     trxSetSlptr(0);
     trx_state = BUSY_TX_ARET;   // Update state accordingly
-
+    last_ackd = 0;
 }
 
 void trxSetStateTx(void) {
@@ -415,12 +422,14 @@ void __attribute__((interrupt, no_auto_psv)) _INT4Interrupt(void) {
             trx_state = TX_ARET_ON; // State transition
 
             if(status == TRAC_SUCCESS) {
+                last_ackd = 1;
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_SUCCESS_DATA_PENDING) {
                 irqCallback(RADIO_TX_SUCCESS);
             } else if(status == TRAC_CHANNEL_ACCESS_FAILURE) {
                 irqCallback(RADIO_TX_FAILURE);
             } else if(status == TRAC_NO_ACK) {
+                last_ackd = 0;
                 irqCallback(RADIO_TX_FAILURE);
             } else if(status == TRAC_INVALID) {
                 irqCallback(RADIO_TX_FAILURE);
@@ -525,7 +534,7 @@ static void setupSPI(void) {
     SPI_CON2 = 0x0000; // Framed SPI2 support disabled
 
     // SPI2STAT Register Settings
-    SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
+    SPI_STATbits.SPISIDL = 0; // Continue module when device enters idle mode
     SPI_STATbits.SPIROV = 0; // Clear Overflow
     SPI_STATbits.SPIEN = 1; // Enable SPI module
 

@@ -36,8 +36,9 @@
  *  parameters.
  */
 
-#ifndef __AT86RF231_DRIVER
-#define __AT86RF231_DRIVER
+#ifndef __AT86RF231_DRIVER_H
+#define __AT86RF231_DRIVER_H
+
 
 #include "mac_packet.h"
 
@@ -134,6 +135,13 @@ unsigned char trxReadRSSI(void);
 unsigned char trxReadED(void);
 
 /**
+ * Return last ACK
+ *
+ * @return 1 for transmission success, 0 for failure.
+ */
+unsigned char trxGetLastACKd(void);
+
+/**
  * Write the contents of a packet to the transceiver.
  *
  * Serializes and writes a MacPacket object to the transceiver via its SPI port.
@@ -204,4 +212,5 @@ void trxSetStateIdle(void);
  */
 void trxSetStateOff(void);
 
-#endif
+
+#endif // __AT86RF231_DRIVER_H
