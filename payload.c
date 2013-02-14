@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2010-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,16 +27,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Payload
+ * Payload module
  *
  * by Stanley S. Baek
  *
  * v.beta
  *
  * Revisions:
- *  Stanley S. Baek      2010-06-05    Initial release
- *
- * Notes:
+ *  Stanley S. Baek     2010-06-05    Initial release
  */
 
 #include "payload.h"
