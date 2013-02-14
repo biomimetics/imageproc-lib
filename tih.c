@@ -92,9 +92,6 @@ void tiHSetDC(unsigned int channel, int dutycycle){
     unsigned int idx = channel - 1;
     if (dutycycle > MAXPWM) dutycycle = MAXPWM;
     if (dutycycle < -MAXPWM) dutycycle = -MAXPWM;
-     outputs[idx].throt_f = -666.0; //TODO: not a solution; have to update float every time?
-     outputs[idx].throt_i = dutycycle;
-
     outputs[idx].throt_f = -666.0; //TODO: not a solution; have to update float every time?
     outputs[idx].throt_i = dutycycle;
 

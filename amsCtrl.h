@@ -63,8 +63,6 @@
 //Setup PID for ams encoders
 void amsPIDSetup(void);
 
-void amsGetPos(unsigned char num);
-
 void amsCtrlSetInput(unsigned char num, int state);
 
 void amsCtrlPIDUpdate(unsigned char num, int state);

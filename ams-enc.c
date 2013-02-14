@@ -82,14 +82,15 @@ void amsHallSetup()
     }
 }
 
-void encSetup(void) {
+void encSetup(void)
+{
     //setup I2C port I2C1
     encoderSetupPeripheral();
-// LSB = R/W* .
-// 1. send slave <a2:a1>, a0=W (write reg address)
-// 2. send slave register address <a7:a0>,
-// 3. send slave <a2:a1>, a0=R (read reg data)
-// 4. read slave data <a7:a0>
+    // LSB = R/W* .
+    // 1. send slave <a2:a1>, a0=W (write reg address)
+    // 2. send slave register address <a7:a0>,
+    // 3. send slave <a2:a1>, a0=R (read reg data)
+    // 4. read slave data <a7:a0>
     encAddr[0] = 0b10000001;        //Encoder 0 rd;wr A1, A2 = low
     encAddr[1] = 0b10000000;        // write
 
@@ -128,11 +129,17 @@ void amsGetPos(unsigned char num) {
     update = encPos[num].pos;
     if (update > prev)
     {   if( (update-prev) > MAX_HALL/2 ) //Subtract one Rev count if diff > 180
-        {   encPos[num].oticks--;}
+        {
+            encPos[num].oticks--;
+            LED_1 = ~LED_1;
+        }
     }
     else
     {   if( (prev-update) > MAX_HALL/2 ) //Add one Rev count if -diff > 180
-        { encPos[num].oticks++; }
+        {
+            encPos[num].oticks++;
+            LED_3 = ~LED_3;
+        }
     }
 }
 

@@ -73,7 +73,7 @@ void amsPIDSetup(void){
         amsPID[i].onoff = PID_ON;
     }
 }
-
+/*
 // for fractional data type, want 0x2000 to be centered at 0, -pi = 0x0000, pi=0x4000
 // convert to 16 bits to get correct sign
 #define MAX_HALL 0x4000 // maximum Hall sensor value
@@ -86,6 +86,7 @@ void amsGetPos(unsigned char num){
      encPos[num].calibPOS = temp << 2;  // should be equiv of fractional type now
 
 }
+*/
 
 void amsCtrlSetInput(unsigned char num, int setpnt) { //setpoint of controller
     pidSetInput(&amsPID[num], setpnt);
