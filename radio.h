@@ -39,6 +39,9 @@
 
 #include "mac_packet.h"
 
+#define RADIO_DATA_SAFE 0
+#define RADIO_LOCK_SAFE 1
+
 // Radio interrupt flags
 typedef enum {
     RADIO_TX_SUCCESS,   // Transmission success
