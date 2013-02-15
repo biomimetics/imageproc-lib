@@ -329,8 +329,8 @@ unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
     Payload pld;
 
     packet = radioRequestPacket(datalen);
-    if ( packet == NULL ) return 1;    // Unable to allocate packet
-    macSetDestAddr(packet, dest_addr); //SRC and PAN already set
+    if ( packet == NULL ) return EXIT_FAILURE;  // Unable to allocate packet
+    macSetDestAddr(packet, dest_addr);          // SRC and PAN already set
 
     pld = macGetPayload(packet);
     paySetData(pld, datalen, (unsigned char*) dataptr);
@@ -344,7 +344,7 @@ unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
         while ( !radioEnqueueTxPacket(packet) ) radioProcess();
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
