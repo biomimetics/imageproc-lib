@@ -96,6 +96,8 @@ void encSetup(void);
  *****************************************************************************/
 void encGetPos(unsigned char num);
 
+int amsStartPosRead(void);
+
 /*****************************************************************************
  * Function Name : encSumPos
  * Description   : Count encoder[num] rollovers, write to struct encPos
