@@ -62,8 +62,7 @@
 #define RADIO_DEFAULT_WATCHDOG_STATE    (0) // Default off
 #define RADIO_DEFAULT_WATCHDOG_TIME     (400000) // 400 ms timeout
 
-//#define RADIO_AUTOCALIBRATE   // Define to enable auto calibration
-#define RADIO_CALIB_PERIOD              (300000000) // 5 minutes
+//#define RADIO_CALIB_PERIOD              (300000000) // 5 minutes
 
 // =========== Static variables ===============================================
 // State information
@@ -90,7 +89,7 @@ static unsigned int radioBeginTransition(void);
 static unsigned int radioSetStateTx(void);
 static unsigned int radioSetStateRx(void);
 static unsigned int radioSetStateIdle(void);
-static unsigned int radioSetStateOff(void);
+//static unsigned int radioSetStateOff(void);
 
 // =========== Public functions ===============================================
 
@@ -304,15 +303,15 @@ void radioProcess(void) {
 
     }
 
-#if defined(RADIO_AUTOCALIBRATE) // Auto calibration routine
-    // Check if calibration is necessary
-    currentTime = sclockGetTime();
-    if(currentTime - status.last_calibration > RADIO_CALIB_PERIOD) {
-        if(!radioSetStateOff()) { return; }
-        trxCalibrate();
-        status.last_calibration = currentTime;
-    }
-#endif
+    // TODO (fgb) : Calibration is recommended in the datasheet, but code
+    //              needs testing
+    //// Check if calibration is necessary
+    //currentTime = sclockGetTime();
+    //if(currentTime - status.last_calibration > RADIO_CALIB_PERIOD) {
+    //    if(!radioSetStateOff()) { return; }
+    //    trxCalibrate();
+    //    status.last_calibration = currentTime;
+    //}
 
     // Default to Rx state
     if(!radioSetStateRx()) { return; }
@@ -498,22 +497,22 @@ static unsigned int radioSetStateIdle(void) {
 /**
 * Sets the radio to an off state
 */
-static unsigned int radioSetStateOff(void) {
-
-   unsigned int lockAcquired;
-
-   // If already in idle mode
-   if(status.state == STATE_OFF) { return 1; }
-
-   // Attempt to begin transitionin
-   lockAcquired = radioBeginTransition();
-   if(!lockAcquired) { return 0; }
-
-   trxSetStateOff();
-   status.state = STATE_OFF;
-   return 1;
-
-}
+//static unsigned int radioSetStateOff(void) {
+//
+//   unsigned int lockAcquired;
+//
+//   // If already in idle mode
+//   if(status.state == STATE_OFF) { return 1; }
+//
+//   // Attempt to begin transitionin
+//   lockAcquired = radioBeginTransition();
+//   if(!lockAcquired) { return 0; }
+//
+//   trxSetStateOff();
+//   status.state = STATE_OFF;
+//   return 1;
+//
+//}
 
 /**
  * Atomically checks and set the radio to transitioning state.
