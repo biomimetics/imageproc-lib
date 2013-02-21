@@ -230,7 +230,6 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_READ_STOP;
             break;
         case AMS_ENC_READ_STOP:
-            //encoder_new_pos = ((encoder_data_high << 6)+(encoder_data_low )); //concatenate registers
             amsEncoderUpdatePos(encoder_number,encoder_new_pos);
 
             if(++encoder_number < NUM_ENC) {
