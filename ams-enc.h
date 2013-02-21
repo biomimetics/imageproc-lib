@@ -67,7 +67,15 @@ extern EncObj encPos[NUM_ENC];
  * Parameters    : None
  * Return Value  : None
  *****************************************************************************/
-void amsHallSetup(void);
+void amsEncoderSetup(void);
+
+/*****************************************************************************
+ * Function Name : amsEncoderResetPos
+ * Description   : Reset encoder structure with blocking read of current encoder
+ * Parameters    : None
+ * Return Value  : None
+ *****************************************************************************/
+void amsEncoderResetPos(void);
 
 /*****************************************************************************
  * Function Name : amsGetPos/encSumPos
@@ -77,42 +85,32 @@ void amsHallSetup(void);
  * .pos: 0 <= .pos <= 0x3fff,  0 to 2 pi range.
  * see hall_velocity_ip2.5.ppt
  *****************************************************************************/
-void amsGetPos(unsigned char num);
+inline void amsEncoderUpdatePos(unsigned char encoder_number, unsigned int new_pos);
 
 /*****************************************************************************
- * Function Name : encSetup
- * Description   : Initialize encoder
- * Parameters    : None
- * Return Value  : None
- *****************************************************************************/
-void encSetup(void);
-
-/*****************************************************************************
- * Function Name : encGetPos
- * Description   : Read the angular position of the right encoder, write to
+ * Function Name : amsEncoderBlockingRead
+ * Description   : Read the angular position of encoder "num", write to
  *                 struct encPos
- * Parameters    : None
+ * Parameters    : num - which encoder to read
  * Return Value  : None
  *****************************************************************************/
-void encGetPos(unsigned char num);
-
-int amsStartPosRead(void);
+void amsEncoderBlockingRead(unsigned char num);
 
 /*****************************************************************************
- * Function Name : encSumPos
- * Description   : Count encoder[num] rollovers, write to struct encPos
+ * Function Name : amsEncoderStartAsyncRead
+ * Description   : Begin an asychronous read of both encoders, encPos will be
+ *                  updated accordingly
  * Parameters    : None
- * Return Value  : None
+ * Return Value  : 1 on successful start of transaction, 0 on failure
  *****************************************************************************/
-void encSumPos(unsigned char num);
+unsigned char amsEncoderStartAsyncRead(void);
 
 /*****************************************************************************
  * Function Name : encGetFloatPos
- * Description   : Read the angular position of encoder[num] return as float
+ * Description   : Return the angular position of encoder[num] return as float
  * Parameters    : None
  * Return Value  : None
  *****************************************************************************/
-float encGetFloatPos(unsigned char num);
-
+float amsEncoderGetFloatPos(unsigned char num);
 
 #endif // __AMS_ENC_H
