@@ -27,7 +27,8 @@ void uartInit(packet_callback rx_cb)
     U2STAvalue  = UART_INT_TX & UART_INT_RX_CHAR &UART_SYNC_BREAK_DISABLED &
                   UART_TX_ENABLE & UART_ADR_DETECT_DIS &
                   UART_IrDA_POL_INV_ZERO; // If not, whole output inverted.
-    U2BRGvalue  = 43; // =43 for 230500Baud (Fcy / ({16|4} * baudrate)) - 1
+    U2BRGvalue  = 20; // =9 for 1M Baud
+    //U2BRGvalue  = 43; // =43 for 230500Baud (Fcy / ({16|4} * baudrate)) - 1
     //U2BRGvalue  = 86; // =86 for 115200 Baud
     //U2BRGvalue  = 1041; // =1041 for 9600 Baud
     
