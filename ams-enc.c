@@ -151,7 +151,7 @@ static inline void encoderSetupPeripheral(void) { //same setup as ITG3200 for co
 void amsEncoderBlockingRead(unsigned char num) {
     unsigned char enc_data[2];
 
-    CRITICAL_SECTION_START;
+    CRITICAL_SECTION_START
     i2cStartTx(ENC_I2C_CHAN); //Setup to burst read both registers, 0xFE and 0xFF
     i2cSendByte(ENC_I2C_CHAN, encAddr[2*num+1]);    //Write address
     i2cSendByte(ENC_I2C_CHAN, AMS_ENC_ANGLE_REG);
@@ -163,7 +163,7 @@ void amsEncoderBlockingRead(unsigned char num) {
     i2cEndTx(ENC_I2C_CHAN);
     IdleI2C1();
     _MI2C1IF = 0;
-    CRITICAL_SECTION_END;
+    CRITICAL_SECTION_END
 
     amsEncoderUpdatePos(num,((enc_data[1] << 6)+(enc_data[0] & 0x3F)));
 }
@@ -183,7 +183,8 @@ unsigned char amsEncoderStartAsyncRead(void) {
 
 void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
     LED_3 = 1;
-    CRITICAL_SECTION_START;
+
+    CRITICAL_SECTION_START
     switch(state) {
         case AMS_ENC_WRITE_START:
             I2C1TRN = encAddr[2*encoder_number+1];
@@ -245,7 +246,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
     }
     LED_3 = 0;
     _MI2C1IF = 0;
-    CRITICAL_SECTION_END;
+    CRITICAL_SECTION_END
 }
 
 inline void amsEncoderUpdatePos(unsigned char encoder_number, unsigned int new_pos) {
