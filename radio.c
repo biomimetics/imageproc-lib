@@ -62,7 +62,8 @@
 #define RADIO_DEFAULT_WATCHDOG_STATE    (0) // Default off
 #define RADIO_DEFAULT_WATCHDOG_TIME     (400000) // 400 ms timeout
 
-//#define RADIO_AUTOCALIBRATE   // Define to enable auto calibration
+// TODO (fgb) : Calibration is recommended in the datasheet, yet needs testing
+#define RADIO_AUTOCALIBRATE             (0)
 #define RADIO_CALIB_PERIOD              (300000000) // 5 minutes
 
 // =========== Static variables ===============================================
@@ -304,15 +305,17 @@ void radioProcess(void) {
 
     }
 
-#if defined(RADIO_AUTOCALIBRATE) // Auto calibration routine
-    // Check if calibration is necessary
-    currentTime = sclockGetTime();
-    if(currentTime - status.last_calibration > RADIO_CALIB_PERIOD) {
-        if(!radioSetStateOff()) { return; }
-        trxCalibrate();
-        status.last_calibration = currentTime;
+    if (RADIO_AUTOCALIBRATE)
+    {
+        // Check if calibration is necessary
+        currentTime = sclockGetTime();
+        if(currentTime - status.last_calibration > RADIO_CALIB_PERIOD)
+        {
+            if ( !radioSetStateOff() ) return;
+            trxCalibrate();
+            status.last_calibration = currentTime;
+        }
     }
-#endif
 
     // Default to Rx state
     if(!radioSetStateRx()) { return; }
