@@ -115,7 +115,7 @@ static void waitDmaFinish(void);
 // Note to self: FIFO State change requires power cycle!
 
 void mpuSetup(unsigned char cs) {
-  spi_cs = cs;    //cs=2 for ip2.5?
+  spi_cs = cs;    
 
   // setup SPI port
   setupSPI();
@@ -129,7 +129,7 @@ void mpuSetup(unsigned char cs) {
   reg = readReg(MPU_REG_WHOAMI);              // Some sort of check here?
 
   writeReg(MPU_REG_RATEDIV, DEFAULT_RATEDIV); // Set rate divider
-    writeReg(MPU_REG_CONFIG, 0b00000001);     // DLPF configured to 188Hz BW
+  // writeReg(MPU_REG_CONFIG, 0b00000001);     // DLPF configured to 188Hz BW
                                               // [Fastest filtered mode]
 
   writeReg(MPU_REG_GYROCONFIG, 0b00011000);   // Set gyro scale 2000 DPS (8x)
@@ -142,7 +142,7 @@ void mpuSetup(unsigned char cs) {
   mpu_params.temp_offset = DEFAULT_TEMP_OFFSET;
 
   writeReg(MPU_REG_INTENABLE, 0);             // Disable interrupts
-  //writeReg(MPU_REG_CONFIG, 0);              // Set frame sync and DLPF off
+  writeReg(MPU_REG_CONFIG, 0);              // Set frame sync and DLPF off
   writeReg(MPU_REG_PMGT2, 0b00000000);        // Activate all sensors
 
   mpuRunCalib(1000, 1000);
