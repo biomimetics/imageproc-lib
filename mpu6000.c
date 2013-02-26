@@ -103,7 +103,7 @@ static unsigned char spi_cs;
  -----------------------------------------------------------------------------*/
 static void writeReg(unsigned char regaddr, unsigned char data );
 static unsigned char readReg(unsigned char regaddr);
-static inline void setupSPI(void);
+static inline void setupSPI(char initConfig);
 static void mpuFinishUpdate(unsigned int cause);
 static void waitDmaFinish(void);
 
@@ -118,7 +118,7 @@ void mpuSetup(unsigned char cs) {
   spi_cs = cs;    
 
   // setup SPI port
-  setupSPI();
+  setupSPI(1);  // Setup SPI for register configuration
   unsigned char reg;
 
   writeReg(MPU_REG_PMGT1, 0x83);              //Reset IMU
@@ -144,6 +144,8 @@ void mpuSetup(unsigned char cs) {
   writeReg(MPU_REG_INTENABLE, 0);             // Disable interrupts
   writeReg(MPU_REG_CONFIG, 0);              // Set frame sync and DLPF off
   writeReg(MPU_REG_PMGT2, 0b00000000);        // Activate all sensors
+
+  setupSPI(0);  // Setup SPI for highspeed data readback. Can do 20MHz, set for 13
 
   mpuRunCalib(1000, 1000);
 }
@@ -317,9 +319,23 @@ static unsigned char readReg(unsigned char regaddr) {
 * Parameters : None
 * Return Value : None
 *****************************************************************************/
-static inline void setupSPI(void)
+static inline void setupSPI(char initConfig)
 {
-    spicSetupChannel2(spi_cs,
+    if (initConfig)
+    {
+      spicSetupChannel2(spi_cs,
+                        ENABLE_SCK_PIN &
+                        ENABLE_SDO_PIN &
+                        SPI_MODE16_OFF &
+                        SPI_SMP_OFF &
+                        SPI_CKE_ON &
+                        SLAVE_ENABLE_OFF &
+                        CLK_POL_ACTIVE_HIGH &
+                        MASTER_ENABLE_ON &
+                        PRI_PRESCAL_64_1 &
+                        SEC_PRESCAL_1_1);
+    } else {    
+      spicSetupChannel2(spi_cs,
                       ENABLE_SCK_PIN &
                       ENABLE_SDO_PIN &
                       SPI_MODE16_OFF &
@@ -330,5 +346,7 @@ static inline void setupSPI(void)
                       MASTER_ENABLE_ON &
                       PRI_PRESCAL_1_1 &
                       SEC_PRESCAL_3_1);
+    }
+
     spic2SetCallback(spi_cs, &mpuFinishUpdate);
 }
