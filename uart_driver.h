@@ -54,9 +54,9 @@
 typedef void (*packet_callback)(MacPacket);
 
 void uartInit(packet_callback rx_cb);
-void uartSend(unsigned char length,unsigned char *frame);
-void uartSendPayload(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-void uartSendPacket(MacPacket packet);
+unsigned char uartSend(unsigned char length,unsigned char *frame);
+unsigned char uartSendPayload(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+unsigned char uartSendPacket(MacPacket packet);
 
 #endif	/* UART_H */
 

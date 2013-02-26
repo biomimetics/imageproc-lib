@@ -45,6 +45,7 @@ typedef struct {
     unsigned char data_length;
     unsigned char* pld_data;
     unsigned char iter_index;
+    unsigned char (*test)(unsigned char, unsigned char, unsigned char, unsigned char*);
 } PayloadStruct;
 
 typedef PayloadStruct* Payload;
