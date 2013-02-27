@@ -39,9 +39,7 @@ void uartInit(packet_callback rx_cb) {
     rx_idx = UART_RX_IDLE;
     rx_callback = rx_cb;
 
-    ConfigIntUART2(UART_TX_INT_EN & UART_TX_INT_PR4 & UART_RX_INT_EN & UART_RX_INT_PR4);
-    EnableIntU2TX;
-    EnableIntU2RX;
+    ConfigIntUART2(UART_TX_INT_EN & UART_TX_INT_PR5 & UART_RX_INT_EN & UART_RX_INT_PR6);
 }
 
 //General blocking UART send function, appends basic checksum
@@ -90,7 +88,6 @@ unsigned char uartSendPayload(unsigned char type, unsigned char status, unsigned
 }
 
 unsigned char uartSendPacket(MacPacket packet) {
-    CRITICAL_SECTION_START
     LED_3 = 1;
     if(tx_packet != NULL) {
         ppoolReturnFullPacket(tx_packet);
@@ -104,12 +101,10 @@ unsigned char uartSendPacket(MacPacket packet) {
         tx_checksum = packet->payload_length + 3; // add three for size, size check, and checksum
         tx_idx = UART_TX_SEND_SIZE;
         U2TXREG = tx_checksum;
-        CRITICAL_SECTION_END
         LED_3 = 0;
         return 1;
     } else {
         LED_3 = 0;
-        CRITICAL_SECTION_END
         return 0;
     }
 }
@@ -117,7 +112,6 @@ unsigned char uartSendPacket(MacPacket packet) {
 void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void) {
     unsigned char tx_byte;
 
-    CRITICAL_SECTION_START
     LED_3 = 1;
     if(tx_idx != UART_TX_IDLE) {
         if(tx_idx == UART_TX_SEND_SIZE) {
@@ -132,18 +126,16 @@ void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void) {
             tx_byte = tx_payload->pld_data[tx_idx++];
         }
         tx_checksum += tx_byte;
-        WriteUART2(tx_byte);
+        U2TXREG = tx_byte;
     }
     _U2TXIF = 0;
     LED_3 = 0;
-    CRITICAL_SECTION_END
 }
 
 //read data from the UART, and call the proper function based on the Xbee code
 void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void) {
     unsigned char rx_byte;
 
-    CRITICAL_SECTION_START
     LED_3 = 1;
 
     while(U2STAbits.URXDA) {
@@ -180,5 +172,4 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void) {
     
     _U2RXIF = 0;
     LED_3 = 0;
-    CRITICAL_SECTION_END
 }

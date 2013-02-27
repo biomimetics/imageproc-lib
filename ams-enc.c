@@ -86,8 +86,10 @@ static inline void encoderSetupPeripheral(void);
  *          Public functions
 -----------------------------------------------------------------------------*/
 
-void amsEncoderSetup(void)
-{   
+void amsEncoderSetup(void) {
+    // Need delay for encoders to be ready
+    delay_ms(100);
+    
     // LSB = R/W* .
     // 1. send slave <a2:a1>, a0=W (write reg address)
     // 2. send slave register address <a7:a0>,
@@ -143,6 +145,7 @@ static inline void encoderSetupPeripheral(void) { //same setup as ITG3200 for co
     // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 909KHz
     I2C1BRGvalue = 40;
     OpenI2C1(I2C1CONvalue, I2C1BRGvalue);
+    SetPriorityIntMI2C1(6);
     _MI2C1IF = 0;
     EnableIntMI2C1;
 }
@@ -184,7 +187,6 @@ unsigned char amsEncoderStartAsyncRead(void) {
 void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
     LED_3 = 1;
 
-    CRITICAL_SECTION_START
     switch(state) {
         case AMS_ENC_WRITE_START:
             I2C1TRN = encAddr[2*encoder_number+1];
@@ -246,7 +248,6 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
     }
     LED_3 = 0;
     _MI2C1IF = 0;
-    CRITICAL_SECTION_END
 }
 
 inline void amsEncoderUpdatePos(unsigned char encoder_number, unsigned int new_pos) {
