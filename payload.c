@@ -74,6 +74,7 @@ Payload payCreateEmpty(unsigned char data_length)
     pld->pld_data = data;
     pld->data_length = data_length;
     pld->iter_index = 0;
+    pld->test = NULL;
     return pld;
 }
 

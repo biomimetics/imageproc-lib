@@ -96,12 +96,13 @@ static unsigned int radioSetStateOff(void);
 // =========== Public functions ===============================================
 
 // Initialize radio software and hardware
-void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length) {
+void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length,
+    unsigned char cs) {
 
     RadioConfiguration conf;
 
     ppoolInit();
-    trxSetup(); // Configure transceiver IC and driver
+    trxSetup(cs); // Configure transceiver IC and driver
     trxSetIrqCallback(&trxCallback);
 
     tx_queue = carrayCreate(tx_queue_length);

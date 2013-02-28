@@ -8,4 +8,5 @@ static char version[] = VERSION_STRING ;
 #endif
 
 
-char* versionGetString(void) { return version; }
+char* versionGetString(void) 
+{ return version; }

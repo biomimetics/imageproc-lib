@@ -8,6 +8,7 @@
 #ifndef __TIH_H
 #define __TIH_H
 
+
 #include "pwm.h"
 
 #define PWM_FREQ            10000 //10 Khz

@@ -84,9 +84,9 @@ void pidHWSetReference(tPID* controller, fractional reference) {
     controller->controlReference = reference;
 }
 
-fractional pidHWRun(tPID* controller, fractional feedback) {
-
-    controller->measuredOutput = feedback;
+// argument of sensed output, should be converted to fractional type
+fractional pidHWRun(tPID* controller, fractional output) {
+    controller->measuredOutput = output;
     PID(controller);
 
     return controller->controlOutput;

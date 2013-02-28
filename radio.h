@@ -37,6 +37,7 @@
 #ifndef __RADIO_H
 #define __RADIO_H
 
+
 #include "mac_packet.h"
 
 #define RADIO_DATA_SAFE 0
@@ -91,7 +92,8 @@ typedef struct {
 } RadioStatus;                      // Total: (18)
 
 // Setup and initialization
-void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length);
+void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length,
+    unsigned char cs);
 
 // Configuration methods
 void radioConfigure(RadioConfiguration *conf);
@@ -117,6 +119,11 @@ MacPacket radioDequeueRxPacket(void);
 unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
                              unsigned char type, unsigned int datalen,
                              unsigned char* dataptr, unsigned char fast_fail);
+static inline unsigned int __attribute__ ((deprecated))
+        radioConfirmationPacket (unsigned int dest_addr, unsigned char type,
+                                 unsigned char status, unsigned char length,
+                                 unsigned char *frame)
+        { return radioSendData (dest_addr, status, type, length, frame, 0); }
 
 unsigned int radioTxQueueEmpty(void);
 unsigned int radioTxQueueFull(void);
@@ -139,5 +146,6 @@ unsigned int radioReturnPacket(MacPacket packet);
 
 MacPacket __attribute__ ((deprecated)) radioCreatePacket(unsigned int data_size);
 void __attribute__ ((deprecated)) radioDeletePacket(MacPacket packet);
+
 
 #endif // __RADIO_H

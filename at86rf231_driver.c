@@ -93,27 +93,32 @@ static unsigned char trxReadSubReg(unsigned char addr, unsigned char mask, unsig
 
 
 // =========== Static variables ===============================================
+
 static unsigned char is_ready = 0; // Mostly for debugging - no checking so code is faster
 static TrxIrqHandler irqCallback;
 // See at86rf231.h
 static tal_trx_status_t trx_state;
 static unsigned char frame_buffer[FRAME_BUFFER_SIZE];
 static unsigned char last_rssi;
+static unsigned char spi_cs;
 static unsigned char last_ackd = 0;
+
+
 // =========== Public functions ===============================================
 
-void trxSetup(void) {
+void trxSetup(unsigned char cs)
+{
+    spi_cs = cs;
 
+    // SPI setup
     setupSPI();     // Set up SPI com port
-    spicSetupChannel1();
-    spic1SetCallback(&trxSpiCallback);  // Configure callback for spi interrupts
+    spic1SetCallback(cs, &trxSpiCallback);  // Configure callback for spi interrupts
     trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts
     trxSetStateOff(); // Transition to TRX_OFF for configuring device
     trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
     trxWriteSubReg(SR_SLOTTED_OPERATION, 0);  // Disable slotted operation
     trxWriteSubReg(SR_TX_AUTO_CRC_ON, 1); // Enable automatic TX CRC
     trxWriteSubReg(SR_CLKM_CTRL, CLKM_NO_CLOCK); // No clock on CLKM pin
-    trxWriteSubReg(SR_IRQ_MASK_MODE, IRQ_MASK_MODE_ON); // Turn off interrupt polling
     trxWriteSubReg(SR_MAX_CSMA_RETRIES, DEFAULT_CSMA_RETRIES); // Set CSMA attempts
     trxWriteSubReg(SR_MAX_FRAME_RETRIES, DEFAULT_FRAME_RETRIES); // Set resend attempts
     trxWriteSubReg(SR_RX_SAFE_MODE, 0); // Disable frame buffer protection
@@ -124,7 +129,6 @@ void trxSetup(void) {
 
     last_rssi = 0;
     is_ready = 1;
-
 }
 
 
@@ -237,7 +241,7 @@ void trxWriteFrameBuffer(MacPacket packet) {
 
     memcpy(frame_buffer + i, payToString(pld), payGetPayloadLength(pld));
 
-    spic1BeginTransaction();
+    spic1BeginTransaction(spi_cs);
     spic1Transmit(TRX_CMD_FW);
     spic1MassTransmit(phy_len, frame_buffer, phy_len*3); // 3*length microseconds timeout seems to work well
 
@@ -342,7 +346,7 @@ void trxSetStateOff(void) {
  */
 static void trxWriteReg(unsigned char addr, unsigned char val) {
 
-    spic1BeginTransaction();
+    spic1BeginTransaction(spi_cs);
     spic1Transmit(TRX_CMD_RW | addr);
     spic1Transmit(val);
     spic1EndTransaction();
@@ -358,7 +362,7 @@ static void trxWriteReg(unsigned char addr, unsigned char val) {
 static unsigned char trxReadReg(unsigned char addr) {
 
     unsigned char c;
-    spic1BeginTransaction();
+    spic1BeginTransaction(spi_cs);
     spic1Transmit(TRX_CMD_RR | addr);
     c = spic1Receive();
     spic1EndTransaction();
@@ -491,7 +495,7 @@ static void trxSpiCallback(unsigned int interrupt_code) {
  */
 static void trxFillBuffer(void) {
 
-    spic1BeginTransaction();
+    spic1BeginTransaction(spi_cs);
     last_rssi = spic1Transmit(TRX_CMD_FR);  // Begin write (returns RSSI because of SPI_CMD_MODE)
     //current_phy_len = spic1Receive(); // Read physical frame size
     //spic1MassTransmit(current_phy_len, NULL, current_phy_len*3); // DMA rest into buffer
@@ -508,42 +512,23 @@ static void trxReadBuffer(void) {
 
 }
 
-static void setupSPI(void) {
-
-    // SPI interrupt is not used.
-    _SPI1IF = 0;    // Clear the interrupt flag
-    _SPI1IE = 0;    // Disable interrupts
-
-    // SPI1CON1 Register Settings
-    SPI_CON1bits.MSTEN = 1; // Master mode Enabled
-    SPI_CON1bits.DISSCK = 0; // Internal Serial Clock is Enabled
-    SPI_CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
-    SPI_CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
-    SPI_CON1bits.SMP = 0; // Input data is sampled at middle of data output time
-    SPI_CON1bits.SSEN = 0; // SSx pin is used
-    SPI_CON1bits.CKE = 1; // Serial output data changes on transition
-                        // from active clock trx_state to idle clock trx_state
-    SPI_CON1bits.CKP = 0; // Idle trx_state for clock is a low level;
-                            // active trx_state is a high level
-
-    // Set up SCK frequency of 6.667Mhz for 40 MIPS
-    SPI_CON1bits.SPRE = 0b010; // Secondary prescale    6:1
-    SPI_CON1bits.PPRE = 0b11; // Primary prescale       1:1
-
-    // SPI2CON2 Register Settings
-    SPI_CON2 = 0x0000; // Framed SPI2 support disabled
-
-    // SPI2STAT Register Settings
-    SPI_STATbits.SPISIDL = 0; // Continue module when device enters idle mode
-    SPI_STATbits.SPIROV = 0; // Clear Overflow
-    SPI_STATbits.SPIEN = 1; // Enable SPI module
-
+static void setupSPI(void)
+{
+    spicSetupChannel1(spi_cs,
+                      ENABLE_SCK_PIN &
+                      ENABLE_SDO_PIN &
+                      SPI_MODE16_OFF &
+                      SPI_SMP_OFF &
+                      SPI_CKE_ON &
+                      SLAVE_ENABLE_OFF &
+                      CLK_POL_ACTIVE_HIGH &
+                      MASTER_ENABLE_ON &
+                      PRI_PRESCAL_1_1 &
+                      SEC_PRESCAL_6_1);
 }
-
 
 static inline void trxSetSlptr(unsigned char val) {
     SLPTR = val;
     Nop();
     Nop();
 }
-

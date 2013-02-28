@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Regents of the University of California
+ * Copyright (c) 2012-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,36 +27,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for wrapper of UART read/write functionality with packet parsing
+ * Blink LEDs
  *
- * by Austin D. Buchan
+ * by Ronald S. Fearing
  *
  * v.beta
  */
 
-#include "uart.h"
-#include "payload.h"
-#include "mac_packet.h"
+#ifndef __BLINK_H
+#define __BLINK_H
 
-#include <stdio.h>
+// Blink LEDs even if interrupts override LED setting
+//
+// n number of blinks, k number of milliseconds
+void blink_leds(int n, int k);
 
-#ifndef UART_H
-#define	UART_H
 
-#define UART_TX_IDLE        0xFF
-#define UART_TX_SEND_SIZE   0xFE
-
-#define UART_RX_IDLE        0xFF
-#define UART_RX_CHECK_SIZE  0xFE
-
-#define UART_MAX_SIZE 200
-
-typedef void (*packet_callback)(MacPacket);
-
-void uartInit(packet_callback rx_cb);
-unsigned char uartSend(unsigned char length,unsigned char *frame);
-unsigned char uartSendPayload(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-unsigned char uartSendPacket(MacPacket packet);
-
-#endif	/* UART_H */
-
+#endif // __BLINK_H

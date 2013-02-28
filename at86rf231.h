@@ -630,11 +630,11 @@
 /** Constant CRC16_valid for sub-register SR_RX_CRC_VALID */
 #define CRC16_VALID   (1)
 
-/** Constant IRQ_MASK_MODE_off for sub-register SR_IRQ_MASK_MODE */
-#define IRQ_MASK_MODE_OFF   (0)
+/** Constant IRQ_MASK_MODE_ENABLEDONLY for sub-register SR_IRQ_MASK_MODE */
+#define IRQ_MASK_MODE_ENABLEDONLY  (0)
 
-/** Constant IRQ_MASK_MODE_on for sub-register SR_IRQ_MASK_MODE */
-#define IRQ_MASK_MODE_ON   (1)
+/** Constant IRQ_MASK_MODE_ALL for sub-register SR_IRQ_MASK_MODE */
+#define IRQ_MASK_MODE_ALL   (1)
 
 /** Constant IRQ_POL_high_active_IRQ for sub-register SR_IRQ_POLARITY */
 #define IRQ_POL_HIGH_ACTIVE_IRQ   (0)

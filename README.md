@@ -1,7 +1,6 @@
-Note: Please remember to also set up an integration branch in the [imageproc-test]
-(https://github.com/ryanjulian/imageproc-test/tree/imageproc2.5-integration)
-repository. Unit tests will be pulled into octoroach while library updates
-will be pulled into here.
+Note: Library updates will be pulled here, while unit tests will be pulled
+into [imageproc-test]
+(https://github.com/biomimetics/imageproc-test/tree/imageproc2.5-integration).
 
 This is the board support integration branch for imageproc-lib on the
 ImageProc 2.5. Please send pull requests with ImageProc 2.5-related changes
@@ -18,7 +17,7 @@ always pull the most recent changes from the central integration branch.
 
 In Git Bash:
 ```bash
-git remote add -t imageproc2.5-integration imageproc2.5-integration git://github.com/ryanjulian/imageproc-lib.git
+git remote add -t imageproc2.5-integration imageproc2.5-integration git@github.com:biomimetics/imageproc-lib.git
 git fetch imageproc2.5-integration
 git checkout -b imageproc2.5-integration -t imageproc2.5-integration/imageproc2.5-integration
 git push origin imageproc2.5-integration
@@ -29,10 +28,10 @@ In SmartGit:
 ```text
 Remote-->Manage Remotes...-->Add
     Name: imageproc2.5-integration
-    URL or Path: git://github.com/ryanjulian/imageproc-lib.git
+    URL or Path: git@github.com:biomimetics/imageproc-lib.git
     (Close)
 Remote-->Pull...
-    Remote Repository: imageproc2.5-integration (git://github.com/ryanjulian/imageproc-lib.git)
+    Remote Repository: imageproc2.5-integration (git@github.com:biomimetics/imageproc-lib.git)
     (Pull)
 Branch-->Check Out...
     Branches-->Other Branches...

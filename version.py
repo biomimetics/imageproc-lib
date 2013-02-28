@@ -15,13 +15,15 @@ if len(sys.argv) < 2:
     print("Not enough arguments given. Need version string within single quotes.")
     sys.exit()
 
-filename   = 'source/version-string.h'
+#filename   = 'source/version-string.h'
+filename = '../imageproc-lib/version-string.h'
 fileheader = 'version.h'
 version    = sys.argv[1] # version string within single quotes
 date       = time.strftime("%a %b %d %H:%M:%S %Y")
 
+
 fullstr = version + ': ' + date
-verstr = fullstr[0:VER_STR_LENGTH_MAX] #limit version string length
+verstr = fullstr[0:VER_STR_LENGTH_MAX]  #limit version string length
 
 # Write version and date information
 fileout = open(filename,'w')
