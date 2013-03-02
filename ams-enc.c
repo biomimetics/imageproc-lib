@@ -73,6 +73,9 @@ EncObj encPos[NUM_ENC];
 
 #define AMS_ENC_ANGLE_REG   0xFE
 
+#define AMS_ENC_OFFSET_0 823
+#define AMS_ENC_OFFSET_1 3523
+
 volatile unsigned char  state = AMS_ENC_IDLE;
 volatile unsigned char  encoder_number = 0;
 volatile unsigned int   encoder_new_pos;
@@ -121,11 +124,13 @@ void amsEncoderResetPos(void) {
     // initialize structure
     int i;
     for(i = 0; i< NUM_ENC; i++) {
-        amsEncoderBlockingRead(i);    // get initial values w/o setting oticks
-        encPos[i].offset = encPos[i].pos; // initialize encoder
+        //amsEncoderBlockingRead(i);    // get initial values w/o setting oticks
+        //encPos[i].offset = encPos[i].pos; // initialize encoder
         encPos[i].calibPos = 0;
         encPos[i].oticks = 0;   // set revolution counter to 0
     }
+    encPos[0].offset = AMS_ENC_OFFSET_0;
+    encPos[1].offset = AMS_ENC_OFFSET_1;
 }
 
 /*****************************************************************************
@@ -223,7 +228,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_READ_1;
             break;
         case AMS_ENC_READ_1:
-            encoder_new_pos = I2C1RCV<<6;
+            encoder_new_pos |= I2C1RCV<<6;
             I2C1CONbits.ACKDT = 1;
             I2C1CONbits.ACKEN = 1;
             state = AMS_ENC_READ_1_NACK;
