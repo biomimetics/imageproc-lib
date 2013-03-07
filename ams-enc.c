@@ -202,11 +202,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_WRITE_REG;
             break;
         case AMS_ENC_WRITE_REG:
-            I2C1CONbits.PEN = 1;
-            state = AMS_ENC_WRITE_STOP;
-            break;
-        case AMS_ENC_WRITE_STOP:
-            I2C1CONbits.SEN = 1;
+            I2C1CONbits.RSEN = 1;
             state = AMS_ENC_READ_START;
             break;
         case AMS_ENC_READ_START:
@@ -218,7 +214,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_READ_0;
             break;
         case AMS_ENC_READ_0:
-            encoder_new_pos = I2C1RCV & 0x3F;
+            encoder_new_pos = I2C1RCV <<6;
             I2C1CONbits.ACKDT = 0;
             I2C1CONbits.ACKEN = 1;
             state = AMS_ENC_READ_0_ACK;
@@ -228,7 +224,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_READ_1;
             break;
         case AMS_ENC_READ_1:
-            encoder_new_pos |= I2C1RCV<<6;
+            encoder_new_pos |= (I2C1RCV &  0x3F);
             I2C1CONbits.ACKDT = 1;
             I2C1CONbits.ACKEN = 1;
             state = AMS_ENC_READ_1_NACK;
