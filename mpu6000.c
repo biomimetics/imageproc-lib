@@ -255,22 +255,24 @@ void mpuBeginUpdate(void) {
 
 static void mpuFinishUpdate(unsigned int cause) {
   //TODO(rqou): don't ignore cause
-  unsigned char buff[UPDATE_SIZE], rev[UPDATE_SIZE], i;
+  unsigned char buff[UPDATE_SIZE], i, temp;
 
   spic2ReadBuffer(UPDATE_SIZE, buff);
   spic2EndTransaction();
 
   // Order is XL[6] TEMP[2] GYRO[6]
-  // Reverse data
-  for(i = 0; i < UPDATE_SIZE; i++) {
-      rev[i] = buff[UPDATE_SIZE - i - 1];
+  //reverse endianness
+  for(i = 0; i < UPDATE_SIZE; i += 2) {
+      temp = buff[i];
+      buff[i] = buff[i+1];
+      buff[i+1] = temp;
   }
 
-  // Order is now GYRO[6] TEMP[2] XL[6]
   // Copy into buffers
-  memcpy(mpu_data.gyro_data, rev, 6);
-  memcpy(&mpu_data.temp, rev + 6, 2);
-  memcpy(mpu_data.xl_data, rev + 8, 6);
+  memcpy(mpu_data.gyro_data, buff + 8, 6);
+  memcpy(&mpu_data.temp, buff + 6, 2);
+  memcpy(mpu_data.xl_data, buff, 6);
+
 }
 
 
