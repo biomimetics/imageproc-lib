@@ -255,8 +255,8 @@ unsigned char spic2Transmit(unsigned char data) {
 
     unsigned char c;
     SPI2STATbits.SPIROV = 0;        // Clear overflow bit
-    SPI2BUF = data;                 // Initiate SPI bus cycle by byte write
-    while(SPI2STATbits.SPITBF);     // Wait for transmit to complete
+    SPI2BUF = data;                   // Initiate SPI bus cycle by byte write
+    while(SPI2STATbits.SPITBF);        // Wait for transmit to complete
     while(!SPI2STATbits.SPIRBF);    // Wait for receive to complete
     c = SPI2BUF;                    // Read out received data to avoid overflow
     return c;
