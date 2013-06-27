@@ -146,8 +146,6 @@
 // Memory geometry
 static DfmemGeometryStruct dfmem_geo;
 
-extern SpicStatus port_status[SPIC_NUM_PORTS];  // for debugging of SPI contention
-
 
 // Placeholders
 static unsigned int currentBuffer = 0;
@@ -578,8 +576,8 @@ static void dfmemSetupPeripheral(void)
                       SLAVE_ENABLE_OFF &
                       CLK_POL_ACTIVE_HIGH &
                       MASTER_ENABLE_ON &
-                      PRI_PRESCAL_64_1 &
-                      SEC_PRESCAL_1_1);
+                      PRI_PRESCAL_1_1 &
+                      SEC_PRESCAL_4_1);
 }
 
 // Figures out memory geometry by querying its size

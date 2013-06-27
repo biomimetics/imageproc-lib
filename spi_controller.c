@@ -42,6 +42,7 @@
  */
 
 #include "spi_controller.h"
+#include "atomic.h"
 #include "spi.h"
 #include "timer.h"
 #include "dma.h"
@@ -104,7 +105,10 @@ static unsigned int spicon_ch1[1];
 static unsigned int spicon_ch2[2];
 
 /** Current port statuses */
-SpicStatus port_status[SPIC_NUM_PORTS];
+DECLARE_SPINLOCK_H(spi_port_ch1);
+DECLARE_SPINLOCK_C(spi_port_ch1);
+DECLARE_SPINLOCK_H(spi_port_ch2);
+DECLARE_SPINLOCK_C(spi_port_ch2);
 
 /** Current port chip select */
 static unsigned char port_cs_line[SPIC_NUM_PORTS];
@@ -123,7 +127,7 @@ void spicSetupChannel1(unsigned char cs, unsigned int spiCon1) {
 
     setupDMASet1();                     // Set up DMA channels
     spicon_ch1[cs] = spiCon1;           // Remember SPI config
-    port_status[0] = STAT_SPI_CLOSED;   // Initialize status
+    spi_port_ch1_reset();               // Initialize status
 
 }
 
@@ -131,7 +135,7 @@ void spicSetupChannel2(unsigned char cs, unsigned int spiCon1) {
 
     setupDMASet2();
     spicon_ch2[cs] = spiCon1;           // Remember SPI config
-    port_status[1] = STAT_SPI_CLOSED;
+    spi_port_ch2_reset();               // Initialize status
 
 }
 
@@ -150,16 +154,13 @@ void spic2SetCallback(unsigned char cs, SpicIrqHandler handler) {
 
 int spic1BeginTransaction(unsigned char cs) {
     // TODO: Timeout?
-    // TODO: Possible race condition if interrupt/non-interrrupt both try to
-    //  start a transaction. Need to change this to atomic test-and-set
 
     // TODO: generalize?
     if (cs > 0)
       // Only one CS line is supported
       return -1;
 
-    while(port_status[0] == STAT_SPI_BUSY); // Wait for port to become available
-    port_status[0] = STAT_SPI_BUSY;
+    spi_port_ch1_lock(); // Wait for port to become available
     // Reconfigure port
     SPI1STAT = 0;
     SPI1CON1 = spicon_ch1[cs];
@@ -172,14 +173,13 @@ int spic1BeginTransaction(unsigned char cs) {
 
 int spic2BeginTransaction(unsigned char cs) {
     // TODO: Timeout?
-    // TODO: Possible race condition if interrupt/non-interrrupt both try to
-    //  start a transaction. Need to change this to atomic test-and-set
 
     // TODO: generalize?
     if (cs > 1)
       // Two CS lines are supported
       return -1;
 
+    spi_port_ch2_lock(); // Wait for port to become available
     // Reconfigure port
     SPI2STAT = 0;
     SPI2CON1 = spicon_ch2[cs];
@@ -197,7 +197,7 @@ void spic1EndTransaction(void) {
 
     // Only one CS line
     SPI1_CS = SPI_CS_IDLE;  // Idle chip select after freeing since may cause irq
-    port_status[0] = STAT_SPI_OPEN; // Free port
+    spi_port_ch1_unlock();  // Free port
 
 }
 
@@ -207,14 +207,7 @@ void spic2EndTransaction(void) {
       SPI2_CS1 = SPI_CS_IDLE;  // Idle chip select
     if (port_cs_line[1] == 1)
       SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
-    port_status[1] = STAT_SPI_OPEN; // Free port
-
-}
-
-void spic2cs2EndTransaction(void) {
-
-    port_status[1] = STAT_SPI_OPEN; // Free port
-    SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
+    spi_port_ch2_unlock();     // Free port
 
 }
 
@@ -224,7 +217,7 @@ void spic1Reset(void) {
     SPIC1_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC1_DMAW_CONbits.CHEN = 0;
     SPI1STATbits.SPIROV = 0;        // Clear overwrite bit
-    port_status[0] = STAT_SPI_OPEN;    // Release lock on channel
+    spi_port_ch2_unlock();          // Release lock on channel
 
 }
 
@@ -235,7 +228,7 @@ void spic2Reset(void) {
     SPIC2_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC2_DMAW_CONbits.CHEN = 0;
     SPI2STATbits.SPIROV = 0;
-    port_status[1] = STAT_SPI_OPEN;    // Release lock on channel
+    spi_port_ch2_unlock();          // Release lock on channel
 
 }
 
@@ -255,8 +248,8 @@ unsigned char spic2Transmit(unsigned char data) {
 
     unsigned char c;
     SPI2STATbits.SPIROV = 0;        // Clear overflow bit
-    SPI2BUF = data;                   // Initiate SPI bus cycle by byte write
-    while(SPI2STATbits.SPITBF);        // Wait for transmit to complete
+    SPI2BUF = data;                 // Initiate SPI bus cycle by byte write
+    while(SPI2STATbits.SPITBF);     // Wait for transmit to complete
     while(!SPI2STATbits.SPIRBF);    // Wait for receive to complete
     c = SPI2BUF;                    // Read out received data to avoid overflow
     return c;
