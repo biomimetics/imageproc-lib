@@ -347,7 +347,7 @@ static inline void setupSPI(char initConfig)
                       CLK_POL_ACTIVE_HIGH &
                       MASTER_ENABLE_ON &
                       PRI_PRESCAL_1_1 &
-                      SEC_PRESCAL_3_1);
+                      SEC_PRESCAL_4_1);
     }
 
     spic2SetCallback(spi_cs, &mpuFinishUpdate);

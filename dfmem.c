@@ -146,8 +146,6 @@
 // Memory geometry
 static DfmemGeometryStruct dfmem_geo;
 
-extern SpicStatus port_status[SPIC_NUM_PORTS];  // for debugging of SPI contention
-
 
 // Placeholders
 static unsigned int currentBuffer = 0;
