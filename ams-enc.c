@@ -139,7 +139,7 @@ static inline void encoderSetupPeripheral(void) { //same setup as ITG3200 for co
             I2C1_SM_DIS & I2C1_GCALL_DIS & I2C1_STR_DIS &
             I2C1_NACK & I2C1_ACK_DIS & I2C1_RCV_DIS &
             I2C1_STOP_DIS & I2C1_RESTART_DIS & I2C1_START_DIS &
-            MI2C1_INT_PRI_5;
+            MI2C1_INT_PRI_6;
 
     // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 909KHz
     I2C1BRGvalue = 40;
