@@ -57,7 +57,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "p33Fxxxx.h"
+#include <xc.h>
 #include "spi.h"
 #include "dfmem.h"
 #include "spi_controller.h"        // For DMA
