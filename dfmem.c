@@ -162,6 +162,9 @@ union {
     unsigned char chr_addr[4];
 } MemAddr;
 
+unsigned char userSecRegID[64];
+unsigned char factorySecRegID[64];
+
 /*----------------------------------------------------------------------------
  *          Declaration of private functions
  ---------------------------------------------------------------------------*/
@@ -172,6 +175,7 @@ static inline void dfmemSelectChip(void);
 static inline void dfmemDeselectChip(void);
 static void dfmemSetupPeripheral(void);
 static void dfmemGeometrySetup(void);
+static void dfmemReadSecurityRegister(void);
 
 static void spiCallback(unsigned int irq_source);
 
@@ -186,6 +190,9 @@ void dfmemSetup(void)
     spic2SetCallback(&spiCallback);
     while(!dfmemIsReady());
     dfmemGeometrySetup();
+
+    //Readback security register, which gets chip-unique identifiers
+    dfmemReadSecurityRegister();
 }
 
 void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
@@ -508,6 +515,12 @@ void dfmemZeroIndex()
     nextPage = 0;
 }
 
+uint64_t dfmemGetUnqiueID(){
+    //Grab first 8 bytes of 64-byte factory value
+    uint64_t id = *((uint64_t*)(factorySecRegID));
+    return id;
+}
+
 /*-----------------------------------------------------------------------------
  *          Private functions
 -----------------------------------------------------------------------------*/
@@ -618,4 +631,28 @@ static void dfmemGeometrySetup(void)
             // TODO (apullin, fgb) : Do something. Probably communicate back with user.
             break;
     }
+}
+
+static void dfmemReadSecurityRegister(void){
+
+    int i; // Loop variable, MPLABX is not C99 standard
+
+    dfmemSelectChip();
+
+    dfmemWriteByte(0x77); //Read security register opcode
+    dfmemWriteByte(0x77); //Dummy write, 3 bytes required for opcode 0x77
+    dfmemWriteByte(0x77); //Dummy write, 3 bytes required for opcode 0x77
+    dfmemWriteByte(0x77); //Dummy write, 3 bytes required for opcode 0x77
+
+    //User ID is the first 8 bytes
+    for(i = 0; i < 64; i++){
+        userSecRegID[i] = dfmemReadByte();
+    }
+
+    //Factory ID is the second 8 bytes
+    for(i = 0; i < 64; i++){
+        factorySecRegID[i] = dfmemReadByte();
+    }
+    dfmemDeselectChip();
+
 }
