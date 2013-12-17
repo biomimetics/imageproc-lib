@@ -192,6 +192,7 @@ void dfmemSetup(void)
     dfmemGeometrySetup();
 
     //Readback security register, which gets chip-unique identifiers
+    // ID is stored in a static var here, and dfmem has a public getter
     dfmemReadSecurityRegister();
 }
 
@@ -644,12 +645,12 @@ static void dfmemReadSecurityRegister(void){
     dfmemWriteByte(0x77); //Dummy write, 3 bytes required for opcode 0x77
     dfmemWriteByte(0x77); //Dummy write, 3 bytes required for opcode 0x77
 
-    //User ID is the first 8 bytes
+    //User ID is the first 64 bytes
     for(i = 0; i < 64; i++){
         userSecRegID[i] = dfmemReadByte();
     }
 
-    //Factory ID is the second 8 bytes
+    //Factory ID is the second 64 bytes
     for(i = 0; i < 64; i++){
         factorySecRegID[i] = dfmemReadByte();
     }
