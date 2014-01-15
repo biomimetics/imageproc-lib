@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2012, Regents of the University of California
  * All rights reserved.
  *
@@ -27,35 +27,58 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Averaging filter using a circular buffer
+ * Packet Pool
  *
- * by Andrew Pullin
+ * by Humphrey Hu
  *
- * v.0.1
+ * Description:
+ *  The packet pool is a static set of FastQueue, MacPacket, and Payload
+ *  objects that provide a pool of packet/payloads for use with the radio.
+ *  Requesting and returning these resources is faster and more stable than
+ *  continually creating and destroying them.
+ *
+ * Usage:
+ *  All the rules for video rentals apply to packet rentals.
+ *      - Check the rental (for NULL) before using it
+ *      - Don't return rentals damaged or altered
+ *      - Don't return rentals more than once
+ *      - Don't use rentals after returning them
+ *
+ *  To request a packet or payload:
+ *      // Call the respective method
+ *      MacPacket packet = ppoolRequestPacket();
+ *      if(packet == NULL) {
+ *          // Handle request failure
+ *      }
+ *
+ *  To return a packet or payload:
+ *      if(!ppoolReturnPacket(packet)) {
+ *          // Handle return failure
+ *      }
+ *
  */
 
-#ifndef __DFILTER_AVG_H
-#define __DFILTER_AVG_H
+#ifndef __PPOOL_H_
 
+#define __PPOOL_H
 
-typedef struct {
-    unsigned int windowLen;
-    unsigned int index;
-    int* data;
-    long accum;
-} dfilterAvgInt_t;
+#include "mac_packet.h"
 
-// Creates a filter and returns a point.
-// Caller should check for NULL returns.
-void dfilterAvgCreate(dfilterAvgInt_t*, unsigned int);
+// Initialize packet pool module
+unsigned int ppoolInit(void);
+// Free module resources
+void ppoolClose(void);
 
-// Add a value to the circular buffer, incrementing index
-void dfilterAvgUpdate(dfilterAvgInt_t*, int);
+// Request a mac packet + payload
+MacPacket ppoolRequestFullPacket(unsigned int size);
+unsigned int ppoolReturnFullPacket(MacPacket packet);
 
-// Calculate and return average value;
-int dfilterAvgCalc(dfilterAvgInt_t*);
+// Request/return a mac packet
+MacPacket ppoolRequestPacket(void);
+unsigned int ppoolReturnPacket(MacPacket packet);
 
-//Zero all values in the filter
-void dfilterZero(dfilterAvgInt_t* filt);
+// Request/return a payload
+Payload ppoolRequestPayload(unsigned int size);
+unsigned int ppoolReturnPayload(Payload pld);
 
-#endif // __DFILTER_AVG_H
+#endif

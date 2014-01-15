@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2012, Regents of the University of California
+ * Copyright (c) 2008-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,11 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the ATMEL DataFlash Memory (dfmem) Interface
+ * ATMEL DataFlash Memory (dfmem) Interface
  *
  * by Fernando L. Garcia Bermudez
  *
- * v.1.0 beta
+ * v.1.0
  *
  * Usage:
  *  #include "dfmem.h"
@@ -56,9 +56,22 @@
 #define __DFMEM_H
 
 
+typedef struct {
+    unsigned int byte_address_bits;
+    unsigned int max_sector;
+    unsigned int max_pages;
+    unsigned int buffer_size;
+    unsigned int bytes_per_page;
+    unsigned int pages_per_block;
+    unsigned int blocks_per_sector;
+    unsigned int pages_per_sector;
+} DfmemGeometryStruct;
+
+typedef DfmemGeometryStruct* DfmemGeometry;
+
 // Handles initialization of communication peripherals and makes sure the
-// memory is initially deselected.
-void dfmemSetup (void);
+// memory is initially deselected. Must pass in chip select pin index.
+void dfmemSetup (unsigned char cs);
 
 // Writes the contents of a data array to memory.
 //
@@ -102,21 +115,6 @@ void dfmemWriteBuffer (unsigned char *data, unsigned int length,
 // Parameters : page = 0-8191 (13 bits),
 //              buffer = 1 or 2.
 void dfmemWriteBuffer2MemoryNoErase (unsigned int page, unsigned char buffer);
-
-// Pushes the contents of a data array to a memory buffer. If the buffer is
-// full (528 bytes), the contents of the buffer is written to a memory page
-// without pre-erasing. After that, the memory page is incremented for the
-// next operations. This function would be useful when you don't want to keep
-// track of the current memory address to write. For the very first time you
-// call this function set the page number using page_reset. After that, you
-// can put -1(0xffff) for page_reset to use the internal page number.
-//
-// Parameters : data = pointer to the input data array,
-//              length = length of this data array (should be <= 528 byte),
-//              page_reset = reset the page number to write the data.
-//                  If page_reset is -1(0xffff), page number will not be reset
-// TODO (fgb) : Needs further debugging.
-//void dfmemPush (unsigned char *data, unsigned int length, unsigned int page_reset);
 
 // Read the contents of a memory page into a data array.
 //
@@ -175,6 +173,8 @@ void dfmemEraseSector(unsigned int page);
 // Erase the contents of the whole memory chip.
 //
 // It's an implementation of the dfmem's "Chip Erase" command.
+//
+// Note: Errata recommends not to use it!
 void dfmemEraseChip(void);
 
 // Requests dfmem status register and returns its ready(RDY) bit.
@@ -191,6 +191,9 @@ unsigned char dfmemGetStatus (void);
 //
 // Returns : manufacturer id
 unsigned char dfmemGetManufacturerID (void);
+
+// Reads out dfmem geometry parameters
+void dfmemGetGeometryParams(DfmemGeometry geo);
 
 // Requests dfmem device ID data, returning the memory density.
 //
@@ -210,12 +213,8 @@ void dfmemSave(unsigned char* data, unsigned int length);
 // contains any data, and then swaps the buffer pointer.
 void dfmemSync();
 
-// Reads back a "sample" from the flash memory following special page alignment
-// rules: Samples do not cross page boundaries, and start from the beginning
-// of the page.
-void dfmemReadSample(unsigned long, unsigned int, unsigned char*);
+// This resets the current page and offset tracking variable to zero.
+void dfmemZeroIndex();
 
-// Erases enough sectors to fit a specified number of samples into the flash
-void dfmemEraseSectorsForSamples(unsigned long, unsigned int);
 
 #endif // __DFMEM_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Regents of the University of California
+ * Copyright (c) 2010-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,20 +27,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Payload
+ * Payload module
  *
  * by Stanley S. Baek
  *
  * v.beta
- *
- * Revisions:
- *  Stanley S. Baek      2010-06-05    Initial release
- *                      
- * Notes:
  */
 
 #ifndef __PAYLOAD_H
 #define __PAYLOAD_H
+
 
 #define PAYLOAD_HEADER_LENGTH   2
 
@@ -49,15 +45,16 @@ typedef struct {
     unsigned char data_length;
     unsigned char* pld_data;
     unsigned char iter_index;
+    unsigned char (*test)(unsigned char, unsigned char, unsigned char, unsigned char*);
 } PayloadStruct;
 
 typedef PayloadStruct* Payload;
 
 /*******************************************************************************
 * Function Name : payCreate
-* Description   : 
-* Parameters    : 
-* Return Value  : 
+* Description   :
+* Parameters    :
+* Return Value  :
 *******************************************************************************/
 Payload payCreate(unsigned char data_length, unsigned char *data,
                   unsigned char status, unsigned char type);
@@ -68,8 +65,8 @@ Payload payClone(Payload pld);
 
 /*******************************************************************************
 * Function Name : payNextElement
-* Description   : Returns the next element from the give payload. The returned 
-*                 elements include headers and data of the payload. It is 
+* Description   : Returns the next element from the give payload. The returned
+*                 elements include headers and data of the payload. It is
 *                 recommended to call payInitIterator before this function call.
 *                 Users must be careful not to call this function more than the
 *                 length of payload since the payInitIterator is called.
@@ -84,7 +81,7 @@ void payInitIterator(Payload pld);
 * Function Name : payReadByte
 * Description   : Read a data character located at loc. This function does not
 *                 return the contents of payload header.
-* Parameters    : loc is the location of the character to be read. The first 
+* Parameters    : loc is the location of the character to be read. The first
 *                 data is located at loc = 0.
 * Return Value  : A character data
 *******************************************************************************/
@@ -98,7 +95,7 @@ unsigned char payReadByte(Payload pld, unsigned char loc);
 *******************************************************************************/
 unsigned char* payToString(Payload pld);
 
-void payAppendData(Payload pld, char loc, 
+void payAppendData(Payload pld, char loc,
                 unsigned char data_length, unsigned char *data);
 
 void payWriteByte(Payload pld, unsigned char loc, unsigned char data);
@@ -128,5 +125,4 @@ unsigned char payGetStatus(Payload pld);
 void payDelete(Payload pld);
 
 
-#endif //__PACKET_H
-
+#endif // __PAYLOAD_H

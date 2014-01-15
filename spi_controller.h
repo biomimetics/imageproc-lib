@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2012, Regents of the University of California
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -81,15 +81,16 @@ typedef void (*SpicIrqHandler) (unsigned int irq_cause);
  *
  * This must be run before module port access methods can be used.
  */
-void spicSetupChannel1(void);
-void spicSetupChannel2(void);
+//TODO(rqou): Make non-PIC specific
+void spicSetupChannel1(unsigned char cs, unsigned int spiCon1);
+void spicSetupChannel2(unsigned char cs, unsigned int spiCon1);
 
 /**
  * Set the interrupt handler for port 1.
  *
  * @param handler Function pointer to interrupt handler
  */
-void spic1SetCallback(SpicIrqHandler handler);
+void spic1SetCallback(unsigned char cs, SpicIrqHandler handler);
 
 /**
  * Begin a transaction on port 1.
@@ -100,8 +101,10 @@ void spic1SetCallback(SpicIrqHandler handler);
  * This function blocks if there is an ongoing transaction, returning
  * after it has acquired the port. Note that this can result in deadlocks
  * if used improperly.
+ *
+ * This function returns 0 on success and something else on error.
  */
-void spic1BeginTransaction(void);
+int spic1BeginTransaction(unsigned char cs);
 
 /**
  * End a transaction on port 1.
@@ -161,7 +164,7 @@ unsigned int spic1ReadBuffer(unsigned int len, unsigned char *buff);
  *
  * @param handler Function pointer to interrupt handler
  */
-void spic2SetCallback(SpicIrqHandler);
+void spic2SetCallback(unsigned char cs, SpicIrqHandler);
 
 /**
  * Begin a transaction on port 2.
@@ -172,13 +175,16 @@ void spic2SetCallback(SpicIrqHandler);
  * This function blocks if there is an ongoing transaction, returning
  * after it has acquired the port. Note that this can result in deadlocks
  * if used improperly.
+ *
+ * This function returns 0 on success and something else on error.
  */
-void spic2BeginTransaction(void);
+int spic2BeginTransaction(unsigned char cs);
 
 /**
  * End a transaction on port 2.
  */
 void spic2EndTransaction(void);
+void spic2cs2EndTransaction(void);
 
 /**
  * Resets port 2.

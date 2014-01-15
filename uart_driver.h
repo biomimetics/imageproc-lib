@@ -27,35 +27,36 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Averaging filter using a circular buffer
+ * Header for wrapper of UART read/write functionality with packet parsing
  *
- * by Andrew Pullin
+ * by Austin D. Buchan
  *
- * v.0.1
+ * v.beta
  */
 
-#ifndef __DFILTER_AVG_H
-#define __DFILTER_AVG_H
+#include "uart.h"
+#include "payload.h"
+#include "mac_packet.h"
 
+#include <stdio.h>
 
-typedef struct {
-    unsigned int windowLen;
-    unsigned int index;
-    int* data;
-    long accum;
-} dfilterAvgInt_t;
+#ifndef UART_H
+#define	UART_H
 
-// Creates a filter and returns a point.
-// Caller should check for NULL returns.
-void dfilterAvgCreate(dfilterAvgInt_t*, unsigned int);
+#define UART_TX_IDLE        0xFF
+#define UART_TX_SEND_SIZE   0xFE
 
-// Add a value to the circular buffer, incrementing index
-void dfilterAvgUpdate(dfilterAvgInt_t*, int);
+#define UART_RX_IDLE        0xFF
+#define UART_RX_CHECK_SIZE  0xFE
 
-// Calculate and return average value;
-int dfilterAvgCalc(dfilterAvgInt_t*);
+#define UART_MAX_SIZE 200
 
-//Zero all values in the filter
-void dfilterZero(dfilterAvgInt_t* filt);
+typedef void (*packet_callback)(MacPacket);
 
-#endif // __DFILTER_AVG_H
+void uartInit(packet_callback rx_cb);
+unsigned char uartSend(unsigned char length,unsigned char *frame);
+unsigned char uartSendPayload(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+unsigned char uartSendPacket(MacPacket packet);
+
+#endif	/* UART_H */
+

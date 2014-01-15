@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2010, Regents of the University of California
+/**
+ * Copyright (c) 2011-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,44 +27,125 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for the wireless radio interface
+ * High Level Wireless Communications Driver
  *
- * by Stanley S. Baek
+ * by Humphrey Hu
  *
- * v.beta
+ * v.0.5
  */
-
-#include "packet_queue.h"
-#include "payload.h"
-#include "at86rf.h"
-#include "mac_packet.h"
 
 #ifndef __RADIO_H
 #define __RADIO_H
 
-void        radioInit(WordVal src_addr, WordVal src_pan_id, int rxpq_max_size, int txpq_max_size);
-void        radioSetSrcAddr(WordVal src_addr);
-WordVal     radioGetSrcAddr(void);
-void        radioSetPanID(WordVal pan_id);
-WordVal     radioGetPanID(void);
-void        radioSetChannel(char chan);
-char        radioGetChannel(void);
-void        radioSetDestAddr(WordVal dest_addr);
-WordVal     radioGetDestAddr(); 
-char        radioSendPayload(WordVal dest_addr, Payload pld);
-Payload     radioReceivePayload();
-void        radioSetRetries();
-void        radioEnqueueRxPacket(MacPacket macRxPacket);
-MacPacket   radioDequeueRxPacket();
-PacketQueue radioGetRxQueue();
-int         radioIsRxQueueEmpty();
-int         radioIsRxQueueFull();
-int         radioGetRxQueueSize();
-void        radioEnqueueTxPacket(MacPacket macTxPacket);
-MacPacket   radioDequeueTxPacket();
-PacketQueue radioGetTxQueue();
-int         radioIsTxQueueEmpty();
-int         radioIsTxQueueFull();
-int         radioGetTxQueueSize();
+
+#include "mac_packet.h"
+
+#define RADIO_DATA_SAFE 0
+#define RADIO_LOCK_SAFE 1
+
+// Radio interrupt flags
+typedef enum {
+    RADIO_TX_SUCCESS,   // Transmission success
+    RADIO_TX_FAILURE,   // Transmission failure
+    RADIO_RX_START,     // Beginning of reception
+    RADIO_RX_SUCCESS,   // Reception success
+    RADIO_RX_FAILURE,   // Reception failure
+    RADIO_HW_FAILURE,   // Hardware failure
+} RadioIrqSrc;
+
+// Represent the current radio state and operation
+typedef enum {
+    STATE_SLEEP = 0,        // Radio powered down (currently not implemented)
+    STATE_OFF,              // Transceiver off
+    STATE_IDLE,             // Transceiver off, PLL on
+    STATE_TRANSITIONING,    // Radio in state transition
+    STATE_RX_IDLE,          // Radio in RX mode, listening
+    STATE_RX_BUSY,          // Radio in RX mode, receiving
+    STATE_TX_IDLE,          // Radio in TX mode, idling
+    STATE_TX_BUSY,          // Radio in TX mode, transmitting or preparing
+} RadioState;
+
+typedef struct {
+    unsigned int address;   // (2)
+    unsigned int pan_id;    // (2)
+    unsigned char channel;  // (1)
+} RadioAddress;             // Total: (5)
+
+typedef struct {
+    RadioAddress address;           // (5)
+    unsigned char soft_retries;     // (1)
+    unsigned char hard_retries;     // (1)
+    unsigned char watchdog_running; // (1)
+    unsigned long watchdog_timeout; // (4)
+} RadioConfiguration;               // Total: (12)
+
+typedef struct {
+    RadioState state;               // (2)
+    unsigned int packets_sent;      // (2)
+    unsigned int packets_received;  // (2)
+    unsigned char sequence_number;  // (1)
+    unsigned char retry_number;     // (1)
+    unsigned char last_rssi;        // (1)
+    unsigned char last_ed;          // (1)
+    unsigned long last_calibration; // (4)
+    unsigned long last_progress;    // (4)
+} RadioStatus;                      // Total: (18)
+
+// Setup and initialization
+void radioInit(unsigned int tx_queue_length, unsigned int rx_queue_length,
+    unsigned char cs);
+
+// Configuration methods
+void radioConfigure(RadioConfiguration *conf);
+void radioSetAddress(RadioAddress *address);
+void radioSetSrcAddr(unsigned int src_addr);
+void radioSetSrcPanID(unsigned int src_pan_id);
+void radioSetChannel(unsigned char channel);
+void radioSetSoftRetries(unsigned char retries);
+void radioSetHardRetries(unsigned char retries);
+
+void radioGetConfiguration(RadioConfiguration *conf);
+void radioGetStatus(RadioStatus *status);
+
+void radioSetWatchdogState(unsigned char state);
+void radioEnableWatchdog(void);
+void radioDisableWatchdog(void);
+void radioSetWatchdogTime(unsigned int time);
+
+// Queue interface
+unsigned int radioEnqueueTxPacket(MacPacket packet);
+MacPacket radioDequeueRxPacket(void);
+
+unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
+                             unsigned char type, unsigned int datalen,
+                             unsigned char* dataptr, unsigned char fast_fail);
+static inline unsigned int __attribute__ ((deprecated))
+        radioConfirmationPacket (unsigned int dest_addr, unsigned char type,
+                                 unsigned char status, unsigned char length,
+                                 unsigned char *frame)
+        { return radioSendData (dest_addr, status, type, length, frame, 0); }
+
+unsigned int radioTxQueueEmpty(void);
+unsigned int radioTxQueueFull(void);
+unsigned int radioGetTxQueueSize(void);
+unsigned int radioRxQueueEmpty(void);
+unsigned int radioRxQueueFull(void);
+unsigned int radioGetRxQueueSize(void);
+// Clear all packets off of queue
+void radioFlushQueues(void);
+
+// Processes queues and internals
+// Should be called regularly
+void radioProcess(void);
+
+// Object access/creation
+// Request a packet + payload from the preinitialized pool
+MacPacket radioRequestPacket(unsigned int data_size);
+// Return a packet + payload to the preinitialized pool
+unsigned int radioReturnPacket(MacPacket packet);
+
+MacPacket __attribute__ ((deprecated)) radioCreatePacket(unsigned int data_size);
+void __attribute__ ((deprecated)) radioDeletePacket(MacPacket packet);
+
 
 #endif // __RADIO_H

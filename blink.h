@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Regents of the University of California
+ * Copyright (c) 2012-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,35 +27,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Averaging filter using a circular buffer
+ * Blink LEDs
  *
- * by Andrew Pullin
+ * by Ronald S. Fearing
  *
- * v.0.1
+ * v.beta
  */
 
-#ifndef __DFILTER_AVG_H
-#define __DFILTER_AVG_H
+#ifndef __BLINK_H
+#define __BLINK_H
+
+// Blink LEDs even if interrupts override LED setting
+//
+// n number of blinks, k number of milliseconds
+void blink_leds(int n, int k);
 
 
-typedef struct {
-    unsigned int windowLen;
-    unsigned int index;
-    int* data;
-    long accum;
-} dfilterAvgInt_t;
-
-// Creates a filter and returns a point.
-// Caller should check for NULL returns.
-void dfilterAvgCreate(dfilterAvgInt_t*, unsigned int);
-
-// Add a value to the circular buffer, incrementing index
-void dfilterAvgUpdate(dfilterAvgInt_t*, int);
-
-// Calculate and return average value;
-int dfilterAvgCalc(dfilterAvgInt_t*);
-
-//Zero all values in the filter
-void dfilterZero(dfilterAvgInt_t* filt);
-
-#endif // __DFILTER_AVG_H
+#endif // __BLINK_H
