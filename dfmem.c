@@ -57,18 +57,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "p33Fxxxx.h"
+#include <xc.h>
 #include "spi.h"
 #include "dfmem.h"
 #include "spi_controller.h"        // For DMA
 #include "utils.h"
 
 // TODO (humhu) : Consolidate into some BSP header
-#if (defined(__IMAGEPROC1) || defined(__IMAGEPROC2) || defined(__MIKRO) || defined(__EXP16DEV))
+#if (defined(__IMAGEPROC1) || defined(__IMAGEPROC24) || defined(__IMAGEPROC25) || defined(__MIKRO) || defined(__EXP16DEV))
 // MIKRO & EXP16DEV has no FLASHMEM, but needs this for compile
 
     // SPIx pins
-    #define SPI_CS          _LATG9
+    //#define SPI_CS          _LATG9 //now done in bsp-ip##.h
 
     // SPIx Registers
     #define SPI_BUF         SPI2BUF
@@ -152,9 +152,6 @@ static unsigned int currentBuffer = 0;
 static unsigned int currentBufferOffset = 0;
 static unsigned int nextPage = 0;
 
-// Chip select
-static unsigned char spi_cs;
-
 enum FlashSizeType {
     DFMEM_8MBIT    = 0b00101,
     DFMEM_16MBIT   = 0b00110,
@@ -184,11 +181,10 @@ static void spiCallback(unsigned int irq_source);
  *          Public functions
 -----------------------------------------------------------------------------*/
 
-void dfmemSetup(unsigned char cs)
+void dfmemSetup(void)
 {
-    spi_cs = cs;
     dfmemSetupPeripheral();
-    spic2SetCallback(cs, &spiCallback);
+    spic2SetCallback(DFMEM_CS, &spiCallback);
     while(!dfmemIsReady());
 
     dfmemGeometrySetup();
@@ -557,7 +553,7 @@ static inline unsigned char dfmemReadByte (void)
 }
 
 // Selects the memory chip.
-static inline void dfmemSelectChip(void) { spic2BeginTransaction(spi_cs); }
+static inline void dfmemSelectChip(void) { spic2BeginTransaction(DFMEM_CS); }
 
 // De-selects the memory chip.
 static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
@@ -567,7 +563,7 @@ static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
 // The MCU is the SPI master and the clock isn't continuous.
 static void dfmemSetupPeripheral(void)
 {
-    spicSetupChannel2(spi_cs,
+    spicSetupChannel2(DFMEM_CS,
                       ENABLE_SCK_PIN &
                       ENABLE_SDO_PIN &
                       SPI_MODE16_OFF &

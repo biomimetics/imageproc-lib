@@ -100,7 +100,6 @@ static TrxIrqHandler irqCallback;
 static tal_trx_status_t trx_state;
 static unsigned char frame_buffer[FRAME_BUFFER_SIZE];
 static unsigned char last_rssi;
-static unsigned char spi_cs;
 static unsigned char last_ackd = 0;
 
 
@@ -108,11 +107,10 @@ static unsigned char last_ackd = 0;
 
 void trxSetup(unsigned char cs)
 {
-    spi_cs = cs;
 
     // SPI setup
     setupSPI();     // Set up SPI com port
-    spic1SetCallback(cs, &trxSpiCallback);  // Configure callback for spi interrupts
+    spic1SetCallback(0, &trxSpiCallback);  // Configure callback for spi interrupts
     trxReadReg(RG_IRQ_STATUS);   // Clear pending interrupts
     trxSetStateOff(); // Transition to TRX_OFF for configuring device
     trxWriteSubReg(SR_IRQ_MASK, TRX_IRQ_TRX_END); // Interrupt at end of transceive
@@ -241,7 +239,7 @@ void trxWriteFrameBuffer(MacPacket packet) {
 
     memcpy(frame_buffer + i, payToString(pld), payGetPayloadLength(pld));
 
-    spic1BeginTransaction(spi_cs);
+    spic1BeginTransaction(TRX_CS);
     spic1Transmit(TRX_CMD_FW);
     spic1MassTransmit(phy_len, frame_buffer, phy_len*3); // 3*length microseconds timeout seems to work well
 
@@ -346,7 +344,7 @@ void trxSetStateOff(void) {
  */
 static void trxWriteReg(unsigned char addr, unsigned char val) {
 
-    spic1BeginTransaction(spi_cs);
+    spic1BeginTransaction(TRX_CS);
     spic1Transmit(TRX_CMD_RW | addr);
     spic1Transmit(val);
     spic1EndTransaction();
@@ -362,7 +360,7 @@ static void trxWriteReg(unsigned char addr, unsigned char val) {
 static unsigned char trxReadReg(unsigned char addr) {
 
     unsigned char c;
-    spic1BeginTransaction(spi_cs);
+    spic1BeginTransaction(TRX_CS);
     spic1Transmit(TRX_CMD_RR | addr);
     c = spic1Receive();
     spic1EndTransaction();
@@ -495,7 +493,7 @@ static void trxSpiCallback(unsigned int interrupt_code) {
  */
 static void trxFillBuffer(void) {
 
-    spic1BeginTransaction(spi_cs);
+    spic1BeginTransaction(TRX_CS);
     last_rssi = spic1Transmit(TRX_CMD_FR);  // Begin write (returns RSSI because of SPI_CMD_MODE)
     //current_phy_len = spic1Receive(); // Read physical frame size
     //spic1MassTransmit(current_phy_len, NULL, current_phy_len*3); // DMA rest into buffer
@@ -514,7 +512,7 @@ static void trxReadBuffer(void) {
 
 static void setupSPI(void)
 {
-    spicSetupChannel1(spi_cs,
+    spicSetupChannel1(TRX_CS,
                       ENABLE_SCK_PIN &
                       ENABLE_SDO_PIN &
                       SPI_MODE16_OFF &

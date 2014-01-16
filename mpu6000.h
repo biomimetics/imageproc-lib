@@ -71,9 +71,8 @@
 } mpuObj;
 
 
-// Setup device
-//  cs = chip select index
-void mpuSetup(unsigned char cs);
+// Setup device, chip select set in BSP header
+void mpuSetup(void);
 
 // Run calibration routine
 void mpuRunCalib(unsigned int discard, unsigned int count);

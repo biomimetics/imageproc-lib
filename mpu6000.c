@@ -95,8 +95,6 @@ static struct {
     float temp_scale;   // For celsius
 } mpu_params;
 
-static unsigned char spi_cs;
-
 
 /*-----------------------------------------------------------------------------
  * Declaration of static functions
@@ -114,11 +112,10 @@ static void waitDmaFinish(void);
 
 // Note to self: FIFO State change requires power cycle!
 
-void mpuSetup(unsigned char cs) {
-  spi_cs = cs;    
+void mpuSetup(void) {
 
   // setup SPI port
-  setupSPI(1);  // Setup SPI for register configuration
+  setupSPI(MPU_CS);  // Setup SPI for register configuration
   unsigned char reg;
 
   writeReg(MPU_REG_PMGT1, 0x83);              //Reset IMU
@@ -242,12 +239,12 @@ float mpuGetTempScale(void) {
 //}
 
 void waitDmaFinish(void) {
-  spic2BeginTransaction(spi_cs);
+  spic2BeginTransaction(MPU_CS);
   spic2EndTransaction();
 }
 
 void mpuBeginUpdate(void) {
-  spic2BeginTransaction(spi_cs);
+  spic2BeginTransaction(MPU_CS);
   spic2Transmit(MPU_REG_XLBASE | READ);
   //TODO(rqou): better timeout?
   spic2MassTransmit(UPDATE_SIZE, NULL, 1000);
@@ -292,7 +289,7 @@ static void mpuFinishUpdate(unsigned int cause) {
 *****************************************************************************/
 static void writeReg(unsigned char regaddr, unsigned char data )
 {
-    spic2BeginTransaction(spi_cs);
+    spic2BeginTransaction(MPU_CS);
     spic2Transmit(regaddr);
     spic2Transmit(data);
     spic2EndTransaction();
@@ -307,7 +304,7 @@ static void writeReg(unsigned char regaddr, unsigned char data )
 static unsigned char readReg(unsigned char regaddr) {
   unsigned char c;
 
-  spic2BeginTransaction(spi_cs);
+  spic2BeginTransaction(MPU_CS);
   spic2Transmit(regaddr | READ);
   c = spic2Receive();
   spic2EndTransaction();
@@ -325,7 +322,7 @@ static inline void setupSPI(char initConfig)
 {
     if (initConfig)
     {
-      spicSetupChannel2(spi_cs,
+      spicSetupChannel2(MPU_CS,
                         ENABLE_SCK_PIN &
                         ENABLE_SDO_PIN &
                         SPI_MODE16_OFF &
@@ -337,7 +334,7 @@ static inline void setupSPI(char initConfig)
                         PRI_PRESCAL_64_1 &
                         SEC_PRESCAL_1_1);
     } else {    
-      spicSetupChannel2(spi_cs,
+      spicSetupChannel2(MPU_CS,
                       ENABLE_SCK_PIN &
                       ENABLE_SDO_PIN &
                       SPI_MODE16_OFF &
@@ -350,5 +347,5 @@ static inline void setupSPI(char initConfig)
                       SEC_PRESCAL_4_1);
     }
 
-    spic2SetCallback(spi_cs, &mpuFinishUpdate);
+    spic2SetCallback(MPU_CS, &mpuFinishUpdate);
 }
