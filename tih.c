@@ -14,10 +14,8 @@
 #define OUTPUT_PWM  1
 #define OUTPUT_GPIO 0
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
-#define MAXPWM 0xf80   // maximum PWM to allow dead time in case need to sample back EMF
-
-
-#define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
+//#define MAXPWM 0xf80   // maximum PWM to allow dead time in case need to sample back EMF
+#define MAXPWM 1999 //should be for 20Khz pwm
 
 static tiHDriver outputs[4];
 static int pwm_period;
@@ -29,7 +27,7 @@ void tiHSetup(void) {
 
     //This setup is unique to PWM_IPCLK_SCALE1
     //If the clock scaler is changed, this MUST be changed too!
-    pwm_period = (int)((float)FCY/((float)PWM_FREQ * (float)1))- 1;
+    pwm_period = (int)((float)FCY/((float)PWM_FREQ * 1.0))- 1;
 
     tiHSetupPeripheral();
     int i;
