@@ -364,7 +364,7 @@ unsigned char radioSendData (unsigned int dest_addr, unsigned char status,
 
 
 // =========== Private functions ==============================================
-
+/*
 void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
 
     // Disable and reset timer
@@ -374,7 +374,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
     _T3IF = 0;
 
 }
-
+*/
 static void radioReset(void) {
 
     trxReset();
