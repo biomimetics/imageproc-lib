@@ -62,10 +62,16 @@ typedef struct {
     int satValPos, satValNeg;
 #ifdef PID_HARDWARE
     tPID dspPID;
-    fractional abcCoeffs[3] __attribute__((section(".xbss, bss, xmemory")));
-    fractional controlHists[3] __attribute__((section(".ybss, bss, ymemory")));
 #endif
 } pidObj;
+
+#ifdef PID_HARDWARE
+typedef struct {
+    fractional abcCoeffs[3];
+    fractional controlHists[3];
+} pidHWvars;
+//Be sure to declare with __attribute__((section(".xbss, bss, xmemory")));
+#endif
 
 //Functions
 void pidUpdate(pidObj *pid, int feedback);

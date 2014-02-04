@@ -127,6 +127,9 @@ void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {
     pid->error = 0;
 #ifdef PID_HARDWARE
     pidHWSetFracCoeffs(&(pid->dspPID), pid->Kp, pid->Ki, pid->Kd);
+    
+    //This check should not really be necessary, since we have default values.
+    //TODO: once this code is validated, this check can be removed.
     if((pid->dspPID.abcCoefficients != NULL) &&
             (pid->dspPID.controlHistory != NULL) ){
         PIDInit(&(pid->dspPID));
