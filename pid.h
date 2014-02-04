@@ -56,14 +56,14 @@ typedef struct {
     unsigned char N;
     char onoff; //boolean
     long error;
-    unsigned long run_time;
-    unsigned long start_time;
     int inputOffset;
     int Kff;
     int maxVal, minVal;
     int satValPos, satValNeg;
 #ifdef PID_HARDWARE
     tPID dspPID;
+    fractional abcCoeffs[3] __attribute__((section(".xbss, bss, xmemory")));
+    fractional controlHists[3] __attribute__((section(".ybss, bss, ymemory")));
 #endif
 } pidObj;
 
