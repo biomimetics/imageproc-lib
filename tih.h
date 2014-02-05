@@ -31,6 +31,8 @@ void tiHChangeDirection(unsigned int channel, tiHDriveDir dir);
 void tiHChangeMode(unsigned int channel, tiHDriveMode mode);
 void tiHSetDC(unsigned int channel, int dutycycle);
 void tiHSetFloat(unsigned int channel, float percent);
+int tiGetPWMMax();
+int tiGetPWMPeriod();
 
 typedef struct {
     float throt_f; // [-100.0 , 100.0]
