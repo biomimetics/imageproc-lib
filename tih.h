@@ -12,7 +12,7 @@
 //#include "pwm.h"
 
 #define PWM_FREQ            20000 //10 Khz
-#define ADC_TRIG_POINT      0.95  //Trigger at 99% of complete PWM period
+#define ADC_TRIG_POINT      0.97  //Trigger at 99% of complete PWM period
 
 typedef enum {
     TIH_MODE_COAST = 0,
@@ -31,8 +31,9 @@ void tiHChangeDirection(unsigned int channel, tiHDriveDir dir);
 void tiHChangeMode(unsigned int channel, tiHDriveMode mode);
 void tiHSetDC(unsigned int channel, int dutycycle);
 void tiHSetFloat(unsigned int channel, float percent);
-int tiGetPWMMax();
-int tiGetPWMPeriod();
+int tiHGetPWMMax();
+int tiHGetPWMPeriod();
+int tiHGetSignedDC(unsigned int channel);
 
 typedef struct {
     float throt_f; // [-100.0 , 100.0]

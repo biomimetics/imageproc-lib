@@ -18,6 +18,7 @@
 static tiHDriver outputs[4];
 static int pwm_period;  //calculated at init, PWM module period register
 static int max_pwm;     //calculated at init, special event compare reg for ADC
+static int sevtcmp_pwm;
 
 static void tiHSetupPeripheral(void);
 static void tiHConfigure(unsigned int channel);
@@ -28,7 +29,9 @@ void tiHSetup(void) {
     //If the clock scaler is changed, this MUST be changed too!
     pwm_period = (int)((float)FCY/((float)PWM_FREQ * 1.0))- 1;
 
-    max_pwm = (int)(ADC_TRIG_POINT * (float)pwm_period);
+    sevtcmp_pwm = (int)(ADC_TRIG_POINT * (float)pwm_period);
+
+    max_pwm = 2*sevtcmp_pwm;
 
     tiHSetupPeripheral();
     int i;
@@ -51,7 +54,7 @@ static void tiHSetupPeripheral(void) {
     unsigned int PTPERvalue = pwm_period;
     unsigned int SEVTCMPvalue, PTCONvalue, PWMCON1value, PWMCON2value;
 
-    SEVTCMPvalue = max_pwm;
+    SEVTCMPvalue = sevtcmp_pwm;
     PTCONvalue = PWM_EN & PWM_IDLE_CON & PWM_OP_SCALE1 &
                  PWM_IPCLK_SCALE1 & PWM_MOD_FREE;
     PWMCON1value = PWM_MOD1_IND & PWM_PEN1L & PWM_MOD2_IND & PWM_PEN2L &
@@ -173,10 +176,15 @@ void tiHConfigure(unsigned int channel) {
 }
 
 //Getter for the maximum allowable throttle value
-int tiGetPWMMax(){
+int tiHGetPWMMax(){
     return max_pwm;
 }
 
-int tiGetPWMPeriod(){
+int tiHGetPWMPeriod(){
     return pwm_period;
+}
+
+int tiHGetSignedDC(unsigned int channel){
+    unsigned int idx = channel - 1;
+    return outputs[idx].throt_i;
 }

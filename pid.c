@@ -49,11 +49,6 @@
 
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
 
-//This is an option to force the PID outputs back to zero when there is no input.
-//This was an attempt to stop bugs w/ motor twitching, or controller wandering.
-//It may not be needed anymore.
-#define PID_ZEROING_ENABLE 1
-
 //Default gains
 #ifdef PID_SOFTWARE
 #define SOFT_GAIN_SCALER 512
