@@ -19,11 +19,11 @@
 #define SLPTR               (_LATB15) // Radio Sleep/Transmit Pin
 
 //TRX defines
-#define TRX_CS      0
+#define TRX_CS      0 //On SPI channel 1
 //DFMEM defines
-#define DFMEM_CS    0
+#define DFMEM_CS    0 //On SPI channel 2
 //MPU defines
-#define MPU_CS      1
+#define MPU_CS      1 //On SPI channel 2
 
 //These should probably be in a chip support package include, rather than BSP
 #define SPI1_CS             (_LATB2)    // Radio Chip Select
