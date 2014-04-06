@@ -37,6 +37,7 @@
  *  Fernando L. Garcia Bermudez     2008-6-17   Added delay function prototypes
  *  Stanley S. Baek                 2009        Defined true/false & comparisons
  *  Aaron M. Hoover                 2010        Added interrupt disabling macros
+ *  Andrrew Pullin                  2014        Changed to a BSP-include system
  *
  */
 
@@ -46,6 +47,8 @@
 
 #include <xc.h>
 
+/*
+ * This is now going to be done inside a board-specific bsp .h file
 // Abstracting LEDs for easier control of their status
 #if defined(__IMAGEPROC1)
 
@@ -77,6 +80,7 @@
     #define LED_7   _LATA7
 
 #endif
+ */
 
 #define ON              1
 #define OFF             0

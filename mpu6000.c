@@ -50,11 +50,6 @@
 #include "utils.h"
 #include <string.h>
 
-
-#define SPI_CON1bits (SPI2CON1bits)
-#define SPI_CON2 (SPI2CON2)
-#define SPI_STATbits (SPI2STATbits)
-
 // Read/Write Access
 #define READ (128)
 #define WRITE (0)

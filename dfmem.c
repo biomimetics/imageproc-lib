@@ -63,23 +63,6 @@
 #include "spi_controller.h"        // For DMA
 #include "utils.h"
 
-// TODO (humhu) : Consolidate into some BSP header
-#if (defined(__IMAGEPROC1) || defined(__IMAGEPROC24) || defined(__IMAGEPROC25) || defined(__MIKRO) || defined(__EXP16DEV))
-// MIKRO & EXP16DEV has no FLASHMEM, but needs this for compile
-
-    // SPIx pins
-    //#define SPI_CS          _LATG9 //now done in bsp-ip##.h
-
-    // SPIx Registers
-    #define SPI_BUF         SPI2BUF
-    #define SPI_CON1        SPI2CON1
-    #define SPI_CON2        SPI2CON2
-    #define SPI_STAT        SPI2STAT
-    #define SPI_STATbits    SPI2STATbits
-    #define SPI_CON1bits    SPI2CON1bits
-
-#endif
-
 // Flash geometry
 // 8 Mbit
 #define FLASH_8MBIT_MAX_SECTOR              16

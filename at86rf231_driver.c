@@ -53,11 +53,6 @@
 
 #include <string.h>
 
-#define SPI_CON1bits        (SPI1CON1bits)
-#define SPI_CON2            (SPI1CON2)
-#define SPI_STATbits        (SPI1STATbits)
-#define SLPTR               (_LATB15) // Sleep/Transmit Pin
-
 // Basic commands
 #define TRX_CMD_RW          (0xC0) // Register Write
 #define TRX_CMD_RR          (0x80) // Register Read
