@@ -40,7 +40,7 @@
  *  - Uses an I2C(SCCB) port for configuring the camera.
  */
 
-#include "p33Fxxxx.h"
+#include <xc.h>
 #include "i2c.h"
 #include "ovcam.h"
 #include "utils.h"

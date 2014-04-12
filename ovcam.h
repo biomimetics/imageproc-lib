@@ -59,7 +59,7 @@
 #define __OVCAM_H
 
 
-#include "p33Fxxxx.h"
+#include <xc.h>
 
 
 // OVCAM Pins

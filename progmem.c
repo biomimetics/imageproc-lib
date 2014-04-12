@@ -43,7 +43,7 @@
  *
  */
 
-#include "p33Fxxxx.h"
+#include <xc.h>
 #include "progmem.h"
 
 //#include "lcd.h"
