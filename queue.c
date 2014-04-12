@@ -42,7 +42,7 @@
 
 #include "queue.h"
 #include "utils.h"
-#include "p33Fxxxx.h"
+#include <xc.h>
 #include <stdio.h>      // for NULL
 #include <stdlib.h>     // for malloc
 
