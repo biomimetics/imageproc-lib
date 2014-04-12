@@ -58,7 +58,7 @@
  * 117 is max data size (127 - 8 - 2 for MPDU and payload headers)
  */
 static unsigned int CUTOFFS[NUM_CUTOFFS] = {12, 86, MAX_PAYLOAD_SIZE};
-static unsigned int QUANTITIES[NUM_CUTOFFS] = {8, 20, 2};
+static unsigned int QUANTITIES[NUM_CUTOFFS] = {20, 8, 2};
 static unsigned char is_initialized = 0;
 
 // ================ STATIC VARIABLES ==========================================
