@@ -40,7 +40,7 @@
  *
  */
 
-#include "p33Fxxxx.h"
+#include <xc.h>
 #include "queue.h"
 #include "packet_queue.h"
 #include "radio.h"

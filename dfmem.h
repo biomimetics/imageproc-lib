@@ -55,6 +55,7 @@
 #ifndef __DFMEM_H
 #define __DFMEM_H
 
+#include <stdint.h>
 
 typedef struct {
     unsigned int byte_address_bits;
@@ -216,5 +217,8 @@ void dfmemSync();
 // This resets the current page and offset tracking variable to zero.
 void dfmemZeroIndex();
 
+//Get the factory programmed unique identifier, which is the first 8 bytes
+// of a 64-byte array
+uint64_t dfmemGetUnqiueID();
 
 #endif // __DFMEM_H
