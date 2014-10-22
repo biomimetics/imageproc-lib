@@ -305,8 +305,14 @@ unsigned int spic1MassTransmit(unsigned int len, unsigned char *buff, unsigned i
         SPIC1_DMAW_CONbits.NULLW = 1;
     }
 
-    SPIC1_DMAR_CNT = len;   // Set number of bytes to send
-    SPIC1_DMAW_CNT = len;
+    //From dsPIC33 datasheet:
+    //    DMAxCNT + 1 represents the number of DMA requests the channel must
+    //    service before the data block transfer is considered complete.
+    //    That is, a DMAxCNT value of ?0? will transfer one element.
+    //So, DMAx_CNT = len-1 below. Noted here to prevent confusion.
+    //TODO: will this cause a problem if called with len=0?
+    SPIC1_DMAR_CNT = len - 1;
+    SPIC1_DMAW_CNT = len - 1;
     SPIC1_DMAR_CONbits.CHEN = 1;    // Begin transmission
     SPIC1_DMAW_CONbits.CHEN = 1;
     SPIC1_DMAW_REQbits.FORCE = 1;
@@ -335,8 +341,14 @@ unsigned int spic2MassTransmit(unsigned int len, unsigned char *buff, unsigned i
         SPIC2_DMAW_CONbits.NULLW = 1;
     }
 
-    SPIC2_DMAR_CNT = len;   // Set number of bytes to send
-    SPIC2_DMAW_CNT = len;
+    //From dsPIC33 datasheet:
+    //    DMAxCNT + 1 represents the number of DMA requests the channel must
+    //    service before the data block transfer is considered complete.
+    //    That is, a DMAxCNT value of ?0? will transfer one element.
+    //So, DMAx_CNT = len-1 below. Noted here to prevent confusion.
+    //TODO: will this cause a problem if called with len=0?
+    SPIC2_DMAR_CNT = len - 1;
+    SPIC2_DMAW_CNT = len - 1;
     SPIC2_DMAR_CONbits.CHEN = 1;    // Begin transmission
     SPIC2_DMAW_CONbits.CHEN = 1;
     SPIC2_DMAW_REQbits.FORCE = 1;
