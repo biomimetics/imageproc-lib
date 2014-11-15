@@ -58,8 +58,6 @@ typedef struct {
     unsigned int offset; // initial reading on setup - relative zero position
 } EncObj;
 
-extern EncObj encPos[NUM_ENC];
-
 /*****************************************************************************
  * Function Name : amsHallSetup
  * Description   : initialize I2C, and for initial calibration, set offset
@@ -106,11 +104,35 @@ void amsEncoderBlockingRead(unsigned char num);
 unsigned char amsEncoderStartAsyncRead(void);
 
 /*****************************************************************************
- * Function Name : encGetFloatPos
+ * Function Name : amsEncoderGetFloatPos
  * Description   : Return the angular position of encoder[num] return as float
  * Parameters    : None
- * Return Value  : None
+ * Return Value  : float value for a single encoder, in degrees
  *****************************************************************************/
 float amsEncoderGetFloatPos(unsigned char num);
+
+/*****************************************************************************
+ * Function Name : amsEncoderGetPos
+ * Description   : Return the angular position of encoder[num] return as int
+ * Parameters    : None
+ * Return Value  : int value for a single encoder
+ *****************************************************************************/
+int amsEncoderGetPos(unsigned char num);
+
+/*****************************************************************************
+ * Function Name : amsEncoderGetOticks
+ * Description   : Return the count of total revolutions
+ * Parameters    : None
+ * Return Value  : int value, for a single encoder
+ *****************************************************************************/
+long amsEncoderGetOticks(unsigned char num);
+
+/*****************************************************************************
+ * Function Name : amsEncoderGetOffset
+ * Description   : Return the offset for an encoder
+ * Parameters    : None
+ * Return Value  : int value, for a single encoder
+ *****************************************************************************/
+unsigned int amsEncoderGetOffset(unsigned char num);
 
 #endif // __AMS_ENC_H
