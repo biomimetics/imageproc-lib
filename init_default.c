@@ -42,7 +42,6 @@
 #include <xc.h>
 #include "adc.h"
 
-
 /* Configuration Bits (macros defined in processor header) */
 #if !defined(__BOOTLOAD)
 
@@ -60,13 +59,24 @@
         // Primary OSC (XT, HS, EC) w/PLL & 2-Speed Startup Enabled (for fast EC)
         _FOSCSEL(FNOSC_PRIPLL & IESO_ON);
 
-        // EC oscillator & CLK Switch./Mon. Dis & OSC2 as CLK Out
-        _FOSC(POSCMD_EC & FCKSM_CSDCMD & OSCIOFNC_OFF);
+        // EC oscillator & CLK Switch./Mon. Dis & OSC2 as GPIO
+        _FOSC(POSCMD_EC & FCKSM_CSDCMD & OSCIOFNC_ON);
 
         // Watchdog Timer Disabled
         _FWDT(FWDTEN_OFF);
-    #endif
 
+
+    #endif
+    
+    #if defined(__MIKRO)
+        _FICD(ICS_PGD3 & // Comm Channel Select (Communicate on PGC1/EMUC1 and PGD1/EMUD1)
+              JTAGEN_OFF           // JTAG Port Enable (JTAG is Disabled)
+                );
+    #else
+        _FICD(ICS_PGD1 & // Comm Channel Select (Communicate on PGC1/EMUC1 and PGD1/EMUD1)
+              JTAGEN_OFF           // JTAG Port Enable (JTAG is Disabled)
+                );
+    #endif
 #endif // !defined(__BOOTLOAD)
 
 
@@ -140,7 +150,7 @@ void SetupPorts(void)
     TRISE = 0b00000000;
 
 
-#elif defined(__IMAGEPROC2)
+#elif defined(__IMAGEPROC24) || defined(__IMAGEPROC25)
 
     // LEDs: RB12-14 are outputs
     // SPI1 Slave Select is an output (RB2)
@@ -149,9 +159,9 @@ void SetupPorts(void)
     LATB  = 0x0000;
     TRISB = 0b0000111111111011;
 
-    // Camera PWDN: RC14 is an output
-    LATC  = 0x0000;
-    TRISC = 0b1011111111111111;
+    // Camera PWDN: RC14 is an output; SPI2 RC15 is also output.
+    LATC  = 0b1000000000000000;
+    TRISC = 0b0011111111111111;
 
     // OVCAM: RD0-7(PIXEL), RC13(VSYNC), RF0(HREF), and RF1(PCLK) are inputs
     // RD8-RD11 are used for external interrupt
@@ -160,7 +170,7 @@ void SetupPorts(void)
     TRISD = 0xffff;
 
     // DFMEM: SPI2 Slave Select is an output (RG9)
-    LATG  = 0b0000000000;
+    LATG  = 0b1000000000;
     TRISG = 0b0111111111;
 
     // PWMs: RE0, RE2, RE4, and RE6 are outputs managed thru the peripheral
@@ -190,7 +200,8 @@ void SetupPorts(void)
     // LCD: RB0-RB7 are outputs
     // DEBUG RB8 - RB15 are outputs
     LATB  = 0x0000;
-    TRISB = 0x0000;
+    TRISB = (1 << 0) | (1<<8) | (1 << 9) | (1<<10) | (1<<11);; //rb0, rb8-rb11 are inputs for ADC
+    //TRISB = 0x0000;
 
     // RD0-RD7 are used for camera input data
     // RD8-RD11 are used for external interrupt

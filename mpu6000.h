@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Regents of the University of California
+ * Copyright (c) 2012-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,36 +27,73 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for wrapper of UART read/write functionality with packet parsing
+ * InvenSense MPU-6000 6-axis MEMS Driver
  *
- * by Austin D. Buchan
+ * by Richard J. Sheperd
  *
- * v.beta
+ * v.alpha
  */
 
-#include "uart.h"
-#include "payload.h"
-#include "mac_packet.h"
+#ifndef __MPU6000_H
+#define __MPU6000_H
 
-#include <stdio.h>
 
-#ifndef UART_H
-#define	UART_H
+// Registers
+#define MPU_REG_RATEDIV (25)
+#define MPU_REG_CONFIG (26)
+#define MPU_REG_GYROCONFIG (27)
+#define MPU_REG_XLCONFIG (28)
+#define MPU_REG_FIFOEN (35)
+#define MPU_REG_I2CMASTCON (36)
+#define MPU_REG_I2CMASTSTAT (54)
+#define MPU_REG_INTENABLE (56)
+#define MPU_REG_INTSTAT (57)
+#define MPU_REG_XLBASE (59)
+#define MPU_XLLEN (6)
+#define MPU_REG_TEMPBASE (65)
+#define MPU_TEMPLEN (2)
+#define MPU_REG_GYROBASE (67)
+#define MPU_GYROLEN (6)
+#define MPU_REG_USERCON (106)
+#define MPU_REG_PMGT1 (107)
+#define MPU_REG_PMGT2 (108)
+#define MPU_REG_FIFOCNTH (114) // Not sure if high or low
+#define MPU_REG_FIFOCNTL (115)
+#define MPU_REG_FIFORW (116)
+#define MPU_REG_WHOAMI (117)
 
-#define UART_TX_IDLE        0xFF
-#define UART_TX_SEND_SIZE   0xFE
 
-#define UART_RX_IDLE        0xFF
-#define UART_RX_CHECK_SIZE  0xFE
+// Internal data buffer
+ typedef struct {
+    int xl_data[3];
+    int gyro_data[3];
+    int temp;   // temperature
+} mpuObj;
 
-#define UART_MAX_SIZE 200
 
-typedef void (*packet_callback)(MacPacket);
+// Setup device, chip select set in BSP header
+void mpuSetup(void);
 
-void uartInit(packet_callback rx_cb);
-unsigned char uartSend(unsigned char length,unsigned char *frame);
-unsigned char uartSendPayload(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-unsigned char uartSendPacket(MacPacket packet);
+// Run calibration routine
+void mpuRunCalib(unsigned int discard, unsigned int count);
 
-#endif	/* UART_H */
+// Set sleep mode
+void mpuSetSleep(unsigned char mode);
 
+// 3 ints
+void mpuGetGyro(int* buff);
+// 3 ints
+void mpuGetXl(int* buff);
+// 1 int
+void mpuGetTemp(int* buff);
+
+float mpuGetGyroScale(void);
+float mpuGetXlScale(void);
+float mpuGetTempScale(void);
+
+// Read data from MPU
+// This begins an asynchronous update.
+void mpuBeginUpdate(void);
+
+
+#endif // __MPU6000_H

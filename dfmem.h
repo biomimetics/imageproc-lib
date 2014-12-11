@@ -71,7 +71,7 @@ typedef struct {
 typedef DfmemGeometryStruct* DfmemGeometry;
 
 // Handles initialization of communication peripherals and makes sure the
-// memory is initially deselected.
+// memory is initially deselected. Chip select defined in BSP header.
 void dfmemSetup (void);
 
 // Writes the contents of a data array to memory.

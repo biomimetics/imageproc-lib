@@ -44,6 +44,8 @@
  *    (Global Options)/xc16-ld", add -ldsp-elf in the "Additional options" field
  */
 
+#include <xc.h>
+
 #include "pid_hw.h"
 #include <dsp.h>
 #include <libq.h>
@@ -78,15 +80,16 @@ void pidHWSetFracCoeffs(tPID* controller, fractional Kp, fractional Ki,
     kCoeffs[2] = Kd;
 
     PIDCoeffCalc(kCoeffs, controller);
+    return;
 }
 
 void pidHWSetReference(tPID* controller, fractional reference) {
     controller->controlReference = reference;
 }
 
-fractional pidHWRun(tPID* controller, fractional feedback) {
-
-    controller->measuredOutput = feedback;
+// argument of sensed output, should be converted to fractional type
+fractional pidHWRun(tPID* controller, fractional output) {
+    controller->measuredOutput = output;
     PID(controller);
 
     return controller->controlOutput;

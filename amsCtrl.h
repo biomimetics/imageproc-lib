@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Regents of the University of California
+ * Copyright (c) 2012-2013, Regents of the University of California
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,36 +27,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Header for wrapper of UART read/write functionality with packet parsing
+ * ams PID Module
  *
- * by Austin D. Buchan
+ * by Duncan Haldane
  *
- * v.beta
+ * v.0.2
  */
 
-#include "uart.h"
-#include "payload.h"
-#include "mac_packet.h"
+#ifndef __AMS_CTRL_H
+#define __AMS_CTRL_H
 
-#include <stdio.h>
 
-#ifndef UART_H
-#define	UART_H
+#ifdef PID_SOFTWARE
 
-#define UART_TX_IDLE        0xFF
-#define UART_TX_SEND_SIZE   0xFE
+    #define AMS_DEFAULT_KP  200
+    #define AMS_DEFAULT_KI  5
+    #define AMS_DEFAULT_KD  0
+    #define AMS_DEFAULT_KAW 5
+    #define AMS_DEFAULT_KFF  0
+    #define SOFT_GAIN_SCALER 512
 
-#define UART_RX_IDLE        0xFF
-#define UART_RX_CHECK_SIZE  0xFE
+#elif defined PID_HARDWARE
 
-#define UART_MAX_SIZE 200
+    #define AMS_DEFAULT_KP  3000
+    #define AMS_DEFAULT_KI  10
+    #define AMS_DEFAULT_KD  0
+    #define AMS_DEFAULT_KAW 0
+    #define AMS_DEFAULT_KFF  0
+    #define AMS_GAIN_SCALE  8
 
-typedef void (*packet_callback)(MacPacket);
+#endif
 
-void uartInit(packet_callback rx_cb);
-unsigned char uartSend(unsigned char length,unsigned char *frame);
-unsigned char uartSendPayload(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-unsigned char uartSendPacket(MacPacket packet);
+#define nPIDS  2
 
-#endif	/* UART_H */
+//Setup PID for ams encoders
+void amsPIDSetup(void);
 
+void amsCtrlSetInput(unsigned char num, int state);
+
+void amsCtrlPIDUpdate(unsigned char num, int state);
+
+void amsCtrlSetGains(unsigned char num, int Kp, int Ki, int Kd, int Kaw, int ff);
+
+
+#endif // __AMS_CTRL_H

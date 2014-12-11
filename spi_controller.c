@@ -42,21 +42,28 @@
  */
 
 #include "spi_controller.h"
+#include "atomic.h"
 #include "spi.h"
 #include "timer.h"
 #include "dma.h"
 #include "init_default.h"
+#include "utils.h"
 
 #include <string.h>
 
+/*
+ This is now done in bsp-ip*.h
 // This section is board-specific
 // TODO: Generalize or move to BSP header
 #if defined(__IMAGEPROC2)
 
     #define SPI1_CS             (_LATB2)    // Radio Chip Select
-    #define SPI2_CS             (_LATG9)    // Flash Chip Select
+    #define SPI2_CS1            (_LATG9)    // Flash Chip Select
+    #define SPI2_CS2            (_LATC15)   // MPU6000 Chip Select
 
 #endif
+*/
+
 // DMA channels allocated as per Wiki assignments
 #define SPIC1_DMAR_CONbits      (DMA2CONbits)
 #define SPIC1_DMAR_CNT          (DMA2CNT)
@@ -86,12 +93,6 @@
 #define SPI_CS_ACTIVE           (0)
 #define SPI_CS_IDLE             (1)
 
-/** Port status codes */
-typedef enum {
-    STAT_SPI_CLOSED, /** Port not initialized */
-    STAT_SPI_OPEN,  /** Port not busy */
-    STAT_SPI_BUSY,  /** Port busy */
-} SpicStatus;
 
 // =========== Function Prototypes ============================================
 static void setupDMASet1(void);
@@ -100,10 +101,21 @@ static void setupDMASet2(void);
 // =========== Static Variables ===============================================
 
 /** Interrupt handlers */
-static SpicIrqHandler int_handler[SPIC_NUM_PORTS];
+static SpicIrqHandler int_handler_ch1[1];
+static SpicIrqHandler int_handler_ch2[2];
+
+/** Port configurations */
+static unsigned int spicon_ch1[1];
+static unsigned int spicon_ch2[2];
 
 /** Current port statuses */
-static SpicStatus port_status[SPIC_NUM_PORTS];
+DECLARE_SPINLOCK_H(spi_port_ch1);
+DECLARE_SPINLOCK_C(spi_port_ch1);
+DECLARE_SPINLOCK_H(spi_port_ch2);
+DECLARE_SPINLOCK_C(spi_port_ch2);
+
+/** Current port chip select */
+static unsigned char port_cs_line[SPIC_NUM_PORTS];
 
 // Port 1 buffers
 static unsigned char spic1_rx_buff[SPIC1_RX_BUFF_LEN] __attribute__((space(dma)));
@@ -115,60 +127,91 @@ static unsigned char spic2_tx_buff[SPIC2_TX_BUFF_LEN] __attribute__((space(dma))
 
 // =========== Public Methods =================================================
 
-void spicSetupChannel1(void) {
+void spicSetupChannel1(unsigned char cs, unsigned int spiCon1) {
 
-    setupDMASet1();     // Set up DMA channels
-    port_status[0] = STAT_SPI_CLOSED;   // Initialize status
+    setupDMASet1();                     // Set up DMA channels
+    spicon_ch1[cs] = spiCon1;           // Remember SPI config
+    spi_port_ch1_reset();               // Initialize status
 
 }
 
-void spicSetupChannel2(void) {
+void spicSetupChannel2(unsigned char cs, unsigned int spiCon1) {
 
     setupDMASet2();
-    port_status[1] = STAT_SPI_CLOSED;
+    spicon_ch2[cs] = spiCon1;           // Remember SPI config
+    spi_port_ch2_reset();               // Initialize status
 
 }
 
-void spic1SetCallback(SpicIrqHandler handler) {
+void spic1SetCallback(unsigned char cs, SpicIrqHandler handler) {
 
-    int_handler[0] = handler;
-
-}
-
-
-void spic2SetCallback(SpicIrqHandler handler) {
-
-    int_handler[1] = handler;
+    int_handler_ch1[cs] = handler;
 
 }
 
-void spic1BeginTransaction(void) {
+
+void spic2SetCallback(unsigned char cs, SpicIrqHandler handler) {
+
+    int_handler_ch2[cs] = handler;
+
+}
+
+int spic1BeginTransaction(unsigned char cs) {
     // TODO: Timeout?
-    while(port_status[0] == STAT_SPI_BUSY); // Wait for port to become available
-    port_status[0] = STAT_SPI_BUSY;
+
+    // TODO: generalize?
+    if (cs > 0)
+      // Only one CS line is supported
+      return -1;
+
+    spi_port_ch1_lock(); // Wait for port to become available
+    // Reconfigure port
+    SPI1STAT = 0;
+    SPI1CON1 = spicon_ch1[cs];
+    SPI1STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
+    port_cs_line[0] = cs;
     SPI1_CS = SPI_CS_ACTIVE;    // Activate chip select
 
+    return 0;
 }
 
-void spic2BeginTransaction(void) {
+int spic2BeginTransaction(unsigned char cs) {
+    // TODO: Timeout?
 
-    while(port_status[1] == STAT_SPI_BUSY); // Wait for port to become available
-    port_status[1] = STAT_SPI_BUSY;
-    SPI2_CS = SPI_CS_ACTIVE;     // Activate chip select
+    // TODO: generalize?
+    if (cs > 1)
+      // Two CS lines are supported
+      return -1;
 
+    spi_port_ch2_lock(); // Wait for port to become available
+    // Reconfigure port
+    SPI2STAT = 0;
+    SPI2CON1 = spicon_ch2[cs];
+    SPI2STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
+    port_cs_line[1] = cs;
+    if (cs == 0)
+      SPI2_CS1 = SPI_CS_ACTIVE;     // Activate chip select
+    if (cs == 1)
+      SPI2_CS2 = SPI_CS_ACTIVE;     // Activate chip select
+
+    return 0;
 }
 
 void spic1EndTransaction(void) {
 
-    port_status[0] = STAT_SPI_OPEN; // Free port
+    // Only one CS line
     SPI1_CS = SPI_CS_IDLE;  // Idle chip select after freeing since may cause irq
+    spi_port_ch1_unlock();  // Free port
 
 }
 
 void spic2EndTransaction(void) {
 
-    port_status[1] = STAT_SPI_OPEN; // Free port
-    SPI2_CS = SPI_CS_IDLE;  // Idle chip select
+    if (port_cs_line[1] == 0)
+      SPI2_CS1 = SPI_CS_IDLE;  // Idle chip select
+    if (port_cs_line[1] == 1)
+      SPI2_CS2 = SPI_CS_IDLE;  // Idle chip select
+    spi_port_ch2_unlock();     // Free port
 
 }
 
@@ -178,17 +221,18 @@ void spic1Reset(void) {
     SPIC1_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC1_DMAW_CONbits.CHEN = 0;
     SPI1STATbits.SPIROV = 0;        // Clear overwrite bit
-    port_status[0] = STAT_SPI_OPEN;    // Release lock on channel
+    spi_port_ch2_unlock();          // Release lock on channel
 
 }
 
 void spic2Reset(void) {
 
-    SPI2_CS = SPI_CS_IDLE;          // Disable chip select
+    SPI2_CS1 = SPI_CS_IDLE;         // Disable chip select
+    SPI2_CS2 = SPI_CS_IDLE;         // Disable chip select
     SPIC2_DMAR_CONbits.CHEN = 0;    // Disable DMA module
     SPIC2_DMAW_CONbits.CHEN = 0;
     SPI2STATbits.SPIROV = 0;
-    port_status[1] = STAT_SPI_OPEN;    // Release lock on channel
+    spi_port_ch2_unlock();          // Release lock on channel
 
 }
 
@@ -196,8 +240,8 @@ unsigned char spic1Transmit(unsigned char data) {
 
     unsigned char c;
     SPI1STATbits.SPIROV = 0;        // Clear overflow bit
-    SPI1BUF = data;                   // Initiate SPI bus cycle by byte write
-    while(SPI1STATbits.SPITBF);        // Wait for transmit to complete
+    SPI1BUF = data;                 // Initiate SPI bus cycle by byte write
+    while(SPI1STATbits.SPITBF);     // Wait for transmit to complete
     while(!SPI1STATbits.SPIRBF);    // Wait for receive to complete
     c = SPI1BUF;                    // Read out received data to avoid overflow
     return c;
@@ -208,8 +252,8 @@ unsigned char spic2Transmit(unsigned char data) {
 
     unsigned char c;
     SPI2STATbits.SPIROV = 0;        // Clear overflow bit
-    SPI2BUF = data;                   // Initiate SPI bus cycle by byte write
-    while(SPI2STATbits.SPITBF);        // Wait for transmit to complete
+    SPI2BUF = data;                 // Initiate SPI bus cycle by byte write
+    while(SPI2STATbits.SPITBF);     // Wait for transmit to complete
     while(!SPI2STATbits.SPIRBF);    // Wait for receive to complete
     c = SPI2BUF;                    // Read out received data to avoid overflow
     return c;
@@ -276,6 +320,10 @@ unsigned int spic1MassTransmit(unsigned int len, unsigned char *buff, unsigned i
 
 }
 
+
+/**
+ * Transmit the contents of a buffer on port 2 via DMA
+ */
 unsigned int spic2MassTransmit(unsigned int len, unsigned char *buff, unsigned int timeout) {
 
     // Make sure requested length is in range
@@ -336,7 +384,8 @@ unsigned int spic2ReadBuffer(unsigned int len, unsigned char *buff) {
 // ISR for DMA2 interrupt, currently DMAR for channel 1
 void __attribute__((interrupt, no_auto_psv)) _DMA2Interrupt(void) {
 
-    int_handler[0](SPIC_TRANS_SUCCESS);        // Call registered callback function
+    // Call registered callback function
+    int_handler_ch1[port_cs_line[0]](SPIC_TRANS_SUCCESS);
     _DMA2IF = 0;
 
 }
@@ -351,7 +400,8 @@ void __attribute__((interrupt, no_auto_psv)) _DMA3Interrupt(void) {
 // ISR for DMA4 interrupt, currently DMAR for channel 2
 void __attribute__((interrupt, no_auto_psv)) _DMA4Interrupt(void) {
 
-    int_handler[1](SPIC_TRANS_SUCCESS);        // Call registered callback function
+    // Call registered callback function
+    int_handler_ch2[port_cs_line[1]](SPIC_TRANS_SUCCESS);
     _DMA4IF = 0;
 
 }

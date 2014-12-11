@@ -63,22 +63,6 @@
 #include "spi_controller.h"        // For DMA
 #include "utils.h"
 
-// TODO (humhu) : Consolidate into some BSP header
-#if (defined(__IMAGEPROC1) || defined(__IMAGEPROC2) || defined(__MIKRO) || defined(__EXP16DEV))
-// MIKRO & EXP16DEV has no FLASHMEM, but needs this for compile
-
-    // SPIx pins
-    #define SPI_CS          _LATG9
-
-    // SPIx Registers
-    #define SPI_BUF         SPI2BUF
-    #define SPI_CON1        SPI2CON1
-    #define SPI_CON2        SPI2CON2
-    #define SPI_STAT        SPI2STAT
-    #define SPI_STATbits    SPI2STATbits
-
-#endif
-
 // Flash geometry
 // 8 Mbit
 #define FLASH_8MBIT_MAX_SECTOR              16
@@ -145,6 +129,7 @@
 // Memory geometry
 static DfmemGeometryStruct dfmem_geo;
 
+
 // Placeholders
 static unsigned int currentBuffer = 0;
 static unsigned int currentBufferOffset = 0;
@@ -186,9 +171,9 @@ static void spiCallback(unsigned int irq_source);
 void dfmemSetup(void)
 {
     dfmemSetupPeripheral();
-    spicSetupChannel2();
-    spic2SetCallback(&spiCallback);
+    spic2SetCallback(DFMEM_CS, &spiCallback);
     while(!dfmemIsReady());
+
     dfmemGeometrySetup();
 
     //Readback security register, which gets chip-unique identifiers
@@ -222,6 +207,8 @@ void dfmemWrite (unsigned char *data, unsigned int length, unsigned int page,
     dfmemWriteByte(MemAddr.chr_addr[0]);
 
     spic2MassTransmit(length, data, 2*length);
+    //while (length--) { dfmemWriteByte(*data++); }
+    //dfmemDeselectChip();
 }
 
 void dfmemWriteBuffer (unsigned char *data, unsigned int length,
@@ -306,7 +293,8 @@ void dfmemRead (unsigned int page, unsigned int byte, unsigned int length,
     unsigned int read_bytes;
     read_bytes = spic2MassTransmit(length, NULL, 2*length);
     dfmemSelectChip(); // Busy wait
-    spic2ReadBuffer(read_bytes, data);
+    spic2ReadBuffer(read_bytes, data);  // reads DMA buffer
+    //while (length--) { *data++ = dfmemReadByte(); }
 
     dfmemDeselectChip();
 }
@@ -475,29 +463,28 @@ void dfmemResumeFromDeepSleep()
 }
 
 void dfmemSave(unsigned char* data, unsigned int length)
-{
-    //If this write will fit into the buffer, then just put it there
-    if (currentBufferOffset + length > dfmem_geo.buffer_size) {
-        dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
-        currentBuffer = (currentBuffer) ? 0 : 1;
-        currentBufferOffset = 0;
+{   //If this write will not fit into the buffer, then
+       if (currentBufferOffset + length > dfmem_geo.buffer_size)
+       { dfmemSync(); //  i) write current buffer to memory, and  ii) switch to new buffer
+       }
+ /*       dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
+        currentBuffer = (currentBuffer) ? 0 : 1; // toggle buffer
+        currentBufferOffset = 0;  // reset to beginning
         nextPage++;
-    }
-
-    //We know there won't be an overrun here because of the previous 'if'
-    // TODO (fgb) : Shouldn't this happen only when the buffer is full,
-    //              probably calling dfmemSync?
+*/
+    //  write data into buffer
     dfmemWriteBuffer(data, length, currentBufferOffset, currentBuffer);
     currentBufferOffset += length;
 }
 
+// write last buffer to memory
 void dfmemSync()
 {
     //if currentBufferOffset == 0, then we don't need to write anything to be sync'd
     if(currentBufferOffset != 0){
         dfmemWriteBuffer2MemoryNoErase(nextPage, currentBuffer);
         currentBuffer = (currentBuffer) ? 0 : 1; //Toggle buffer number
-        currentBufferOffset = 0;
+        currentBufferOffset = 0; // reset to beginning of buffer
         nextPage++;
     }
 }
@@ -563,7 +550,7 @@ static inline unsigned char dfmemReadByte (void)
 }
 
 // Selects the memory chip.
-static inline void dfmemSelectChip(void) { spic2BeginTransaction(); }
+static inline void dfmemSelectChip(void) { spic2BeginTransaction(DFMEM_CS); }
 
 // De-selects the memory chip.
 static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
@@ -573,12 +560,17 @@ static inline void dfmemDeselectChip(void) { spic2EndTransaction(); }
 // The MCU is the SPI master and the clock isn't continuous.
 static void dfmemSetupPeripheral(void)
 {
-    SPI_CON1 = ENABLE_SCK_PIN & ENABLE_SDO_PIN & SPI_MODE16_OFF & SPI_SMP_OFF &
-               SPI_CKE_ON & SLAVE_ENABLE_OFF & CLK_POL_ACTIVE_HIGH &
-               MASTER_ENABLE_ON & PRI_PRESCAL_1_1 & SEC_PRESCAL_4_1;
-    SPI_CON2 = FRAME_ENABLE_OFF & FRAME_SYNC_OUTPUT & FRAME_POL_ACTIVE_HIGH &
-               FRAME_SYNC_EDGE_PRECEDE;
-    SPI_STAT = SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR;
+    spicSetupChannel2(DFMEM_CS,
+                      ENABLE_SCK_PIN &
+                      ENABLE_SDO_PIN &
+                      SPI_MODE16_OFF &
+                      SPI_SMP_OFF &
+                      SPI_CKE_ON &
+                      SLAVE_ENABLE_OFF &
+                      CLK_POL_ACTIVE_HIGH &
+                      MASTER_ENABLE_ON &
+                      PRI_PRESCAL_1_1 &
+                      SEC_PRESCAL_4_1);
 }
 
 // Figures out memory geometry by querying its size
