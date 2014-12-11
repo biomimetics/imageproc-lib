@@ -51,6 +51,8 @@
 
 #include <string.h>
 
+/*
+ This is now done in bsp-ip*.h
 // This section is board-specific
 // TODO: Generalize or move to BSP header
 #if defined(__IMAGEPROC2)
@@ -60,6 +62,8 @@
     #define SPI2_CS2            (_LATC15)   // MPU6000 Chip Select
 
 #endif
+*/
+
 // DMA channels allocated as per Wiki assignments
 #define SPIC1_DMAR_CONbits      (DMA2CONbits)
 #define SPIC1_DMAR_CNT          (DMA2CNT)

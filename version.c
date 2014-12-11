@@ -4,9 +4,8 @@
 #ifndef VERSION_STRING
 #error "No version string is defined. This is strictly required to build. Check pre-build python step, version.py ."
 #else
-static unsigned char version[] = VERSION_STRING ;
+static char version[] = VERSION_STRING ;
 #endif
 
 
-unsigned char* versionGetString(void)
-{ return version; }
+char* versionGetString(void) { return version; }

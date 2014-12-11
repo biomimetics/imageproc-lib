@@ -124,7 +124,7 @@ void __attribute__((interrupt, no_auto_psv)) _INT0Interrupt(void) {
     _INT0IF = 0;    // Clear the interrupt flag
 
 }
-#elif defined(__IMAGEPROC2)
+#elif defined(__IMAGEPROC24) || defined(__IMAGEPROC25)
 void __attribute__((interrupt, no_auto_psv)) _INT2Interrupt(void) {
 
     batHandleISR();

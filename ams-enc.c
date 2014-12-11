@@ -73,6 +73,9 @@ EncObj encPos[NUM_ENC];
 
 #define AMS_ENC_ANGLE_REG   0xFE
 
+#define AMS_ENC_OFFSET_0 5758
+#define AMS_ENC_OFFSET_1 7706
+
 volatile unsigned char  state = AMS_ENC_IDLE;
 volatile unsigned char  encoder_number = 0;
 volatile unsigned int   encoder_new_pos;
@@ -86,8 +89,10 @@ static inline void encoderSetupPeripheral(void);
  *          Public functions
 -----------------------------------------------------------------------------*/
 
-void amsEncoderSetup(void)
-{   
+void amsEncoderSetup(void) {
+    // Need delay for encoders to be ready
+    delay_ms(100);
+    
     // LSB = R/W* .
     // 1. send slave <a2:a1>, a0=W (write reg address)
     // 2. send slave register address <a7:a0>,
@@ -119,11 +124,13 @@ void amsEncoderResetPos(void) {
     // initialize structure
     int i;
     for(i = 0; i< NUM_ENC; i++) {
-        amsEncoderBlockingRead(i);    // get initial values w/o setting oticks
-        encPos[i].offset = encPos[i].pos; // initialize encoder
+        //amsEncoderBlockingRead(i);    // get initial values w/o setting oticks
+        //encPos[i].offset = encPos[i].pos; // initialize encoder
         encPos[i].calibPos = 0;
         encPos[i].oticks = 0;   // set revolution counter to 0
     }
+    encPos[0].offset = AMS_ENC_OFFSET_0;
+    encPos[1].offset = AMS_ENC_OFFSET_1;
 }
 
 /*****************************************************************************
@@ -139,11 +146,12 @@ static inline void encoderSetupPeripheral(void) { //same setup as ITG3200 for co
             I2C1_SM_DIS & I2C1_GCALL_DIS & I2C1_STR_DIS &
             I2C1_NACK & I2C1_ACK_DIS & I2C1_RCV_DIS &
             I2C1_STOP_DIS & I2C1_RESTART_DIS & I2C1_START_DIS &
-            MI2C1_INT_PRI_5;
+            MI2C1_INT_PRI_6;
 
     // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 909KHz
     I2C1BRGvalue = 40;
     OpenI2C1(I2C1CONvalue, I2C1BRGvalue);
+    SetPriorityIntMI2C1(6);
     _MI2C1IF = 0;
     EnableIntMI2C1;
 }
@@ -185,7 +193,6 @@ unsigned char amsEncoderStartAsyncRead(void) {
 void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
     LED_3 = 1;
 
-    CRITICAL_SECTION_START
     switch(state) {
         case AMS_ENC_WRITE_START:
             I2C1TRN = encAddr[2*encoder_number+1];
@@ -196,11 +203,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_WRITE_REG;
             break;
         case AMS_ENC_WRITE_REG:
-            I2C1CONbits.PEN = 1;
-            state = AMS_ENC_WRITE_STOP;
-            break;
-        case AMS_ENC_WRITE_STOP:
-            I2C1CONbits.SEN = 1;
+            I2C1CONbits.RSEN = 1;
             state = AMS_ENC_READ_START;
             break;
         case AMS_ENC_READ_START:
@@ -212,7 +215,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_READ_0;
             break;
         case AMS_ENC_READ_0:
-            encoder_new_pos = I2C1RCV & 0x3F;
+            encoder_new_pos = I2C1RCV <<6;
             I2C1CONbits.ACKDT = 0;
             I2C1CONbits.ACKEN = 1;
             state = AMS_ENC_READ_0_ACK;
@@ -222,7 +225,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_READ_1;
             break;
         case AMS_ENC_READ_1:
-            encoder_new_pos = I2C1RCV<<6;
+            encoder_new_pos |= (I2C1RCV &  0x3F);
             I2C1CONbits.ACKDT = 1;
             I2C1CONbits.ACKEN = 1;
             state = AMS_ENC_READ_1_NACK;
@@ -247,7 +250,6 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
     }
     LED_3 = 0;
     _MI2C1IF = 0;
-    CRITICAL_SECTION_END
 }
 
 inline void amsEncoderUpdatePos(unsigned char encoder_number, unsigned int new_pos) {

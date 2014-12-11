@@ -49,11 +49,6 @@
 
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
 
-//This is an option to force the PID outputs back to zero when there is no input.
-//This was an attempt to stop bugs w/ motor twitching, or controller wandering.
-//It may not be needed anymore.
-#define PID_ZEROING_ENABLE 1
-
 //Default gains
 #ifdef PID_SOFTWARE
 #define SOFT_GAIN_SCALER 512
@@ -127,6 +122,9 @@ void pidInitPIDObj(pidObj* pid, int Kp, int Ki, int Kd, int Kaw, int Kff) {
     pid->error = 0;
 #ifdef PID_HARDWARE
     pidHWSetFracCoeffs(&(pid->dspPID), pid->Kp, pid->Ki, pid->Kd);
+    
+    //This check should not really be necessary, since we have default values.
+    //TODO: once this code is validated, this check can be removed.
     if((pid->dspPID.abcCoefficients != NULL) &&
             (pid->dspPID.controlHistory != NULL) ){
         PIDInit(&(pid->dspPID));

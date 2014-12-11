@@ -14,11 +14,11 @@
 #define OUTPUT_PWM  1
 #define OUTPUT_GPIO 0
 #define ABS(my_val) ((my_val) < 0) ? -(my_val) : (my_val)
-#define MAXPWM 0xf80   // maximum PWM to allow dead time in case need to sample back EMF
-
 
 static tiHDriver outputs[4];
-static int pwm_period;
+static int pwm_period;  //calculated at init, PWM module period register
+static int max_pwm;     //calculated at init, special event compare reg for ADC
+static int sevtcmp_pwm;
 
 static void tiHSetupPeripheral(void);
 static void tiHConfigure(unsigned int channel);
@@ -27,7 +27,11 @@ void tiHSetup(void) {
 
     //This setup is unique to PWM_IPCLK_SCALE1
     //If the clock scaler is changed, this MUST be changed too!
-    pwm_period = (int)((float)FCY/((float)PWM_FREQ * (float)1))- 1;
+    pwm_period = (int)((float)FCY/((float)PWM_FREQ * 1.0))- 1;
+
+    sevtcmp_pwm = (int)(ADC_TRIG_POINT * (float)pwm_period);
+
+    max_pwm = 2*sevtcmp_pwm;
 
     tiHSetupPeripheral();
     int i;
@@ -49,9 +53,8 @@ static void tiHSetupPeripheral(void) {
 
     unsigned int PTPERvalue = pwm_period;
     unsigned int SEVTCMPvalue, PTCONvalue, PWMCON1value, PWMCON2value;
-    //SEVTCMPvalue = 1988;
-    //PWM Special Event Trigger is set to
-    SEVTCMPvalue = (int)(ADC_TRIG_POINT * (float)pwm_period);
+
+    SEVTCMPvalue = sevtcmp_pwm;
     PTCONvalue = PWM_EN & PWM_IDLE_CON & PWM_OP_SCALE1 &
                  PWM_IPCLK_SCALE1 & PWM_MOD_FREE;
     PWMCON1value = PWM_MOD1_IND & PWM_PEN1L & PWM_MOD2_IND & PWM_PEN2L &
@@ -90,8 +93,8 @@ void tiHSetFloat(unsigned int channel, float percent){
 
 void tiHSetDC(unsigned int channel, int dutycycle){
     unsigned int idx = channel - 1;
-    if (dutycycle > MAXPWM) dutycycle = MAXPWM;
-    if (dutycycle < -MAXPWM) dutycycle = -MAXPWM;
+    if (dutycycle > max_pwm) dutycycle = max_pwm;
+    if (dutycycle < -max_pwm) dutycycle = -max_pwm;
     outputs[idx].throt_f = -666.0; //TODO: not a solution; have to update float every time?
     outputs[idx].throt_i = dutycycle;
 
@@ -170,4 +173,18 @@ void tiHConfigure(unsigned int channel) {
 
     LATE = LATEval; //Mode
     PWMCON1 = PWMCON1val; //Direction
+}
+
+//Getter for the maximum allowable throttle value
+int tiHGetPWMMax(){
+    return max_pwm;
+}
+
+int tiHGetPWMPeriod(){
+    return pwm_period;
+}
+
+int tiHGetSignedDC(unsigned int channel){
+    unsigned int idx = channel - 1;
+    return outputs[idx].throt_i;
 }

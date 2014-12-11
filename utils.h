@@ -37,6 +37,7 @@
  *  Fernando L. Garcia Bermudez     2008-6-17   Added delay function prototypes
  *  Stanley S. Baek                 2009        Defined true/false & comparisons
  *  Aaron M. Hoover                 2010        Added interrupt disabling macros
+ *  Andrrew Pullin                  2014        Changed to a BSP-include system
  *
  */
 
@@ -46,13 +47,15 @@
 
 #include <xc.h>
 
+/*
+ * This is now going to be done inside a board-specific bsp .h file
 // Abstracting LEDs for easier control of their status
 #if defined(__IMAGEPROC1)
 
     #define LED_1   _LATF0
     #define LED_2   _LATF1
 
-#elif defined(__IMAGEPROC2) || defined(__MIKRO)
+#elif defined(__IMAGEPROC24) || defined(__IMAGEPROC25) || defined(__MIKRO)
 
     #define LED_1   _LATB12
     #define LED_2   _LATB13
@@ -77,9 +80,27 @@
     #define LED_7   _LATA7
 
 #endif
+ */
 
 #define ON              1
 #define OFF             0
+
+/// Board Support Header
+#if defined(__IMAGEPROC1)
+    #include "bsp-ip1.h"
+#elif defined(__IMAGEPROC24)
+    #include "bsp-ip24.h"
+#elif defined(__IMAGEPROC25)
+    #include "bsp-ip25.h"
+#elif defined(__BASESTATION)
+    #include "bsp-basestation.h"
+#elif defined(__BASESTATION2)
+    #include "bsp-basestation2.h"
+#elif defined(__MIKRO)
+    #include "bsp-mikro.h"            //Not expected to be used
+#elif defined(__EXP16DEV)
+    #include "bsp-exp16dev.h"         //Not expected to be used
+#endif
 
 //Disable interrupts by wrapping code with this macro
 //Example usage:

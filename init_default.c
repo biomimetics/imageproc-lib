@@ -150,7 +150,7 @@ void SetupPorts(void)
     TRISE = 0b00000000;
 
 
-#elif defined(__IMAGEPROC2)
+#elif defined(__IMAGEPROC24) || defined(__IMAGEPROC25)
 
     // LEDs: RB12-14 are outputs
     // SPI1 Slave Select is an output (RB2)
