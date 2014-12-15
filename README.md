@@ -1,17 +1,3 @@
-Imageproc 2.5 support is now in the master branch.
-Imageproc 2.4 support has been moved to 'ip24-maint'.
-
-Use the following commands to setup the integration branch in your local git
-repository. These commands assume you have forked imageproc-lib from
-biomimetics into your Github account, and then cloned your Github fork into
-your local repository.
-
-After following these instructions, "push" will always push changes to your
-fork of the integration branch on your Github account, while "pull" will
-always pull the most recent changes from the central integration branch.
-
-- - -
-
 All code licensed under the 3-clause modified-BSD license, unless
 otherwise noted.
 
@@ -22,6 +8,9 @@ Description
 -----------
 A set of common modules developed for the ImageProc family of boards,
 which use Microchip's dsPIC architecture.
+
+These modules work with ImageProc 2.5 boards. Support for older boards up to
+version 2.4 can be found in the [ip24-maint](../../tree/ip24-maint) branch.
 
 Download code
 -------------
