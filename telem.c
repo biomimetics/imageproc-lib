@@ -74,7 +74,7 @@
 #if defined(__RADIO_HIGH_DATA_RATE)
 #define READBACK_DELAY_TIME_MS 3
 #else
-#define READBACK_DELAY_TIME_MS 4
+#define READBACK_DELAY_TIME_MS 7
 #endif
 
 telemStruct_t telemBuffer;
