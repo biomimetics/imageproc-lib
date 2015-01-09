@@ -159,7 +159,7 @@ void telemSetSamplesToSave(unsigned long n) {
     sampIdx = 0;
 }
 
-void telemReadbackSamples(unsigned long numSamples) {
+void telemReadbackSamples(unsigned long numSamples, unsigned int src_addr) {
     int delaytime_ms = READBACK_DELAY_TIME_MS;
     unsigned long i = 0; //will actually be the same as the sampleIndex
 
@@ -175,7 +175,7 @@ void telemReadbackSamples(unsigned long numSamples) {
         //Reliable send, with linear backoff
         do {
             //debugpins1_set();
-            telemSendDataDelay(&sampleData, delaytime_ms);
+            telemSendDataDelay(&sampleData, delaytime_ms, src_addr);
             //Linear backoff
             delaytime_ms += 0;
             //debugpins1_clr();
@@ -189,8 +189,8 @@ void telemReadbackSamples(unsigned long numSamples) {
     EnableIntT1;
 }
 
-void telemSendDataDelay(telemStruct_t* sample, int delaytime_ms) {
-    radioSendData(RADIO_DST_ADDR, 0, CMD_FLASH_READBACK, telemPacketSize, (unsigned char *)sample, 0);
+void telemSendDataDelay(telemStruct_t* sample, int delaytime_ms, unsigned int src_addr) {
+    radioSendData(src_addr, 0, CMD_FLASH_READBACK, telemPacketSize, (unsigned char *)sample, 0);
     delay_ms(delaytime_ms); // allow radio transmission time
 }
 
