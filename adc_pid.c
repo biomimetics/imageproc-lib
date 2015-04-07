@@ -251,7 +251,7 @@ static void initDma0(void) {
 void __attribute__((interrupt, no_auto_psv)) _DMA0Interrupt(void) {
     //This should really be done in an elegant way by selecting a pointer, and
     // not repeating code below.
-    LED_3 = 1;
+    //LED_3 = 1;
     if (DmaBuffer == 0) {
         adc_AN0 = BufferA[0][0];  //AN0
         adc_AN8 = BufferA[1][0];  //AN8
@@ -274,7 +274,7 @@ void __attribute__((interrupt, no_auto_psv)) _DMA0Interrupt(void) {
     adc_MotorD = adc_AN11;
 
     DmaBuffer ^= 1; //Toggle between buffers
-    LED_3 = 0;
+    //LED_3 = 0;
     IFS0bits.DMA0IF = 0; //Clear the DMA0 Interrupt Flag
 }
 // End DMA section
