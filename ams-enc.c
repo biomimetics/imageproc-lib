@@ -215,7 +215,7 @@ unsigned char amsEncoderStartAsyncRead(void) {
 }
 
 void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
-    LED_3 = 1;
+    //LED_3 = 1;
 
     switch(state) {
         case AMS_ENC_WRITE_START:
@@ -272,7 +272,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_IDLE;
             break;
     }
-    LED_3 = 0;
+    //LED_3 = 0;
     _MI2C1IF = 0;
 }
 
