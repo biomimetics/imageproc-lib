@@ -48,7 +48,8 @@
 #include "timer.h"
 #include "ppool.h"
 
-#include "at86rf231.h"  // Current transceiver IC
+//#include "at86rf231.h"  // Current transceiver IC
+#include "at86rf233.h"  // Current transceiver IC
 #include "at86rf231_driver.h"
 
 #include <stdlib.h>
