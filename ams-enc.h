@@ -54,7 +54,6 @@
 typedef struct {
     unsigned int pos; // raw reading from sensor 14 bits
     long oticks;  // revolution counter
-    unsigned int calibPos;  // 0 to 2pi, converted to 16 bits
     unsigned int offset; // initial reading on setup - relative zero position
 } EncObj;
 

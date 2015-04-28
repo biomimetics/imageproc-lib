@@ -132,7 +132,6 @@ void amsEncoderResetPos(void) {
     for(i = 0; i< NUM_ENC; i++) {
         //amsEncoderBlockingRead(i);    // get initial values w/o setting oticks
         //encPos[i].offset = encPos[i].pos; // initialize encoder
-        encPos[i].calibPos = 0;
         encPos[i].oticks = 0;   // set revolution counter to 0
     }
     encPos[0].offset = AMS_ENC_OFFSET_0;
