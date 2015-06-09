@@ -157,6 +157,11 @@ void radioGetStatus(RadioStatus *stat) {
     memcpy(stat, &status, sizeof(RadioStatus));
 }
 
+void radioGetAddress(RadioAddress *addr) {
+    if(addr == NULL) { return; }
+    memcpy(addr, &(configuration.address), sizeof(RadioAddress));
+}
+
 void radioSetAddress(RadioAddress *address) {
 
     if(address == NULL) { return; }
