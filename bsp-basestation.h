@@ -10,14 +10,12 @@
 
 //SPI setup registers; possible should be in a chip support include
 // SPIx Registers
-#warning "This is probably wrong; AP 6-9-2015"
 #define SPI_BUF         SPI2BUF
-#define SPI_CON1        SPI2CON1
-#define SPI_CON2        SPI2CON2
-#define SPI_STAT        SPI2STAT
-#define SPI_STATbits    SPI2STATbits
 #define SPI_CON1bits    SPI2CON1bits
-#define SLPTR               (_LATB15) // Radio Sleep/Transmit Pin
+#define SPI_CON2        SPI2CON2
+#define SPI_STATbits    SPI2STATbits
+#define SPI_CS          _LATG9
+#define SLPTR           _LATE5
 
 //TRX defines
 #define TRX_CS      0 //On SPI channel 1
