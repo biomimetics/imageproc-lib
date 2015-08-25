@@ -86,8 +86,11 @@ unsigned int telemPacketSize;
 ////////   Private variables   ////////////////
 static unsigned long samplesToSave = 0;
 //Skip counter for dividing the 300hz timer into lower telemetry rates
-static unsigned int telemSkipNum = DEFAULT_SKIP_NUM;
-static unsigned int skipcounter = DEFAULT_SKIP_NUM;
+#ifndef TELEM_SKIP_NUM
+#define TELEM_SKIP_NUM DEFAULT_SKIP_NUM
+#endif
+static unsigned int telemSkipNum = TELEM_SKIP_NUM;
+static unsigned int skipcounter = TELEM_SKIP_NUM;
 static unsigned long sampIdx = 0;
 
 //static unsigned long samplesToStream = 0;
