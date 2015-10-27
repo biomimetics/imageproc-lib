@@ -54,10 +54,9 @@
 typedef struct {
     unsigned int pos; // raw reading from sensor 14 bits
     long oticks;  // revolution counter
+    unsigned int calibPos;  // 0 to 2pi, converted to 16 bits
     unsigned int offset; // initial reading on setup - relative zero position
 } EncObj;
-
-extern EncObj encPos[NUM_ENC];
 
 /*****************************************************************************
  * Function Name : amsHallSetup
@@ -105,11 +104,35 @@ void amsEncoderBlockingRead(unsigned char num);
 unsigned char amsEncoderStartAsyncRead(void);
 
 /*****************************************************************************
- * Function Name : encGetFloatPos
+ * Function Name : amsEncoderGetFloatPos
  * Description   : Return the angular position of encoder[num] return as float
  * Parameters    : None
- * Return Value  : None
+ * Return Value  : float value for a single encoder, in degrees
  *****************************************************************************/
 float amsEncoderGetFloatPos(unsigned char num);
+
+/*****************************************************************************
+ * Function Name : amsEncoderGetPos
+ * Description   : Return the angular position of encoder[num] return as int
+ * Parameters    : None
+ * Return Value  : int value for a single encoder
+ *****************************************************************************/
+int amsEncoderGetPos(unsigned char num);
+
+/*****************************************************************************
+ * Function Name : amsEncoderGetOticks
+ * Description   : Return the count of total revolutions
+ * Parameters    : None
+ * Return Value  : int value, for a single encoder
+ *****************************************************************************/
+long amsEncoderGetOticks(unsigned char num);
+
+/*****************************************************************************
+ * Function Name : amsEncoderGetOffset
+ * Description   : Return the offset for an encoder
+ * Parameters    : None
+ * Return Value  : int value, for a single encoder
+ *****************************************************************************/
+unsigned int amsEncoderGetOffset(unsigned char num);
 
 #endif // __AMS_ENC_H

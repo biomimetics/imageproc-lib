@@ -51,7 +51,6 @@
 #include "utils.h"
 #include "settings.h"
 
-
 #define LSB2ENCDEG      0.0219
 #define ENC_I2C_CHAN    1       //Encoder is on I2C channel 1
 
@@ -74,13 +73,7 @@ EncObj encPos[NUM_ENC];
 
 #define AMS_ENC_ANGLE_REG   0xFE
 
-#ifndef AMS_ENC_OFFSET_0
-#define AMS_ENC_OFFSET_0 0
-#endif
 
-#ifndef AMS_ENC_OFFSET_1
-#define AMS_ENC_OFFSET_1 0
-#endif
 
 volatile unsigned char  state = AMS_ENC_IDLE;
 volatile unsigned char  encoder_number = 0;
@@ -132,10 +125,36 @@ void amsEncoderResetPos(void) {
     for(i = 0; i< NUM_ENC; i++) {
         //amsEncoderBlockingRead(i);    // get initial values w/o setting oticks
         //encPos[i].offset = encPos[i].pos; // initialize encoder
+        encPos[i].calibPos = 0;
         encPos[i].oticks = 0;   // set revolution counter to 0
     }
+
+    //Set up offset
+    //TODO: maybe move these to NVM somewhere in the flash, rather than project defines
+#ifdef AMS_ENC_OFFSET_0
     encPos[0].offset = AMS_ENC_OFFSET_0;
+#else
+    encPos[0].offset = 0;
+#endif
+
+#ifdef AMS_ENC_OFFSET_1
     encPos[1].offset = AMS_ENC_OFFSET_1;
+#else
+    encPos[1].offset = 0;
+#endif
+
+#ifdef AMS_ENC_OFFSET_2
+    encPos[2].offset = AMS_ENC_OFFSET_2;
+#else
+    encPos[2].offset = 0;
+#endif
+
+#ifdef AMS_ENC_OFFSET_3
+    encPos[3].offset = AMS_ENC_OFFSET_3;
+#else
+    encPos[3].offset = 0;
+#endif
+
 }
 
 /*****************************************************************************
@@ -196,7 +215,7 @@ unsigned char amsEncoderStartAsyncRead(void) {
 }
 
 void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
-    LED_3 = 1;
+    //LED_3 = 1;
 
     switch(state) {
         case AMS_ENC_WRITE_START:
@@ -253,7 +272,7 @@ void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void) {
             state = AMS_ENC_IDLE;
             break;
     }
-    LED_3 = 0;
+    //LED_3 = 0;
     _MI2C1IF = 0;
 }
 
@@ -275,4 +294,31 @@ float amsEncoderGetFloatPos(unsigned char num) {
     float pos;
     pos = encPos[num].pos* LSB2ENCDEG; //calculate Float
     return pos;
+}
+
+int amsEncoderGetPos(unsigned char num) {
+    if(num < NUM_ENC){
+        return encPos[num].pos;
+    }
+    else{
+        return 0;
+    }
+}
+
+long amsEncoderGetOticks(unsigned char num) {
+    if(num < NUM_ENC){
+        return encPos[num].oticks;
+    }
+    else{
+        return 0;
+    }
+}
+
+unsigned int amsEncoderGetOffset(unsigned char num){
+    if(num < NUM_ENC){
+        return encPos[num].offset;
+    }
+    else{
+        return 0;
+    }
 }

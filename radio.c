@@ -48,7 +48,8 @@
 #include "timer.h"
 #include "ppool.h"
 
-#include "at86rf231.h"  // Current transceiver IC
+//#include "at86rf231.h"  // Current transceiver IC
+#include "at86rf233.h"  // Current transceiver IC
 #include "at86rf231_driver.h"
 
 #include <stdlib.h>
@@ -154,6 +155,11 @@ void radioGetConfiguration(RadioConfiguration *conf) {
 void radioGetStatus(RadioStatus *stat) {
     if(stat == NULL) { return; }
     memcpy(stat, &status, sizeof(RadioStatus));
+}
+
+void radioGetAddress(RadioAddress *addr) {
+    if(addr == NULL) { return; }
+    memcpy(addr, &(configuration.address), sizeof(RadioAddress));
 }
 
 void radioSetAddress(RadioAddress *address) {
